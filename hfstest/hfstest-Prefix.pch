@@ -1,0 +1,7 @@
+//
+// Prefix header for all source files of the 'hfstest' target in the 'hfstest' project
+//
+
+#ifdef __OBJC__
+	#import <Foundation/Foundation.h>
+#endif
