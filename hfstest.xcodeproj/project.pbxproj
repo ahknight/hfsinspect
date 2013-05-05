@@ -10,6 +10,8 @@
 		9BBA85071735AFD400273AE9 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9BBA85061735AFD400273AE9 /* Foundation.framework */; };
 		9BBA850A1735AFD400273AE9 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 9BBA85091735AFD400273AE9 /* main.m */; };
 		9BBA850E1735AFD400273AE9 /* hfstest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9BBA850D1735AFD400273AE9 /* hfstest.1 */; };
+		9BDF325E1736D27500F60671 /* hfs_pstruct.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BDF325D1736D27500F60671 /* hfs_pstruct.c */; };
+		9BDF32621736D30E00F60671 /* hfs_endian.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BDF32611736D30E00F60671 /* hfs_endian.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -28,9 +30,13 @@
 /* Begin PBXFileReference section */
 		9BBA85031735AFD400273AE9 /* hfstest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = hfstest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9BBA85061735AFD400273AE9 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		9BBA85091735AFD400273AE9 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		9BBA85091735AFD400273AE9 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = main.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		9BBA850C1735AFD400273AE9 /* hfstest-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "hfstest-Prefix.pch"; sourceTree = "<group>"; };
 		9BBA850D1735AFD400273AE9 /* hfstest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = hfstest.1; sourceTree = "<group>"; };
+		9BDF325D1736D27500F60671 /* hfs_pstruct.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_pstruct.c; sourceTree = "<group>"; };
+		9BDF325F1736D28300F60671 /* hfs_pstruct.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_pstruct.h; sourceTree = "<group>"; };
+		9BDF32601736D30700F60671 /* hfs_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_endian.h; sourceTree = "<group>"; };
+		9BDF32611736D30E00F60671 /* hfs_endian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_endian.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,6 +81,7 @@
 			children = (
 				9BBA85091735AFD400273AE9 /* main.m */,
 				9BBA850D1735AFD400273AE9 /* hfstest.1 */,
+				9BDF32631736D34500F60671 /* hfs */,
 				9BBA850B1735AFD400273AE9 /* Supporting Files */,
 			);
 			path = hfstest;
@@ -86,6 +93,17 @@
 				9BBA850C1735AFD400273AE9 /* hfstest-Prefix.pch */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		9BDF32631736D34500F60671 /* hfs */ = {
+			isa = PBXGroup;
+			children = (
+				9BDF32601736D30700F60671 /* hfs_endian.h */,
+				9BDF32611736D30E00F60671 /* hfs_endian.c */,
+				9BDF325F1736D28300F60671 /* hfs_pstruct.h */,
+				9BDF325D1736D27500F60671 /* hfs_pstruct.c */,
+			);
+			name = hfs;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -140,6 +158,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				9BBA850A1735AFD400273AE9 /* main.m in Sources */,
+				9BDF325E1736D27500F60671 /* hfs_pstruct.c in Sources */,
+				9BDF32621736D30E00F60671 /* hfs_endian.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,6 +262,7 @@
 				9BBA85131735AFD400273AE9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
