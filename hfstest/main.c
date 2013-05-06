@@ -13,10 +13,11 @@
 #include <sys/errno.h>
 #include <hfs/hfs_format.h>
 #include "hfs.h"
+#include "hfs_pstruct.h"
 
 int main(int argc, const char * argv[])
 {
-	const char * path = argv[1]; //"/dev/disk2s1";
+	const char * path = argv[1];
 	
     HFSVolume hfs;
     
@@ -28,23 +29,7 @@ int main(int argc, const char * argv[])
     
     PrintVolumeHeader(&hfs.vh);
     	
-    // PrintCatalogHeader(&vh);
-    
-//	HFSPlusExtentRecord *extentRecord = &hfs->vh.catalogFile.extents;
-//    
-//	off_t offset = BE32(extentRecord[0]->startBlock) * BE32(vh.blockSize);
-//	
-//	BTNodeDescriptor node;
-//	size = pread(fd, &node, sizeof(node), offset);
-//	
-//    PrintBTNodeDescriptor(&node);
-//	
-//	BTHeaderRec header;
-//    offset += sizeof(node); // chain
-//	size = pread(fd, &header, sizeof(header), offset);
-//	
-//    PrintBTHeaderRecord(&header);    
-//
+    PrintCatalogHeader(&hfs);
     
 	hfs_close(&hfs);
 
