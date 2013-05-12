@@ -11,22 +11,27 @@
 
 #include <libkern/OSByteOrder.h>
 
+
+// Define macros to convert big endian ints to host order.
+// (Defined as simple casts on little endian systems.)
 #if defined(__LITTLE_ENDIAN__)
 
-#define BE16(__a) 		OSSwapBigToHostInt16 (__a)
-#define BE32(__a) 		OSSwapBigToHostInt32 (__a)
-#define BE64(__a) 		OSSwapBigToHostInt64 (__a)
+#define S16(__a) 		OSSwapBigToHostInt16 (__a)
+#define S32(__a) 		OSSwapBigToHostInt32 (__a)
+#define S64(__a) 		OSSwapBigToHostInt64 (__a)
 
 #elif defined(__BIG_ENDIAN__)
 
-#define BE16(__a) 		((u_int16_t)(__a))
-#define BE32(__a) 		((u_int32_t)(__a))
-#define BE64(__a) 		((u_int64_t)(__a))
+#define S16(__a) 		((u_int16_t)(__a))
+#define S32(__a) 		((u_int32_t)(__a))
+#define S64(__a) 		((u_int64_t)(__a))
 
 #endif
 
-#define MAC_GMT_FACTOR      2082844800UL
-
-
-
 #endif
+
+void swap_HFSPlusVolumeHeader(HFSPlusVolumeHeader *vh);
+void swap_HFSPlusForkData(HFSPlusForkData *fork);
+void swap_HFSPlusExtentDescriptor(HFSPlusExtentDescriptor *extent);
+void swap_BTNodeDescriptor(BTNodeDescriptor *node);
+void swap_BTHeaderRec(BTHeaderRec *header);

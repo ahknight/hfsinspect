@@ -19,14 +19,18 @@ int main(int argc, const char * argv[])
 {
 	const char * path = argv[1];
 	
-    HFSVolume hfs;
+    HFSVolume hfs = {};
     
     if (-1 == hfs_open(&hfs, path)) {
+        perror("abort");
         return errno;
     }
     
-    hfs_load(&hfs);
-    
+    if (-1 == hfs_load(&hfs)) {
+        perror("abort");
+        return errno;
+    }
+
     PrintVolumeHeader(&hfs.vh);
     	
     PrintCatalogHeader(&hfs);
