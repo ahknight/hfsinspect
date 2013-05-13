@@ -15,17 +15,21 @@
 
 #define MAC_GMT_FACTOR      2082844800UL
 
-#define BLOCK_TO_OFFSET(blocks, hfs) (off_t)(blocks * hfs->vh.blockSize)
-#define OFFSET_TO_BLOCK(offset, hfs) (u_int32_t)(offset / hfs->vh.blockSize)
+int         hfs_open                            (HFSVolume *hfs, const char *path);
+int         hfs_load                            (HFSVolume *hfs);
+int         hfs_close                           (HFSVolume *hfs);
 
-int hfs_open(HFSVolume *hfs, const char *path);
-int hfs_load(HFSVolume *hfs);
-int hfs_close(HFSVolume *hfs);
-ssize_t hfs_read(HFSVolume *hfs, void *buf, size_t size, off_t offset);     // Read from disk.
-ssize_t hfs_readfork(HFSFork *fork, void *buf, size_t size, off_t offset);  // Read from a fork, following known extents.
+ssize_t     hfs_read                            (HFSVolume *hfs, char *buf, size_t size, off_t offset);
+ssize_t     hfs_read_from_extent                (int fd, char* buffer, HFSPlusExtentDescriptor *extent, size_t block_size, size_t size, off_t offset);
+ssize_t     hfs_readfork                        (HFSFork *fork, char *buf, size_t size, off_t offset);
 
-ssize_t hfs_btree_init(HFSBTree *tree, HFSFork *fork);
-ssize_t hfs_btree_get_node(HFSBTree *tree, HFSBTreeNode *node, u_int32_t nodenum);
-ssize_t hfs_btree_print_record(HFSBTreeNode* node, u_int32_t i);
+ssize_t     hfs_btree_init                      (HFSBTree *tree, HFSFork *fork);
+ssize_t     hfs_btree_read_node                 (HFSBTree *tree, BTreeNode *node, u_int32_t nodeNumber);
+u_int16_t   hfs_btree_get_catalog_record_type   (BTreeNode *node, u_int32_t i);
+
+u_int16_t   hfs_btree_get_record_offset         (BTreeNode *node, u_int32_t i);
+ssize_t     hfs_btree_get_record_size           (BTreeNode *node, u_int32_t i);
+ssize_t     hfs_btree_get_record                (BTreeNode *node, u_int32_t i, char* buffer);
+ssize_t     hfs_btree_decompose_record          (const char* record, const size_t record_size, BTreeKey *key, u_int16_t *key_length, char* value, size_t *value_size);
 
 #endif

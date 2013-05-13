@@ -22,17 +22,17 @@ int main(int argc, const char * argv[])
     HFSVolume hfs = {};
     
     if (-1 == hfs_open(&hfs, path)) {
-        perror("abort");
+        perror("hfs_open");
         return errno;
     }
     
     if (-1 == hfs_load(&hfs)) {
-        perror("abort");
+        perror("hfs_load");
         return errno;
     }
 
     PrintVolumeHeader(&hfs.vh);
-    	
+    
     PrintCatalogHeader(&hfs);
     
 	hfs_close(&hfs);

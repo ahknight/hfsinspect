@@ -9,6 +9,12 @@
 #ifndef hfstest_hfs_structs_h
 #define hfstest_hfs_structs_h
 
+// For passing around structs, blocks, etc.
+struct Buffer {
+    size_t              size;
+    void*               data;
+};
+
 struct HFSVolume {
     int fd;                 // File descriptor
     HFSPlusVolumeHeader vh; // Volume header
@@ -36,5 +42,15 @@ struct HFSBTreeNode {
     BTNodeDescriptor    nodeDescriptor;     // Node descriptor record
 };
 typedef struct HFSBTreeNode HFSBTreeNode;
+
+struct BTreeNode {
+    char                *buffer;
+    BTNodeDescriptor    *nodeDescriptor;
+    size_t              blockSize;
+    off_t               nodeOffset;
+    u_int32_t           nodeNumber;
+    HFSBTree            bTree;
+};
+typedef struct BTreeNode BTreeNode;
 
 #endif
