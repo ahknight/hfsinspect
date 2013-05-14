@@ -75,7 +75,7 @@ ssize_t hfs_read_from_extent(HFSVolume *hfs, Buffer *buffer, HFSPlusExtentDescri
         off_t extent_size_bytes = extent->blockCount * block_size;
         size_t read_size = MIN(extent_size_bytes, size);
         off_t eoffset = (extent->startBlock * block_size) + offset;
-        printf("read_extent: reading %zd bytes at physical offset %lld\n", read_size, eoffset);
+//        printf("read_extent: reading %zd bytes at physical offset %lld\n", read_size, eoffset);
         
         ssize_t result = hfs_read(hfs, buffer, read_size, eoffset);
         return result;
@@ -106,7 +106,7 @@ ssize_t hfs_readfork(HFSFork *fork, Buffer *buffer, size_t size, off_t offset) {
         if (size == 0) break;
         if (extent.blockCount == 0) break;
         
-        printf("read_fork: reading %zd bytes from logical offset %lld\n", size, offset);
+//        printf("read_fork: reading %zd bytes from logical offset %lld\n", size, offset);
         ssize_t result = hfs_read_from_extent(hfs, buffer, &extent, block_size, size, offset);
         if (result == -1) return result;
 
@@ -163,7 +163,7 @@ ssize_t hfs_btree_init(HFSBTree *tree, HFSFork *fork)
     return (size1 + size2);
 }
 
-BTreeNode hfs_btree_get_node(HFSBTree *tree, u_int32_t nodeNumber)
+BTreeNode hfs_btree_get_node (HFSBTree *tree, u_int32_t nodeNumber)
 {
     if(nodeNumber > tree->headerRecord.totalNodes) {
         BTreeNode nope;
@@ -180,7 +180,7 @@ BTreeNode hfs_btree_get_node(HFSBTree *tree, u_int32_t nodeNumber)
     node.bTree      = *tree;
     node.buffer     = buffer_alloc(node.blockSize);
     
-    printf("read_node: reading %zd bytes at logical offset %lld\n", node.blockSize, node.nodeOffset);
+//    printf("read_node: reading %zd bytes at logical offset %lld\n", node.blockSize, node.nodeOffset);
     ssize_t result = hfs_readfork(&tree->fork, &node.buffer, node.blockSize, offset);
     
     if (result)
@@ -189,7 +189,7 @@ BTreeNode hfs_btree_get_node(HFSBTree *tree, u_int32_t nodeNumber)
     return node;
 }
 
-u_int16_t hfs_btree_get_catalog_record_type(BTreeNode *node, u_int32_t i)
+u_int16_t hfs_btree_get_catalog_record_type (BTreeNode *node, u_int32_t i)
 {
     if(i >= node->nodeDescriptor.numRecords) return 0;
     
@@ -200,7 +200,7 @@ u_int16_t hfs_btree_get_catalog_record_type(BTreeNode *node, u_int32_t i)
     return type;
 }
 
-u_int16_t hfs_btree_get_record_offset(BTreeNode *node, u_int32_t i)
+u_int16_t hfs_btree_get_record_offset (BTreeNode *node, u_int32_t i)
 {
     if(i >= node->nodeDescriptor.numRecords) return -1;
     
@@ -218,7 +218,7 @@ u_int16_t hfs_btree_get_record_offset(BTreeNode *node, u_int32_t i)
     return recordOffset;
 }
 
-ssize_t hfs_btree_get_record_size   (BTreeNode *node, u_int32_t i)
+ssize_t hfs_btree_get_record_size (BTreeNode *node, u_int32_t i)
 {
     if(i > node->nodeDescriptor.numRecords) return 0;
     
@@ -229,7 +229,7 @@ ssize_t hfs_btree_get_record_size   (BTreeNode *node, u_int32_t i)
     return recordSize;
 }
 
-Buffer hfs_btree_get_record        (BTreeNode *node, u_int32_t i)
+Buffer hfs_btree_get_record (BTreeNode *node, u_int32_t i)
 {
     if(i > node->nodeDescriptor.numRecords) return buffer_alloc(0);
     
@@ -241,24 +241,42 @@ Buffer hfs_btree_get_record        (BTreeNode *node, u_int32_t i)
     return buffer;
 }
 
-ssize_t hfs_btree_decompose_record  (const Buffer *record, Buffer *key, Buffer* value)
+ssize_t hfs_btree_decompose_keyed_record (const BTreeNode *node, const Buffer *record, Buffer *key, Buffer* value)
 {
-    Buffer keyBuffer = buffer_slice(record, sizeof(BTreeKey), 0);
+    /*
+           ____________________
+     06 00 00 36 24 da 00 00 00 04 00 00 00
+     00 00 FF FF FF FF FF FF ... 00 00 00 ...
+     len   key                   value
+     
+     Get the length first.
+     Use that to get the slice for the key.
+     The remaining space is the value.
+     */
+    
+    u_int16_t key_length = 0;
+    
+    if (node->bTree.headerRecord.attributes & kBTVariableIndexKeysMask) {
+        key_length = *( (u_int16_t*) record->data );
+        
+        if (key_length < kHFSCatalogKeyMinimumLength) key_length = kHFSCatalogKeyMinimumLength;
+        if (key_length > record->size) {
+            return -1;
+        }
+        
+    } else {
+        key_length = node->bTree.headerRecord.maxKeyLength;
+    }
+    
+    Buffer keyBuffer = buffer_slice(record, key_length, sizeof(key_length));
     *key = keyBuffer;
     
-    BTreeKey btkey = *( (BTreeKey*) keyBuffer.data );
+    off_t valueOffset = key_length + sizeof(u_int16_t);
+    if (valueOffset % 2) (valueOffset)++; // Align on a byte boundary.
+    size_t value_size = record->size - key_length - sizeof(key_length);
     
-    u_int16_t key_length = btkey.length16;
-
-    if (key_length < kHFSCatalogKeyMinimumLength) key_length = kHFSCatalogKeyMinimumLength; // FIXME: Might break other btrees.
-    if (key_length % 2) (key_length)++;
-
-    size_t value_size = record->size - key_length;
-    
-    Buffer valueBuffer = buffer_slice(record, value_size, key_length);
+    Buffer valueBuffer = buffer_slice(record, value_size, valueOffset);
     *value = valueBuffer;
-    buffer_resize(key, key_length);
-    buffer_resize(value, value_size);
     
     return key_length;
 }

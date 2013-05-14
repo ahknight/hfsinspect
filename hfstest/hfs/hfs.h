@@ -33,6 +33,6 @@ ssize_t     hfs_btree_get_record_size           (BTreeNode *node, u_int32_t i);
 Buffer      hfs_btree_get_record                (BTreeNode *node, u_int32_t i);
 
 // Breaks the record up into a key and value; returns the key length.
-ssize_t     hfs_btree_decompose_record          (const Buffer *record, Buffer *key, Buffer *value);
+ssize_t     hfs_btree_decompose_keyed_record          (const BTreeNode *node, const Buffer *record, Buffer *key, Buffer *value);
 
 #endif

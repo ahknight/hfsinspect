@@ -462,7 +462,7 @@ char* hex_string(const char* in, size_t len)
     return out;
 }
 
-void PrintCatalogHeader(HFSVolume *hfs)
+void PrintCatalogExcerpt(HFSVolume *hfs, int numNodes)
 {
     HFSFork catalog;
     catalog.hfs = *hfs;
@@ -472,18 +472,27 @@ void PrintCatalogHeader(HFSVolume *hfs)
     hfs_btree_init(&tree, &catalog);
     tree.fork.cnid = kHFSCatalogFileID;
     
-//    char* buf1 = malloc(4096); bzero(buf1, 4096);
-//    char* buf2 = malloc(4096); bzero(buf2, 4096);
-//    
-//    BTreeNode bufNode;
-//    bufNode.buffer = buf2;
-//    
-//    hfs_readfork(&catalog, buf1, 4096, 4096*1);
-//    hfs_btree_read_node(&tree, &bufNode, 1);
-//    
-//    printf("Compare: %d", bcmp(buf1, buf2, 4096));
+    printf("\n# BEGIN B-TREE: CATALOG\n");
+
+    for (int nodeNum = 0; nodeNum < numNodes; nodeNum++) {
+        BTreeNode node = hfs_btree_get_node(&tree, nodeNum);
+
+        PrintCatalogNode(&node);
+        
+        buffer_free(&node.buffer);
+    }
+}
+
+void PrintCatalogHeader(HFSVolume *hfs)
+{
+    HFSFork catalog;
+    catalog.hfs = *hfs;
+    catalog.forkData = hfs->vh.catalogFile;
     
-    
+    HFSBTree tree;
+    hfs_btree_init(&tree, &catalog);
+    tree.fork.cnid = kHFSCatalogFileID;
+        
     printf("\n# BEGIN B-TREE: CATALOG\n");
     
     for (int j = 1; j<10; j++) {
@@ -495,7 +504,7 @@ void PrintCatalogHeader(HFSVolume *hfs)
             return;
         }
         
-        _PrintAttributeString("rawNode", "%s", hex_string(node.buffer.data, node.buffer.size));
+//        _PrintAttributeString("rawNode", "%s", hex_string(node.buffer.data, node.buffer.size));
         _PrintAttributeString("nodeSize", "%d", node.buffer.size);
         
         BTNodeDescriptor *nodeDesc = (BTNodeDescriptor*) node.buffer.data;
@@ -504,12 +513,6 @@ void PrintCatalogHeader(HFSVolume *hfs)
         for (int i = 0; i < node.nodeDescriptor.numRecords-1; i++) {
             if(i >= node.nodeDescriptor.numRecords) return;
             
-            ssize_t record_size = hfs_btree_get_record_size(&node, i);
-            if (record_size < 1) {
-                printf("Invalid record.\n");
-                continue;
-            }
-                        
             Buffer record = hfs_btree_get_record(&node, i);
             if (record.size == 0) {
                 printf("Invalid record.\n");
@@ -519,7 +522,7 @@ void PrintCatalogHeader(HFSVolume *hfs)
             Buffer key;
             Buffer value;
             
-            ssize_t key_length = hfs_btree_decompose_record(&record, &key, &value);
+            ssize_t key_length = hfs_btree_decompose_keyed_record(&node, &record, &key, &value);
             if (key_length < kHFSCatalogKeyMinimumLength) {
                 printf("Invalid key length.\n");
                 continue;
@@ -528,11 +531,11 @@ void PrintCatalogHeader(HFSVolume *hfs)
             u_int16_t offset = hfs_btree_get_record_offset(&node, i);
             printf("\n  # Record %d (0x%x)\n", i, offset);
             _PrintAttributeString("recordLength", "%zd", hfs_btree_get_record_size(&node, i));
-            _PrintAttributeString("rawRecord", "%s", hex_string(record.data, record.size));
+//            _PrintAttributeString("rawRecord", "%s", hex_string(record.data, record.size));
             _PrintAttributeString("keyLength", "%d", key_length);
-            _PrintAttributeString("key", "%s", hex_string(key.data, key.size));
+//            _PrintAttributeString("key", "%s", hex_string(key.data, key.size));
             _PrintAttributeString("dataLength", "%d", value.size);
-            _PrintAttributeString("data", "%s", hex_string(value.data, value.size));
+//            _PrintAttributeString("data", "%s", hex_string(value.data, value.size));
             
             buffer_free(&record);
             buffer_free(&key);
@@ -542,6 +545,169 @@ void PrintCatalogHeader(HFSVolume *hfs)
         buffer_free(&node.buffer);
         
     }
+}
+
+void PrintCatalogNode(BTreeNode *node)
+{
+    printf("\n# Catalog Node %d (offset %zd)\n", node->nodeNumber, node->nodeOffset);
+    
+    PrintBTNodeDescriptor(&node->nodeDescriptor);
+    
+    for (int recordNumber = 0; recordNumber < node->nodeDescriptor.numRecords; recordNumber++) {
+        if(recordNumber >= node->nodeDescriptor.numRecords) return;
+        
+        ssize_t record_size = hfs_btree_get_record_size(node, recordNumber);
+        if (record_size < 1) {
+            printf("Invalid record.\n");
+            continue;
+        }
+        
+        Buffer record = hfs_btree_get_record(node, recordNumber);
+        if (record.size == 0) {
+            printf("Invalid record.\n");
+            continue;
+        }
+        
+        u_int16_t offset = hfs_btree_get_record_offset(node, recordNumber);
+        printf("\n  # Record %d (offset %zd)\n", recordNumber, offset);
+        _PrintAttributeString("recordLength", "%zd", hfs_btree_get_record_size(node, recordNumber));
+//        _PrintAttributeString("rawRecord", "%s", hex_string(record.data, record.size));
+
+        if (node->nodeDescriptor.kind == kBTHeaderNode) {
+            switch (recordNumber) {
+                case 0:
+                {
+                    _PrintAttributeString("recordType", "BTHeaderRec");
+                    BTHeaderRec header = *( (BTHeaderRec*) record.data );
+                    PrintBTHeaderRecord(&header);
+                }
+                    break;
+                case 1:
+                {
+                    _PrintAttributeString("recordType", "userData (reserved)");
+                }
+                    break;
+                case 2:
+                {
+                    _PrintAttributeString("recordType", "mapData (reserved)");
+                }
+                    break;
+                    
+                default:
+                    break;
+            }
+            
+        } else if (node->nodeDescriptor.kind == kBTIndexNode || node->nodeDescriptor.kind == kBTLeafNode) {
+            Buffer key;
+            Buffer value;
+            
+            ssize_t key_length = hfs_btree_decompose_keyed_record(node, &record, &key, &value);
+            if (key_length < kHFSCatalogKeyMinimumLength) {
+                printf("skipping record: Invalid key length.\n");
+                continue;
+            }
+            
+            _PrintAttributeString("keyLength", "%d (%d allocated)", key_length, key.size);
+            _PrintAttributeString("key", "%s", hex_string(key.data, key_length));
+            _PrintAttributeString("dataLength", "%d (%d allocated)", record_size - key_length, value.size);
+//            _PrintAttributeString("data", "%s ...", hex_string(value.data, 30));
+            
+            if (node->nodeDescriptor.kind == kBTIndexNode) {
+                u_int32_t childNode = *(u_int32_t*)(value.data);
+                childNode = S32(childNode);
+                _PrintAttributeString("childNode", "%ld", childNode);
+            
+            } else {
+                u_int16_t type =  *(u_int16_t*)(value.data);
+                type = S16(type);
+                
+                switch (type) {
+                    case kHFSPlusFileRecord:
+                    {
+                        HFSPlusCatalogFile recordValue = *( (HFSPlusCatalogFile*) value.data );
+                        PrintHFSPlusCatalogFile(&recordValue);
+                    }
+                        break;
+                        
+                    case kHFSPlusFolderRecord:
+                    {
+                        HFSPlusCatalogFolder recordValue = *( (HFSPlusCatalogFolder*) value.data );
+                        PrintHFSPlusCatalogFolder(&recordValue);
+                    }
+                        break;
+                        
+                    case kHFSPlusFileThreadRecord:
+                    {
+                        HFSPlusCatalogThread recordValue = *( (HFSPlusCatalogThread*) value.data );
+                        PrintHFSPlusCatalogThread(&recordValue);
+                    }
+                        break;
+                        
+                    case kHFSPlusFolderThreadRecord:
+                    {
+                        HFSPlusCatalogThread recordValue = *( (HFSPlusCatalogThread*) value.data );
+                        PrintHFSPlusCatalogThread(&recordValue);
+                    }
+                        break;
+                        
+                    default:
+                    {
+                        _PrintAttributeString("recordType", "%d (invalid)", type);
+//                        _PrintAttributeString("rawValue", "%s", hex_string(value.data, record_size - key_length));
+                    }
+                        break;
+                }
+            }
+            
+            buffer_free(&key);
+            buffer_free(&value);
+            
+        } else if (node->nodeDescriptor.kind == kBTMapNode) {
+            
+        }
+        
+        buffer_free(&record);
+    }
+}
+
+void PrintHFSPlusCatalogFolder(HFSPlusCatalogFolder *record)
+{
+    _PrintAttributeString("recordType", "kHFSPlusFolderRecord");
+}
+
+void PrintHFSPlusCatalogFile(HFSPlusCatalogFile *record)
+{
+    _PrintAttributeString("recordType", "kHFSPlusFileRecord");
+    PrintUI16(record, flags);
+    PrintUI16(record, reserved1);
+    PrintUI32(record, fileID);
+    PrintUI32(record, createDate);
+    PrintUI32(record, contentModDate);
+    PrintUI32(record, attributeModDate);
+    PrintUI32(record, accessDate);
+    PrintUI32(record, backupDate);
+    ;
+    ;
+    ;
+    PrintUI32(record, textEncoding);
+    PrintUI32(record, reserved2);
+}
+
+void PrintHFSPlusCatalogThread(HFSPlusCatalogThread *record)
+{
+    _PrintAttributeString("recordType", "kHFSPlusFolderThreadRecord");
+    _PrintAttributeString("recordType", "kHFSPlusFileThreadRecord");
+}
+
+void PrintHFSPlusCatalogKey(HFSPlusCatalogKey *record)
+{
+    // Create a very crude and inaccurate 8-bit representation of the name by dropping the high word of the (now-)UTF16LE character.
+    char nodename[256];
+    for (int j = 0; j<=record->nodeName.length; j++) {
+        nodename[j] = record->nodeName.unicode[j];
+        nodename[j+1] = '\0';
+    }
+    _PrintAttributeString("key", "%d %d %s", record->keyLength, record->parentID, nodename);
 }
 
                 // To get a record we need to know the kind of node so we know what record to expect.

@@ -10,6 +10,7 @@
 		9BBA85071735AFD400273AE9 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9BBA85061735AFD400273AE9 /* Foundation.framework */; };
 		9BBA850A1735AFD400273AE9 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BBA85091735AFD400273AE9 /* main.c */; };
 		9BBA850E1735AFD400273AE9 /* hfstest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9BBA850D1735AFD400273AE9 /* hfstest.1 */; };
+		9BCD794717428E3800CB9BC4 /* buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BCD793E17428E3800CB9BC4 /* buffer.c */; };
 		9BDF325E1736D27500F60671 /* hfs_pstruct.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BDF325D1736D27500F60671 /* hfs_pstruct.c */; };
 		9BDF32621736D30E00F60671 /* hfs_endian.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BDF32611736D30E00F60671 /* hfs_endian.c */; };
 		9BDF32661737307D00F60671 /* hfs.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BDF32651737307D00F60671 /* hfs.c */; };
@@ -35,6 +36,8 @@
 		9BBA85091735AFD400273AE9 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = main.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		9BBA850C1735AFD400273AE9 /* hfstest-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "hfstest-Prefix.pch"; sourceTree = "<group>"; };
 		9BBA850D1735AFD400273AE9 /* hfstest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = hfstest.1; sourceTree = "<group>"; };
+		9BCD793E17428E3800CB9BC4 /* buffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = buffer.c; sourceTree = "<group>"; };
+		9BCD793F17428E3800CB9BC4 /* buffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = buffer.h; sourceTree = "<group>"; };
 		9BDF325D1736D27500F60671 /* hfs_pstruct.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_pstruct.c; sourceTree = "<group>"; };
 		9BDF325F1736D28300F60671 /* hfs_pstruct.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_pstruct.h; sourceTree = "<group>"; };
 		9BDF32601736D30700F60671 /* hfs_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_endian.h; sourceTree = "<group>"; };
@@ -87,6 +90,7 @@
 				9BBA85091735AFD400273AE9 /* main.c */,
 				9BBA850D1735AFD400273AE9 /* hfstest.1 */,
 				9BDF32631736D34500F60671 /* hfs */,
+				9BCD793C17428E3800CB9BC4 /* buffer */,
 				9BDF3267173759B900F60671 /* Apple */,
 				9BBA850B1735AFD400273AE9 /* Supporting Files */,
 			);
@@ -99,6 +103,15 @@
 				9BBA850C1735AFD400273AE9 /* hfstest-Prefix.pch */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		9BCD793C17428E3800CB9BC4 /* buffer */ = {
+			isa = PBXGroup;
+			children = (
+				9BCD793F17428E3800CB9BC4 /* buffer.h */,
+				9BCD793E17428E3800CB9BC4 /* buffer.c */,
+			);
+			path = buffer;
 			sourceTree = "<group>";
 		};
 		9BDF32631736D34500F60671 /* hfs */ = {
@@ -178,6 +191,7 @@
 				9BDF325E1736D27500F60671 /* hfs_pstruct.c in Sources */,
 				9BDF32621736D30E00F60671 /* hfs_endian.c in Sources */,
 				9BDF32661737307D00F60671 /* hfs.c in Sources */,
+				9BCD794717428E3800CB9BC4 /* buffer.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
