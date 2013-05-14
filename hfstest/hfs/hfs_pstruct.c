@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <libkern/OSByteOrder.h>
+#include <malloc/malloc.h>
 #include <string.h>
 
 #include "hfs_pstruct.h"
@@ -449,6 +450,18 @@ void PrintBTHeaderRecord(BTHeaderRec *hr)
 //	printf("Reserved3:        %u\n",    hr->reserved3[16]);
 }
 
+char* hex_string(const char* in, size_t len)
+{
+    char* byte_format = "%02x "; // '0C '
+    char* out = malloc( (len * 3) + 1 );
+    for (int i=0; i < len; i++) {
+        char* byte = malloc(4);
+        snprintf(byte, 4, byte_format, (u_int8_t) in[i]);
+        out = strcat(out, byte);
+    }
+    return out;
+}
+
 void PrintCatalogHeader(HFSVolume *hfs)
 {
     HFSFork catalog;
@@ -473,61 +486,61 @@ void PrintCatalogHeader(HFSVolume *hfs)
     
     printf("\n# BEGIN B-TREE: CATALOG\n");
     
-    for (int j = 1; j<3; j++) {
+    for (int j = 1; j<10; j++) {
         printf("\n# Catalog Node %d (offset %d)\n", j, tree.headerRecord.nodeSize * j);
-        
-        size_t bufSize = tree.headerRecord.nodeSize;
-        
-        BTreeNode node;
-        node.buffer = malloc(bufSize);
-        bzero(node.buffer, bufSize);
-        
-        ssize_t result = hfs_btree_read_node(&tree, &node, j);
-        if (result < 0) {
+                
+        BTreeNode node = hfs_btree_get_node(&tree, j);
+        if (node.nodeNumber == -1) {
             perror("couldn't read node");
             return;
         }
         
-        BTNodeDescriptor *nodeDesc = (BTNodeDescriptor*) node.buffer;
+        _PrintAttributeString("rawNode", "%s", hex_string(node.buffer.data, node.buffer.size));
+        _PrintAttributeString("nodeSize", "%d", node.buffer.size);
+        
+        BTNodeDescriptor *nodeDesc = (BTNodeDescriptor*) node.buffer.data;
         PrintBTNodeDescriptor(nodeDesc);
         
-        for (int i = 0; i < node.nodeDescriptor->numRecords; i++) {
-            if(i >= node.nodeDescriptor->numRecords) return;
+        for (int i = 0; i < node.nodeDescriptor.numRecords-1; i++) {
+            if(i >= node.nodeDescriptor.numRecords) return;
             
             ssize_t record_size = hfs_btree_get_record_size(&node, i);
             if (record_size < 1) {
                 printf("Invalid record.\n");
                 continue;
             }
-            
-            char* record = "";
-            
-            result = hfs_btree_get_record(&node, i, record);
-            if (result < 0) {
+                        
+            Buffer record = hfs_btree_get_record(&node, i);
+            if (record.size == 0) {
                 printf("Invalid record.\n");
                 continue;
             }
             
-            BTreeKey    key = {};
-            u_int16_t   key_length = 0;
-            char*       value = "";
-            size_t      value_size = 0;
+            Buffer key;
+            Buffer value;
             
-            result = hfs_btree_decompose_record(record, record_size, &key, &key_length, value, &value_size);
-            if (result < 0) {
-                printf("Invalid record.\n");
+            ssize_t key_length = hfs_btree_decompose_record(&record, &key, &value);
+            if (key_length < kHFSCatalogKeyMinimumLength) {
+                printf("Invalid key length.\n");
                 continue;
             }
             
             u_int16_t offset = hfs_btree_get_record_offset(&node, i);
             printf("\n  # Record %d (0x%x)\n", i, offset);
+            _PrintAttributeString("recordLength", "%zd", hfs_btree_get_record_size(&node, i));
+            _PrintAttributeString("rawRecord", "%s", hex_string(record.data, record.size));
             _PrintAttributeString("keyLength", "%d", key_length);
-            _PrintAttributeString("dataLength", "%d", value_size);
+            _PrintAttributeString("key", "%s", hex_string(key.data, key.size));
+            _PrintAttributeString("dataLength", "%d", value.size);
+            _PrintAttributeString("data", "%s", hex_string(value.data, value.size));
             
-            printf("%s", value);
+            buffer_free(&record);
+            buffer_free(&key);
+            buffer_free(&value);
         }
     
-        free(node.buffer);
+        buffer_free(&node.buffer);
+        
     }
 }
 

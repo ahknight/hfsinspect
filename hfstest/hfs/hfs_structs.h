@@ -9,11 +9,7 @@
 #ifndef hfstest_hfs_structs_h
 #define hfstest_hfs_structs_h
 
-// For passing around structs, blocks, etc.
-struct Buffer {
-    size_t              size;
-    void*               data;
-};
+#import "buffer.h"
 
 struct HFSVolume {
     int fd;                 // File descriptor
@@ -44,8 +40,8 @@ struct HFSBTreeNode {
 typedef struct HFSBTreeNode HFSBTreeNode;
 
 struct BTreeNode {
-    char                *buffer;
-    BTNodeDescriptor    *nodeDescriptor;
+    Buffer              buffer;
+    BTNodeDescriptor    nodeDescriptor;
     size_t              blockSize;
     off_t               nodeOffset;
     u_int32_t           nodeNumber;

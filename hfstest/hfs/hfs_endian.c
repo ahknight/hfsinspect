@@ -46,8 +46,8 @@ void swap_HFSPlusVolumeHeader(HFSPlusVolumeHeader *record)
     Convert32(record->writeCount);
     Convert64(record->encodingsBitmap);
     
-//    record->finderInfo is an array of bytes; swap as-used.
-
+    //    record->finderInfo is an array of bytes; swap as-used.
+    
     swap_HFSPlusForkData(&record->allocationFile);
     swap_HFSPlusForkData(&record->extentsFile);
     swap_HFSPlusForkData(&record->catalogFile);
@@ -60,7 +60,7 @@ void swap_HFSPlusForkData(HFSPlusForkData *record)
     Convert64(record->logicalSize);
     Convert32(record->totalBlocks);
     Convert32(record->clumpSize);
-
+    
     for (int i = 0; i < kHFSPlusExtentDensity; i++) {
         HFSPlusExtentDescriptor *extent_descriptor = &record->extents[i];
         swap_HFSPlusExtentDescriptor(extent_descriptor);
@@ -77,10 +77,10 @@ void swap_BTNodeDescriptor(BTNodeDescriptor *record)
 {
     Convert32(record->fLink);
     Convert32(record->bLink);
-//    record->kind is a short
-//    record->height is a short
+    //    record->kind is a short
+    //    record->height is a short
     Convert16(record->numRecords);
-//    record->reserved is reserved
+    //    record->reserved is reserved
 }
 
 void swap_BTHeaderRec(BTHeaderRec *record)
@@ -94,12 +94,19 @@ void swap_BTHeaderRec(BTHeaderRec *record)
     Convert16(record->maxKeyLength);
     Convert32(record->totalNodes);
     Convert32(record->freeNodes);
-//    record->reserved1
+    //    record->reserved1
     Convert32(record->clumpSize);
-//    record->btreeType is a short
-//    record->keyCompareType is a short
+    //    record->btreeType is a short
+    //    record->keyCompareType is a short
     Convert32(record->attributes);
-//    header->reserved3
+    //    header->reserved3
+}
+
+void swap_BTreeKey(BTreeKey *record)
+{
+    // length8 is a short
+    Convert16(record->length16);
+    // rawData is opaque
 }
 
 void swap_HFSPlusCatalogKey(HFSPlusCatalogKey *record)
@@ -112,9 +119,9 @@ void swap_HFSPlusCatalogKey(HFSPlusCatalogKey *record)
 void swap_HFSUniStr255(HFSUniStr255 *unistr)
 {
     Convert16(unistr->length);
-//    for (int i = 0; i < unistr->length; i++) {
-//        Convert16(unistr->unicode[i]);
-//    }
+    //    for (int i = 0; i < unistr->length; i++) {
+    //        Convert16(unistr->unicode[i]);
+    //    }
 }
 
 void swap_HFSPlusCatalogFolder(HFSPlusCatalogFolder *record)
@@ -209,21 +216,21 @@ void swap_BTreeNode(BTreeNode *node)
     // Good luck.
     
     // Check record offset 0 to see if we've done this before. It's a constant 14.
-    u_int16_t sentinel = (u_int16_t)(node->buffer + node->blockSize - sizeof(u_int16_t));
+    u_int16_t sentinel = (u_int16_t)(node->buffer.data + node->blockSize - sizeof(u_int16_t));
     if ( sentinel == 14 ) return;
     
     
     /* First, swap things universal to all nodes. */
     
     // Swap node descriptor
-    BTNodeDescriptor *nodeDescriptor = (BTNodeDescriptor*)(node->buffer);
+    BTNodeDescriptor *nodeDescriptor = (BTNodeDescriptor*)(node->buffer.data);
     swap_BTNodeDescriptor(nodeDescriptor);
-    node->nodeDescriptor = nodeDescriptor;
+    node->nodeDescriptor = *nodeDescriptor;
     
     // Swap record offsets
-    u_int16_t *offsets = (u_int16_t*)(node->buffer + node->blockSize - (sizeof(u_int16_t) * node->nodeDescriptor->numRecords));
+    u_int16_t *offsets = (u_int16_t*)(node->buffer.data + node->blockSize - (sizeof(u_int16_t) * node->nodeDescriptor.numRecords));
     
-    for (int i = 0; i < node->nodeDescriptor->numRecords; i++) {
+    for (int i = 0; i < node->nodeDescriptor.numRecords; i++) {
         u_int16_t *offset = &offsets[i];
         *offset = S16(*offset);
     }
@@ -234,52 +241,47 @@ void swap_BTreeNode(BTreeNode *node)
     if (treeID == kHFSCatalogFileID) {
         // Swap catalog records
         
-        if (node->nodeDescriptor->kind == kBTHeaderNode) {
+        if (node->nodeDescriptor.kind == kBTHeaderNode) {
             // Only swap the header.  Don't care about user and map.
-            BTHeaderRec *header = (BTHeaderRec*)(node->buffer + sizeof(BTNodeDescriptor));
+            BTHeaderRec *header = (BTHeaderRec*)(node->buffer.data + sizeof(BTNodeDescriptor));
             swap_BTHeaderRec(header);
             
-        } else if (node->nodeDescriptor->kind == kBTIndexNode) {
-            for (int i = 0; i < node->nodeDescriptor->numRecords; i++) {
-                HFSPlusCatalogKey *key = (HFSPlusCatalogKey*)(node->buffer + offsets[i]);
-                swap_HFSPlusCatalogKey(key);
-                u_int32_t *childNode = (u_int32_t*)(node->buffer + offsets[i] + key->keyLength+2);
-                *childNode = S32(*childNode);
-            }
-            
-        } else if (node->nodeDescriptor->kind == kBTLeafNode) {
-            
-            for (int i = 1; i < node->nodeDescriptor->numRecords; i++) {
-                u_int16_t *recordStart = &offsets[i];
-                void* record;
-                record = (node->buffer + *recordStart);
+        } else if (node->nodeDescriptor.kind == kBTIndexNode || node->nodeDescriptor.kind == kBTLeafNode) {
+            for (int i = 1; i < node->nodeDescriptor.numRecords; i++) {
+                char* record;
+                record = (node->buffer.data + offsets[i]);
                 
-                HFSPlusCatalogKey *key = record;
-                swap_HFSPlusCatalogKey(key);
+                BTreeKey *key = (BTreeKey*)record;
+                swap_BTreeKey(key);
                 
-                *recordStart += key->keyLength+2;
+                u_int16_t key_length = key->length16;
+                if (key_length % 2) key_length++;
                 
-                record = (node->buffer + *recordStart);
-                int16_t recordKind = *(int16_t*)record;
-                recordKind = S16(recordKind);
+                record = (node->buffer.data + offsets[i] + key_length);
                 
-                if (recordKind == kHFSPlusFolderRecord) {
-                    swap_HFSPlusCatalogFolder((HFSPlusCatalogFolder*)record);
-                
-                } else if (recordKind == kHFSPlusFileRecord) {
-                    swap_HFSPlusCatalogFile((HFSPlusCatalogFile*)record);
+                if (node->nodeDescriptor.kind == kBTIndexNode) {
+                } else if (node->nodeDescriptor.kind == kBTLeafNode) {
+                    int16_t recordKind = *(int16_t*)record;
+                    recordKind = S16(recordKind);
                     
-                } else if (recordKind == kHFSPlusFolderThreadRecord) {
-                    swap_HFSPlusCatalogThread((HFSPlusCatalogThread*)record);
-                    
-                } else if (recordKind == kHFSPlusFileThreadRecord) {
-                    swap_HFSPlusCatalogThread((HFSPlusCatalogThread*)record);
+                    if (recordKind == kHFSPlusFolderRecord) {
+                        swap_HFSPlusCatalogFolder((HFSPlusCatalogFolder*)record);
+                        
+                    } else if (recordKind == kHFSPlusFileRecord) {
+                        swap_HFSPlusCatalogFile((HFSPlusCatalogFile*)record);
+                        
+                    } else if (recordKind == kHFSPlusFolderThreadRecord) {
+                        swap_HFSPlusCatalogThread((HFSPlusCatalogThread*)record);
+                        
+                    } else if (recordKind == kHFSPlusFileThreadRecord) {
+                        swap_HFSPlusCatalogThread((HFSPlusCatalogThread*)record);
+                        
+                    }
                     
                 }
-                
             }
             
-        } else if (node->nodeDescriptor->kind == kBTMapNode) {
+        } else if (node->nodeDescriptor.kind == kBTMapNode) {
             // Don't care.  Thanks for playing.
             
         }
@@ -296,4 +298,3 @@ void swap_BTreeNode(BTreeNode *node)
     }
     
 }
-
