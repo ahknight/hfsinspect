@@ -19,15 +19,6 @@
 #include "hfs.h"
 
 
-#ifndef	MIN
-#define	MIN(a, b)	((a) < (b) ? (a) : (b))
-#endif
-
-#ifndef	MAX
-#define	MAX(a, b)	((a) > (b) ? (a) : (b))
-#endif
-
-
 #pragma mark Volume Abstractions
 
 int hfs_open(HFSVolume *hfs, const char *path) {
@@ -259,7 +250,8 @@ ssize_t hfs_btree_decompose_keyed_record (const BTreeNode *node, const Buffer *r
     if (node->bTree.headerRecord.attributes & kBTVariableIndexKeysMask) {
         key_length = *( (u_int16_t*) record->data );
         
-        if (key_length < kHFSCatalogKeyMinimumLength) key_length = kHFSCatalogKeyMinimumLength;
+        if (key_length < kHFSPlusCatalogKeyMinimumLength) key_length = kHFSPlusCatalogKeyMinimumLength;
+        if (key_length > kHFSPlusCatalogKeyMaximumLength) return key_length; // Things are bad at this point; probably not a keyed record.
         if (key_length > record->size) {
             return -1;
         }

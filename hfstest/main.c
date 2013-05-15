@@ -33,7 +33,7 @@ int main(int argc, const char * argv[])
 
     PrintVolumeHeader(&hfs.vh);
     
-    PrintCatalogExcerpt(&hfs, 3);
+    PrintCatalogExcerpt(&hfs, 10);
     
 	hfs_close(&hfs);
 

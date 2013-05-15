@@ -14,6 +14,14 @@
 #include "hfs_endian.h"
 #include "buffer.h"
 
+#ifndef	MIN
+#define	MIN(a, b)	((a) < (b) ? (a) : (b))
+#endif
+
+#ifndef	MAX
+#define	MAX(a, b)	((a) > (b) ? (a) : (b))
+#endif
+
 #define MAC_GMT_FACTOR      2082844800UL
 
 int         hfs_open                            (HFSVolume *hfs, const char *path);

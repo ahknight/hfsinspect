@@ -206,7 +206,7 @@ void swap_HFSPlusCatalogThread(HFSPlusCatalogThread *record)
     Convert16(record->recordType);
     Convert32(record->reserved);
     Convert32(record->parentID);
-    // nodeName is an array of unichars.  Ain't touchin' that.
+    swap_HFSUniStr255(&record->nodeName);
 }
 
 void swap_BTreeNode(BTreeNode *node)
@@ -247,7 +247,7 @@ void swap_BTreeNode(BTreeNode *node)
             swap_BTHeaderRec(header);
             
         } else if (node->nodeDescriptor.kind == kBTIndexNode || node->nodeDescriptor.kind == kBTLeafNode) {
-            for (int i = 1; i < node->nodeDescriptor.numRecords; i++) {
+            for (int i = 0; i < node->nodeDescriptor.numRecords; i++) {
                 char* record;
                 off_t offset = offsets[i];
                 record = (node->buffer.data + offset);
@@ -278,6 +278,8 @@ void swap_BTreeNode(BTreeNode *node)
                     } else if (recordKind == kHFSPlusFileThreadRecord) {
                         swap_HFSPlusCatalogThread((HFSPlusCatalogThread*)record);
                         
+                    } else {
+                        printf("Unknown record.");
                     }
                     
                 }

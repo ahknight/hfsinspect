@@ -180,12 +180,13 @@ void _PrintHFSUniStr255(char* label, HFSUniStr255 *record)
     
     char narrow[256];
     wchar_t wide[256];
-    for (int i = 0; i < record->length; i++) {
+    int len = MIN(record->length, 255);
+    for (int i = 0; i < len; i++) {
         narrow[i] = wctob(record->unicode[i]);
         wide[i] = record->unicode[i];
     }
-    narrow[record->length] = '\0';
-    wide[record->length] = L'\0';
+    narrow[len] = '\0';
+    wide[len] = L'\0';
     
     wprintf(L"  %-23s= %ls (unicode representation)\n", label, wide);
     _PrintAttributeString(label, "%s (ASCII representation)", narrow);
@@ -713,7 +714,9 @@ char* hex_string(const char* in, size_t len)
         char* byte = malloc(4);
         snprintf(byte, 4, byte_format, (u_int8_t) in[i]);
         out = strcat(out, byte);
+        free(byte);
     }
+    out[len] = '\0';
     return out;
 }
 
@@ -760,9 +763,8 @@ void PrintCatalogNode(BTreeNode *node)
         }
         
         u_int16_t offset = hfs_btree_get_record_offset(node, recordNumber);
-        printf("\n  # Record %d (offset %zd)\n", recordNumber, offset);
+        printf("\n  # Record %d of %d (offset %zd)\n", recordNumber + 1, node->nodeDescriptor.numRecords, offset);
         _PrintAttributeString("recordLength", "%zd", hfs_btree_get_record_size(node, recordNumber));
-//        _PrintAttributeString("rawRecord", "%s", hex_string(record.data, record.size));
 
         if (node->nodeDescriptor.kind == kBTHeaderNode) {
             switch (recordNumber) {
@@ -793,13 +795,18 @@ void PrintCatalogNode(BTreeNode *node)
             Buffer value;
             
             ssize_t key_length = hfs_btree_decompose_keyed_record(node, &record, &key, &value);
-            if (key_length < kHFSCatalogKeyMinimumLength) {
-                if (recordNumber == node->nodeDescriptor.numRecords - 1) {
+            if (key_length < kHFSPlusCatalogKeyMinimumLength || key_length > kHFSPlusCatalogKeyMaximumLength) {
+                if ((recordNumber + 1) == node->nodeDescriptor.numRecords) {
                     _PrintAttributeString("recordType", "(free space)");
+                    break;
                 } else {
                     _PrintAttributeString("recordType", "(unknown format)");
+                    HFSPlusCatalogKey key = *( (HFSPlusCatalogKey*) record.data );
+                    PrintHFSPlusCatalogKey(&key);
+                    char* data = hex_string(record.data, record.size);
+                    printf("%s\n", data);
+                    continue;
                 }
-                continue;
             }
             
             HFSPlusCatalogKey keyStruct = *( (HFSPlusCatalogKey*) key.data );
@@ -845,7 +852,6 @@ void PrintCatalogNode(BTreeNode *node)
                     default:
                     {
                         _PrintAttributeString("recordType", "%d (invalid)", type);
-//                        _PrintAttributeString("rawValue", "%s", hex_string(value.data, record_size - key_length));
                     }
                         break;
                 }
