@@ -7,12 +7,15 @@
 //
 #include <stdlib.h>
 #include <stdio.h>
+#include <wchar.h>
+#include <locale.h>
 #include <time.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <libkern/OSByteOrder.h>
 #include <malloc/malloc.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "hfs_pstruct.h"
 #include "hfs.h"
@@ -100,6 +103,22 @@ void _PrintUI32DataLength(char *label, u_int32_t size)
     _PrintUI64DataLength(label, (u_int64_t)size);
 }
 
+void _PrintUI8Binary(char *label, u_int8_t i)
+{
+    char str[9] = {};
+    str[8] = '\0';
+    for (int j = 0; j<8; j++) str[7-j] = ((i >> j) & 0x01) ? '1' : '0'; str[8] = '\0';
+    _PrintAttributeString(label, "%s", str);
+}
+
+void _PrintUI16Binary(char *label, u_int16_t i)
+{
+    char str[17] = {};
+    str[16] = '\0';
+    for (int j = 0; j<16; j++) str[15-j] = ((i >> j) & 0x01) ? '1' : '0'; str[16] = '\0';
+    _PrintAttributeString(label, "%s", str);
+}
+
 void _PrintUI32Binary(char *label, u_int32_t i)
 {
     char str[65] = {};
@@ -154,6 +173,25 @@ void _PrintUI16Char(char* label, u_int16_t i)
     char str[3] = { i>>8, i, '\0' };
     _PrintAttributeString(label, "0x%X (%s)", i, str);
 }
+
+void _PrintHFSUniStr255(char* label, HFSUniStr255 *record)
+{
+    setlocale(LC_ALL, ""); // Ensure we can print Unicode to the console.
+    
+    char narrow[256];
+    wchar_t wide[256];
+    for (int i = 0; i < record->length; i++) {
+        narrow[i] = wctob(record->unicode[i]);
+        wide[i] = record->unicode[i];
+    }
+    narrow[record->length] = '\0';
+    wide[record->length] = L'\0';
+    
+    wprintf(L"  %-23s= %ls (unicode representation)\n", label, wide);
+    _PrintAttributeString(label, "%s (ASCII representation)", narrow);
+}
+
+
 
 void PrintVolumeHeader(HFSPlusVolumeHeader *vh)
 {
@@ -388,6 +426,7 @@ void PrintBTNodeDescriptor(BTNodeDescriptor *node)
     _PrintUI16   ("reserved",           node->reserved);
 }
 
+#define PrintUI8(x, y)  _PrintUI8(#y, x->y)
 #define PrintUI16(x, y) _PrintUI16(#y, x->y)
 #define PrintUI32(x, y) _PrintUI32(#y, x->y)
 #define PrintUI64(x, y) _PrintUI64(#y, x->y)
@@ -450,6 +489,222 @@ void PrintBTHeaderRecord(BTHeaderRec *hr)
 //	printf("Reserved3:        %u\n",    hr->reserved3[16]);
 }
 
+void PrintHFSPlusBSDInfo(HFSPlusBSDInfo *record)
+{
+    PrintUI32(record, ownerID);
+    PrintUI32(record, groupID);
+    
+    int flagMasks[] = {
+        UF_NODUMP,
+        UF_IMMUTABLE,
+        UF_APPEND,
+        UF_OPAQUE,
+        UF_COMPRESSED,
+        UF_TRACKED,
+        UF_HIDDEN,
+        SF_ARCHIVED,
+        SF_IMMUTABLE,
+        SF_APPEND,
+    };
+    
+    char* flagNames[] = {
+        "immutable",
+        "appendOnly",
+        "directoryOpaque",
+        "compressed",
+        "tracked",
+        "hidden",
+        "archived (superuser)",
+        "immutable (superuser)",
+        "append (superuser)",
+    };
+    
+    _PrintUI8Binary("adminFlags", record->adminFlags);
+    
+    for (int i = 0; i < 10; i++) {
+        u_int8_t flag = record->adminFlags;
+        if (flag & flagMasks[i]) {
+            _PrintSubattributeString("%s", flagNames[i]);
+        }
+    }
+    
+    _PrintUI8Binary("ownerFlags", record->ownerFlags);
+    
+    for (int i = 0; i < 10; i++) {
+        u_int8_t flag = record->ownerFlags;
+        if (flag & flagMasks[i]) {
+            _PrintSubattributeString("%s", flagNames[i]);
+        }
+    }
+    
+    u_int16_t mode = record->fileMode;
+    
+    if (S_ISBLK(mode)) {
+        _PrintAttributeString("fileMode (type)", "block special");
+    }
+    if (S_ISCHR(mode)) {
+        _PrintAttributeString("fileMode (type)", "character special");
+    }
+    if (S_ISDIR(mode)) {
+        _PrintAttributeString("fileMode (type)", "directory");
+    }
+    if (S_ISFIFO(mode)) {
+        _PrintAttributeString("fileMode (type)", "named pipe");
+    }
+    if (S_ISREG(mode)) {
+        _PrintAttributeString("fileMode (type)", "regular file");
+    }
+    if (S_ISLNK(mode)) {
+        _PrintAttributeString("fileMode (type)", "symbolic link");
+    }
+    if (S_ISSOCK(mode)) {
+        _PrintAttributeString("fileMode (type)", "socket");
+    }
+    if (S_ISWHT(mode)) {
+        _PrintAttributeString("fileMode (type)", "whiteout");
+    }
+    
+    _PrintUI16Binary("fileMode", mode);
+    
+    int modes[] = {
+        S_ISUID,
+        S_ISGID,
+        S_ISTXT,
+        
+        S_IRUSR,
+        S_IWUSR,
+        S_IXUSR,
+        
+        S_IRGRP,
+        S_IWGRP,
+        S_IXGRP,
+        
+        S_IROTH,
+        S_IWOTH,
+        S_IXOTH,
+    };
+    char* names[] = {
+        "setUID",
+        "setGID",
+        "sticky",
+        
+        "read (owner)",
+        "write (owner)",
+        "execute (owner)",
+        
+        "read (group)",
+        "write (group)",
+        "execute (group)",
+        
+        "read (others)",
+        "write (others)",
+        "execute (others)",
+    };
+    
+    for (int i = 0; i < 12; i++) {
+        u_int16_t mode = record->fileMode;
+        if (mode & modes[i]) {
+            _PrintSubattributeString("%s", names[i]);
+        }
+    }
+    
+    PrintUI32(record, special.linkCount);
+}
+
+void PrintFndrFileInfo(FndrFileInfo *record)
+{
+    _PrintUI32Char("fdType", record->fdType);
+    _PrintUI32Char("fdCreator", record->fdCreator);
+    PrintUI16(record, fdFlags);
+    PrintUI16(record, fdLocation.v);
+    PrintUI16(record, fdLocation.h);
+    PrintUI16(record, opaque);
+}
+
+void PrintFndrDirInfo(FndrDirInfo *record)
+{
+    PrintUI16(record, frRect.top);
+    PrintUI16(record, frRect.left);
+    PrintUI16(record, frRect.bottom);
+    PrintUI16(record, frRect.right);
+    PrintUI8(record, frFlags);
+    PrintUI16(record, frLocation.v);
+    PrintUI16(record, frLocation.h);
+    PrintUI16(record, opaque);
+}
+
+void PrintFndrOpaqueInfo(FndrOpaqueInfo *record)
+{
+    // It's opaque. Provided for completeness, and just incase some properties are discovered.
+}
+
+void PrintHFSPlusCatalogFolder(HFSPlusCatalogFolder *record)
+{
+    _PrintAttributeString("recordType", "kHFSPlusFolderRecord");
+    _PrintUI16Binary("flags", record->flags);
+    PrintUI16(record, valence);
+    PrintUI32(record, folderID);
+    PrintUI32(record, createDate);
+    PrintUI32(record, contentModDate);
+    PrintUI32(record, attributeModDate);
+    PrintUI32(record, accessDate);
+    PrintUI32(record, backupDate);
+    PrintHFSPlusBSDInfo(&record->bsdInfo);
+    PrintFndrDirInfo(&record->userInfo);
+    PrintFndrOpaqueInfo(&record->finderInfo);
+    PrintUI32(record, textEncoding);
+    PrintUI32(record, folderCount);
+}
+
+void PrintHFSPlusCatalogFile(HFSPlusCatalogFile *record)
+{
+    _PrintAttributeString("recordType", "kHFSPlusFileRecord");
+    _PrintUI16Binary("flags", record->flags);
+    if (record->flags & kHFSFileLockedMask)
+        _PrintSubattributeString("kHFSFileLockedMask");
+    if (record->flags & kHFSThreadExistsMask)
+        _PrintSubattributeString("kHFSThreadExistsMask");
+    PrintUI16(record, reserved1);
+    PrintUI32(record, fileID);
+    PrintUI32(record, createDate);
+    PrintUI32(record, contentModDate);
+    PrintUI32(record, attributeModDate);
+    PrintUI32(record, accessDate);
+    PrintUI32(record, backupDate);
+    PrintHFSPlusBSDInfo(&record->bsdInfo);
+    PrintFndrFileInfo(&record->userInfo);
+    PrintFndrOpaqueInfo(&record->finderInfo);
+    PrintUI32(record, textEncoding);
+    PrintUI32(record, reserved2);
+}
+
+void PrintHFSPlusFolderThreadRecord(HFSPlusCatalogThread *record)
+{
+    _PrintAttributeString("recordType", "kHFSPlusFolderThreadRecord");
+    PrintHFSPlusCatalogThread(record);
+}
+
+void PrintHFSPlusFileThreadRecord(HFSPlusCatalogThread *record)
+{
+    _PrintAttributeString("recordType", "kHFSPlusFileThreadRecord");
+    PrintHFSPlusCatalogThread(record);
+}
+
+void PrintHFSPlusCatalogThread(HFSPlusCatalogThread *record)
+{
+    //    PrintUI16(record, recordType);
+    PrintUI16(record, reserved);
+    PrintUI32(record, parentID);
+    _PrintHFSUniStr255("nodeName", &record->nodeName);
+}
+
+void PrintHFSPlusCatalogKey(HFSPlusCatalogKey *record)
+{
+    PrintUI16(record, keyLength);
+    PrintUI32(record, parentID);
+    _PrintHFSUniStr255("key", &record->nodeName);
+}
+
 char* hex_string(const char* in, size_t len)
 {
     char* byte_format = "%02x "; // '0C '
@@ -480,70 +735,6 @@ void PrintCatalogExcerpt(HFSVolume *hfs, int numNodes)
         PrintCatalogNode(&node);
         
         buffer_free(&node.buffer);
-    }
-}
-
-void PrintCatalogHeader(HFSVolume *hfs)
-{
-    HFSFork catalog;
-    catalog.hfs = *hfs;
-    catalog.forkData = hfs->vh.catalogFile;
-    
-    HFSBTree tree;
-    hfs_btree_init(&tree, &catalog);
-    tree.fork.cnid = kHFSCatalogFileID;
-        
-    printf("\n# BEGIN B-TREE: CATALOG\n");
-    
-    for (int j = 1; j<10; j++) {
-        printf("\n# Catalog Node %d (offset %d)\n", j, tree.headerRecord.nodeSize * j);
-                
-        BTreeNode node = hfs_btree_get_node(&tree, j);
-        if (node.nodeNumber == -1) {
-            perror("couldn't read node");
-            return;
-        }
-        
-//        _PrintAttributeString("rawNode", "%s", hex_string(node.buffer.data, node.buffer.size));
-        _PrintAttributeString("nodeSize", "%d", node.buffer.size);
-        
-        BTNodeDescriptor *nodeDesc = (BTNodeDescriptor*) node.buffer.data;
-        PrintBTNodeDescriptor(nodeDesc);
-        
-        for (int i = 0; i < node.nodeDescriptor.numRecords-1; i++) {
-            if(i >= node.nodeDescriptor.numRecords) return;
-            
-            Buffer record = hfs_btree_get_record(&node, i);
-            if (record.size == 0) {
-                printf("Invalid record.\n");
-                continue;
-            }
-            
-            Buffer key;
-            Buffer value;
-            
-            ssize_t key_length = hfs_btree_decompose_keyed_record(&node, &record, &key, &value);
-            if (key_length < kHFSCatalogKeyMinimumLength) {
-                printf("Invalid key length.\n");
-                continue;
-            }
-            
-            u_int16_t offset = hfs_btree_get_record_offset(&node, i);
-            printf("\n  # Record %d (0x%x)\n", i, offset);
-            _PrintAttributeString("recordLength", "%zd", hfs_btree_get_record_size(&node, i));
-//            _PrintAttributeString("rawRecord", "%s", hex_string(record.data, record.size));
-            _PrintAttributeString("keyLength", "%d", key_length);
-//            _PrintAttributeString("key", "%s", hex_string(key.data, key.size));
-            _PrintAttributeString("dataLength", "%d", value.size);
-//            _PrintAttributeString("data", "%s", hex_string(value.data, value.size));
-            
-            buffer_free(&record);
-            buffer_free(&key);
-            buffer_free(&value);
-        }
-    
-        buffer_free(&node.buffer);
-        
     }
 }
 
@@ -603,23 +794,24 @@ void PrintCatalogNode(BTreeNode *node)
             
             ssize_t key_length = hfs_btree_decompose_keyed_record(node, &record, &key, &value);
             if (key_length < kHFSCatalogKeyMinimumLength) {
-                printf("skipping record: Invalid key length.\n");
+                if (recordNumber == node->nodeDescriptor.numRecords - 1) {
+                    _PrintAttributeString("recordType", "(free space)");
+                } else {
+                    _PrintAttributeString("recordType", "(unknown format)");
+                }
                 continue;
             }
             
-            _PrintAttributeString("keyLength", "%d (%d allocated)", key_length, key.size);
-            _PrintAttributeString("key", "%s", hex_string(key.data, key_length));
-            _PrintAttributeString("dataLength", "%d (%d allocated)", record_size - key_length, value.size);
-//            _PrintAttributeString("data", "%s ...", hex_string(value.data, 30));
+            HFSPlusCatalogKey keyStruct = *( (HFSPlusCatalogKey*) key.data );
+            
+            PrintHFSPlusCatalogKey(&keyStruct);
             
             if (node->nodeDescriptor.kind == kBTIndexNode) {
                 u_int32_t childNode = *(u_int32_t*)(value.data);
-                childNode = S32(childNode);
                 _PrintAttributeString("childNode", "%ld", childNode);
             
             } else {
                 u_int16_t type =  *(u_int16_t*)(value.data);
-                type = S16(type);
                 
                 switch (type) {
                     case kHFSPlusFileRecord:
@@ -639,14 +831,14 @@ void PrintCatalogNode(BTreeNode *node)
                     case kHFSPlusFileThreadRecord:
                     {
                         HFSPlusCatalogThread recordValue = *( (HFSPlusCatalogThread*) value.data );
-                        PrintHFSPlusCatalogThread(&recordValue);
+                        PrintHFSPlusFileThreadRecord(&recordValue);
                     }
                         break;
                         
                     case kHFSPlusFolderThreadRecord:
                     {
                         HFSPlusCatalogThread recordValue = *( (HFSPlusCatalogThread*) value.data );
-                        PrintHFSPlusCatalogThread(&recordValue);
+                        PrintHFSPlusFolderThreadRecord(&recordValue);
                     }
                         break;
                         
@@ -670,118 +862,3 @@ void PrintCatalogNode(BTreeNode *node)
     }
 }
 
-void PrintHFSPlusCatalogFolder(HFSPlusCatalogFolder *record)
-{
-    _PrintAttributeString("recordType", "kHFSPlusFolderRecord");
-}
-
-void PrintHFSPlusCatalogFile(HFSPlusCatalogFile *record)
-{
-    _PrintAttributeString("recordType", "kHFSPlusFileRecord");
-    PrintUI16(record, flags);
-    PrintUI16(record, reserved1);
-    PrintUI32(record, fileID);
-    PrintUI32(record, createDate);
-    PrintUI32(record, contentModDate);
-    PrintUI32(record, attributeModDate);
-    PrintUI32(record, accessDate);
-    PrintUI32(record, backupDate);
-    ;
-    ;
-    ;
-    PrintUI32(record, textEncoding);
-    PrintUI32(record, reserved2);
-}
-
-void PrintHFSPlusCatalogThread(HFSPlusCatalogThread *record)
-{
-    _PrintAttributeString("recordType", "kHFSPlusFolderThreadRecord");
-    _PrintAttributeString("recordType", "kHFSPlusFileThreadRecord");
-}
-
-void PrintHFSPlusCatalogKey(HFSPlusCatalogKey *record)
-{
-    // Create a very crude and inaccurate 8-bit representation of the name by dropping the high word of the (now-)UTF16LE character.
-    char nodename[256];
-    for (int j = 0; j<=record->nodeName.length; j++) {
-        nodename[j] = record->nodeName.unicode[j];
-        nodename[j+1] = '\0';
-    }
-    _PrintAttributeString("key", "%d %d %s", record->keyLength, record->parentID, nodename);
-}
-
-                // To get a record we need to know the kind of node so we know what record to expect.
-//                if (node.bTree.fork.cnid == kHFSCatalogFileID) {
-//                    HFSPlusCatalogKey *catalogKey = (HFSPlusCatalogKey*)&key;
-//                    
-//                    // We're using the catalog file
-//                    if (node.nodeDescriptor->kind == kBTHeaderNode) {
-//                        if (i == 0) {
-//                            // Catalog header node. We've got a header record at 0 and nothing useful to us after that.
-//                            BTHeaderRec *header = (node.buffer + offset);
-//                            PrintBTHeaderRecord(header);
-//                            printf("\n");
-//                        }
-//                        
-//                    } else if (node.nodeDescriptor->kind == kBTIndexNode) {
-//                        // Catalog index node. We've got catalog keys.
-//                        
-//                        // Create a very crude and inaccurate 8-bit representation of the name by dropping the high word of the (now-)UTF16LE character.
-//                        char nodename[256];
-//                        for (int j = 0; j<=catalogKey->nodeName.length; j++) {
-//                            nodename[j] = catalogKey->nodeName.unicode[j];
-//                            nodename[j+1] = '\0';
-//                        }
-//                        printf("    Catalog key: %d %d %s\n", catalogKey->keyLength, catalogKey->parentID, nodename);
-//                        
-//                    } else if (node.nodeDescriptor->kind == kBTLeafNode) {
-//                        // Data node.  Get the type, pick the right struct, then hit it again.
-//                        u_int16_t type =  *(u_int16_t*)(value); //hfs_btree_get_catalog_leaf_record_type(&node, i);
-//                        
-//                        switch (type) {
-//                            case kHFSPlusFolderRecord:
-//                            {
-//                                _PrintAttributeString("recordType", "kHFSPlusFolderRecord");
-//                            }
-//                                break;
-//                            case kHFSPlusFileRecord:
-//                            {
-//                                _PrintAttributeString("recordType", "kHFSPlusFileRecord");
-//                                HFSPlusCatalogFile *record = (HFSPlusCatalogFile*)value;
-//                                PrintUI16(record, flags);
-//                                PrintUI16(record, reserved1);
-//                                PrintUI32(record, fileID);
-//                                PrintUI32(record, createDate);
-//                                PrintUI32(record, contentModDate);
-//                                PrintUI32(record, attributeModDate);
-//                                PrintUI32(record, accessDate);
-//                                PrintUI32(record, backupDate);
-//                                ;
-//                                ;
-//                                ;
-//                                PrintUI32(record, textEncoding);
-//                                PrintUI32(record, reserved2);
-//                            }
-//                                break;
-//                            case kHFSPlusFolderThreadRecord:
-//                            {
-//                                _PrintAttributeString("recordType", "kHFSPlusFolderThreadRecord");
-//                            }
-//                                break;
-//                            case kHFSPlusFileThreadRecord:
-//                            {
-//                                _PrintAttributeString("recordType", "kHFSPlusFileThreadRecord");
-//                            }
-//                                break;
-//                                
-//                            default:
-//                                _PrintAttributeString("recordType", "%d", type);
-//                                break;
-//                        }
-//                        
-//                    } else if (node.nodeDescriptor->kind == kBTMapNode) {
-//                    } else {
-//                        printf("    Node type: %d; record %d\n", node.nodeDescriptor->kind, i);
-//                    }
-//                }
-                

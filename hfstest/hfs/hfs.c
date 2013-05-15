@@ -268,7 +268,7 @@ ssize_t hfs_btree_decompose_keyed_record (const BTreeNode *node, const Buffer *r
         key_length = node->bTree.headerRecord.maxKeyLength;
     }
     
-    Buffer keyBuffer = buffer_slice(record, key_length, sizeof(key_length));
+    Buffer keyBuffer = buffer_slice(record, key_length + 2, 0); // +2 includes the key length bytes as well.
     *key = keyBuffer;
     
     off_t valueOffset = key_length + sizeof(u_int16_t);
