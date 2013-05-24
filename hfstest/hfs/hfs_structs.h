@@ -12,41 +12,34 @@
 #import "buffer.h"
 
 struct HFSVolume {
-    int fd;                 // File descriptor
-    HFSPlusVolumeHeader vh; // Volume header
+    int                 fd;                 // File descriptor
+    HFSPlusVolumeHeader vh;                 // Volume header
 };
 typedef struct HFSVolume HFSVolume;
 
 struct HFSFork {
-    HFSVolume           hfs;               // File system descriptor
-    HFSPlusForkData     forkData;          // Contains the initial extents
+    HFSVolume           hfs;                // File system descriptor
+    HFSPlusForkData     forkData;           // Contains the initial extents
+    u_int8_t            forkType;           // 0x00: data; 0xFF: resource
     u_int32_t           cnid;               // For extents overflow lookups
 };
 typedef struct HFSFork HFSFork;
 
 struct HFSBTree {
-    HFSFork             fork;              // For data access
-    BTNodeDescriptor    nodeDescriptor;    // For the header node
-    BTHeaderRec         headerRecord;      // From the header node
+    HFSFork             fork;               // For data access
+    BTNodeDescriptor    nodeDescriptor;     // For the header node
+    BTHeaderRec         headerRecord;       // From the header node
 };
 typedef struct HFSBTree HFSBTree;
 
 struct HFSBTreeNode {
-    HFSBTree            tree;               // Tree file
-    off_t               offset;             // Byte offset within the tree file
+    Buffer              buffer;             // Raw data buffer
+    HFSBTree            bTree;              // Parent tree
+    BTNodeDescriptor    nodeDescriptor;     // This node's descriptor record
+    size_t              blockSize;          // Node/buffer size in bytes
     u_int32_t           nodeNumber;         // Node number in the tree file
-    BTNodeDescriptor    nodeDescriptor;     // Node descriptor record
+    u_int32_t           nodeOffset;         // Block offset within the tree file
 };
 typedef struct HFSBTreeNode HFSBTreeNode;
-
-struct BTreeNode {
-    Buffer              buffer;
-    BTNodeDescriptor    nodeDescriptor;
-    size_t              blockSize;
-    off_t               nodeOffset;
-    u_int32_t           nodeNumber;
-    HFSBTree            bTree;
-};
-typedef struct BTreeNode BTreeNode;
 
 #endif

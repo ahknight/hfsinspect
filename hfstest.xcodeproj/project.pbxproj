@@ -7,10 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9B2EE368174D1BD6008A0C54 /* debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B2EE367174D1BD6008A0C54 /* debug.c */; };
 		9BBA85071735AFD400273AE9 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9BBA85061735AFD400273AE9 /* Foundation.framework */; };
 		9BBA850A1735AFD400273AE9 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BBA85091735AFD400273AE9 /* main.c */; };
 		9BBA850E1735AFD400273AE9 /* hfstest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9BBA850D1735AFD400273AE9 /* hfstest.1 */; };
+		9BBA9C59174E8E9C0096D7D2 /* stream.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BBA9C58174E8E9C0096D7D2 /* stream.c */; };
+		9BBA9C5B174E9F580096D7D2 /* cfile.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BBA9C5A174E9F580096D7D2 /* cfile.c */; };
 		9BCD794717428E3800CB9BC4 /* buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BCD793E17428E3800CB9BC4 /* buffer.c */; };
+		9BCD797017457F2000CB9BC4 /* hfs_unicode.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BCD796F17457F2000CB9BC4 /* hfs_unicode.c */; };
 		9BDF325E1736D27500F60671 /* hfs_pstruct.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BDF325D1736D27500F60671 /* hfs_pstruct.c */; };
 		9BDF32621736D30E00F60671 /* hfs_endian.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BDF32611736D30E00F60671 /* hfs_endian.c */; };
 		9BDF32661737307D00F60671 /* hfs.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BDF32651737307D00F60671 /* hfs.c */; };
@@ -30,20 +34,28 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		9B2EE367174D1BD6008A0C54 /* debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = debug.c; sourceTree = "<group>"; };
+		9B2EE369174D1BDB008A0C54 /* debug.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = debug.h; sourceTree = "<group>"; };
 		9B9686501737774B00F31063 /* hfs_structs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_structs.h; sourceTree = "<group>"; };
 		9BBA85031735AFD400273AE9 /* hfstest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = hfstest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9BBA85061735AFD400273AE9 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		9BBA85091735AFD400273AE9 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = main.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
-		9BBA850C1735AFD400273AE9 /* hfstest-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "hfstest-Prefix.pch"; sourceTree = "<group>"; };
+		9BBA850C1735AFD400273AE9 /* hfstest-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = "hfstest-Prefix.pch"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		9BBA850D1735AFD400273AE9 /* hfstest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = hfstest.1; sourceTree = "<group>"; };
-		9BCD793E17428E3800CB9BC4 /* buffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = buffer.c; sourceTree = "<group>"; };
+		9BBA9C57174E8E980096D7D2 /* stream.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; path = stream.h; sourceTree = "<group>"; };
+		9BBA9C58174E8E9C0096D7D2 /* stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stream.c; sourceTree = "<group>"; };
+		9BBA9C5A174E9F580096D7D2 /* cfile.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cfile.c; sourceTree = "<group>"; };
+		9BBA9C5C174EAB500096D7D2 /* cfile.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cfile.h; sourceTree = "<group>"; };
+		9BCD793E17428E3800CB9BC4 /* buffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = buffer.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BCD793F17428E3800CB9BC4 /* buffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = buffer.h; sourceTree = "<group>"; };
-		9BDF325D1736D27500F60671 /* hfs_pstruct.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_pstruct.c; sourceTree = "<group>"; };
+		9BCD796E17457F1800CB9BC4 /* hfs_unicode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_unicode.h; sourceTree = "<group>"; };
+		9BCD796F17457F2000CB9BC4 /* hfs_unicode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_unicode.c; sourceTree = "<group>"; };
+		9BDF325D1736D27500F60671 /* hfs_pstruct.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs_pstruct.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BDF325F1736D28300F60671 /* hfs_pstruct.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_pstruct.h; sourceTree = "<group>"; };
 		9BDF32601736D30700F60671 /* hfs_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_endian.h; sourceTree = "<group>"; };
-		9BDF32611736D30E00F60671 /* hfs_endian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_endian.c; sourceTree = "<group>"; };
+		9BDF32611736D30E00F60671 /* hfs_endian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs_endian.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BDF32641737307700F60671 /* hfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs.h; sourceTree = "<group>"; };
-		9BDF32651737307D00F60671 /* hfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs.c; sourceTree = "<group>"; };
+		9BDF32651737307D00F60671 /* hfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BDF326817375A2400F60671 /* hfs_macos_defs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_macos_defs.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -91,8 +103,11 @@
 				9BBA850D1735AFD400273AE9 /* hfstest.1 */,
 				9BDF32631736D34500F60671 /* hfs */,
 				9BCD793C17428E3800CB9BC4 /* buffer */,
+				9BBA9C56174E8E780096D7D2 /* stream */,
 				9BDF3267173759B900F60671 /* Apple */,
 				9BBA850B1735AFD400273AE9 /* Supporting Files */,
+				9B2EE369174D1BDB008A0C54 /* debug.h */,
+				9B2EE367174D1BD6008A0C54 /* debug.c */,
 			);
 			path = hfstest;
 			sourceTree = "<group>";
@@ -103,6 +118,17 @@
 				9BBA850C1735AFD400273AE9 /* hfstest-Prefix.pch */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		9BBA9C56174E8E780096D7D2 /* stream */ = {
+			isa = PBXGroup;
+			children = (
+				9BBA9C57174E8E980096D7D2 /* stream.h */,
+				9BBA9C58174E8E9C0096D7D2 /* stream.c */,
+				9BBA9C5A174E9F580096D7D2 /* cfile.c */,
+				9BBA9C5C174EAB500096D7D2 /* cfile.h */,
+			);
+			path = stream;
 			sourceTree = "<group>";
 		};
 		9BCD793C17428E3800CB9BC4 /* buffer */ = {
@@ -132,6 +158,8 @@
 			isa = PBXGroup;
 			children = (
 				9BDF326817375A2400F60671 /* hfs_macos_defs.h */,
+				9BCD796E17457F1800CB9BC4 /* hfs_unicode.h */,
+				9BCD796F17457F2000CB9BC4 /* hfs_unicode.c */,
 			);
 			path = Apple;
 			sourceTree = "<group>";
@@ -192,6 +220,10 @@
 				9BDF32621736D30E00F60671 /* hfs_endian.c in Sources */,
 				9BDF32661737307D00F60671 /* hfs.c in Sources */,
 				9BCD794717428E3800CB9BC4 /* buffer.c in Sources */,
+				9BCD797017457F2000CB9BC4 /* hfs_unicode.c in Sources */,
+				9B2EE368174D1BD6008A0C54 /* debug.c in Sources */,
+				9BBA9C59174E8E9C0096D7D2 /* stream.c in Sources */,
+				9BBA9C5B174E9F580096D7D2 /* cfile.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

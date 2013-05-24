@@ -5,3 +5,14 @@
 #ifdef __OBJC__
 	#import <Foundation/Foundation.h>
 #endif
+
+#import <stdlib.h>
+#import <stdio.h>
+#import <unistd.h>
+#import <libgen.h>
+#import "debug.h"
+
+#define out(...)   { fprintf(stdout, __VA_ARGS__); }
+#define error(...) { fprintf(stderr, "%s: ", __FUNCTION__); fprintf(stderr, __VA_ARGS__); }
+#define debug(...) if (getenv("DEBUG")) { fprintf(stderr, "D %s:%d (%s): ", basename(__FILE__), __LINE__, __FUNCTION__); fprintf(stderr, __VA_ARGS__); }
+#define critical(...) { fprintf(stderr, "CRITICAL: %s: ", __FUNCTION__); fprintf(stderr, __VA_ARGS__); if (getenv("DEBUG")) { print_trace(); raise(SIGTRAP); } else { exit(1); } }

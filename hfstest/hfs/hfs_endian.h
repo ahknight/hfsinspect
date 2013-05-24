@@ -29,14 +29,12 @@
 
 #endif
 
-#endif
-
 void swap_HFSPlusVolumeHeader(HFSPlusVolumeHeader *vh);
 void swap_HFSPlusForkData(HFSPlusForkData *fork);
+void swap_HFSPlusExtentRecord(HFSPlusExtentRecord record);
 void swap_HFSPlusExtentDescriptor(HFSPlusExtentDescriptor *extent);
 void swap_BTNodeDescriptor(BTNodeDescriptor *node);
 void swap_BTHeaderRec(BTHeaderRec *header);
-void swap_BTreeKey(BTreeKey *record);
 void swap_HFSPlusCatalogKey(HFSPlusCatalogKey *key);
 void swap_HFSUniStr255(HFSUniStr255 *unistr);
 void swap_HFSPlusCatalogFolder(HFSPlusCatalogFolder *record);
@@ -46,4 +44,6 @@ void swap_FndrFileInfo(FndrFileInfo *record);
 void swap_FndrOpaqueInfo(FndrOpaqueInfo *record);
 void swap_HFSPlusCatalogFile(HFSPlusCatalogFile *record);
 void swap_HFSPlusCatalogThread(HFSPlusCatalogThread *record);
-void swap_BTreeNode(BTreeNode *node);
+int  swap_BTreeNode(HFSBTreeNode *node);
+
+#endif

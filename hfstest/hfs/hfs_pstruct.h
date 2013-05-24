@@ -12,27 +12,27 @@
 #include <hfs/hfs_format.h>
 #include "hfs_structs.h"
 
-void PrintVolumeHeader(HFSPlusVolumeHeader *vh);
+void PrintVolumeHeader(const HFSPlusVolumeHeader *vh);
+void PrintHFSPlusExtentRecordBuffer(const Buffer *buffer, unsigned int count, u_int32_t totalBlocks);
+void PrintHFSPlusForkData(const HFSPlusForkData *fork);
 
+void PrintBTNodeDescriptor(const BTNodeDescriptor *nd);
+void PrintBTHeaderRecord(const BTHeaderRec *hr);
 
-void PrintHFSPlusForkData(HFSPlusForkData *fork);
+void PrintHFSPlusCatalogFolder(const HFSPlusCatalogFolder *record);
+void PrintHFSPlusCatalogFile(const HFSPlusCatalogFile *record);
+void PrintHFSPlusCatalogThread(const HFSPlusCatalogThread *record);
 
+void VisualizeData(const char* data, size_t length);
+void VisualizeHFSPlusExtentKey(const HFSPlusExtentKey *record, const char* label);
 
-void PrintBTNodeDescriptor(BTNodeDescriptor *nd);
+void PrintHFSPlusExtentKey(const HFSPlusExtentKey *record);
+void PrintHFSPlusCatalogKey(const HFSPlusCatalogKey *record);
 
-void PrintBTHeaderRecord(BTHeaderRec *hr);
+void PrintExtentsSummary(const HFSFork* fork);
 
-
-void PrintCatalogExcerpt(HFSVolume *hfs, int numNodes);
-
-void PrintCatalogNode(BTreeNode *node);
-
-void PrintHFSPlusCatalogFolder(HFSPlusCatalogFolder *record);
-
-void PrintHFSPlusCatalogFile(HFSPlusCatalogFile *record);
-
-void PrintHFSPlusCatalogThread(HFSPlusCatalogThread *record);
-
-void PrintHFSPlusCatalogKey(HFSPlusCatalogKey *record);
+void PrintNode(const HFSBTreeNode* node);
+void PrintNodeRecord(const HFSBTreeNode* node, int recordNumber);
+void PrintTreeNode(const HFSBTree *tree, u_int32_t nodeID);
 
 #endif

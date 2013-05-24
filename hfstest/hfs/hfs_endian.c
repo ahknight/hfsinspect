@@ -9,8 +9,13 @@
 #include <stdlib.h>
 #include <hfs/hfs_format.h>
 #include <string.h>
+#include <signal.h>
+#include <stdio.h>
+#include <errno.h>
+
 #include "hfs_endian.h"
 #include "hfs_structs.h"
+#include "hfs_pstruct.h"
 
 
 #define Convert16(x)    x = OSSwapBigToHostInt16(x)
@@ -60,10 +65,14 @@ void swap_HFSPlusForkData(HFSPlusForkData *record)
     Convert64(record->logicalSize);
     Convert32(record->totalBlocks);
     Convert32(record->clumpSize);
-    
+    swap_HFSPlusExtentRecord(record->extents);
+}
+
+void swap_HFSPlusExtentRecord(HFSPlusExtentDescriptor record[8])
+{
     for (int i = 0; i < kHFSPlusExtentDensity; i++) {
-        HFSPlusExtentDescriptor *extent_descriptor = &record->extents[i];
-        swap_HFSPlusExtentDescriptor(extent_descriptor);
+        HFSPlusExtentDescriptor *descriptor = &record[i];
+        swap_HFSPlusExtentDescriptor(descriptor);
     }
 }
 
@@ -102,18 +111,19 @@ void swap_BTHeaderRec(BTHeaderRec *record)
     //    header->reserved3
 }
 
-void swap_BTreeKey(BTreeKey *record)
-{
-    // length8 is a short
-    Convert16(record->length16);
-    // rawData is opaque
-}
-
 void swap_HFSPlusCatalogKey(HFSPlusCatalogKey *record)
 {
     Convert16(record->keyLength);
     Convert32(record->parentID);
     swap_HFSUniStr255(&record->nodeName);
+}
+
+void swap_HFSPlusExtentKey(HFSPlusExtentKey *record)
+{
+    Convert16(record->keyLength);
+    Convert32(record->fileID);
+    Convert32(record->startBlock);
+    
 }
 
 void swap_HFSUniStr255(HFSUniStr255 *unistr)
@@ -209,16 +219,23 @@ void swap_HFSPlusCatalogThread(HFSPlusCatalogThread *record)
     swap_HFSUniStr255(&record->nodeName);
 }
 
-void swap_BTreeNode(BTreeNode *node)
+int swap_BTreeNode(HFSBTreeNode *node)
 {
     // node->buffer is a 4-8KB block read from disk in BE format.
     // Figure out what it is and swap everything that needs swapping.
     // Good luck.
     
     // Check record offset 0 to see if we've done this before. It's a constant 14.
-    u_int16_t sentinel = (u_int16_t)(node->buffer.data + node->blockSize - sizeof(u_int16_t));
-    if ( sentinel == 14 ) return;
+    u_int16_t sentinel = *(u_int16_t*)(node->buffer.data + node->bTree.headerRecord.nodeSize - sizeof(u_int16_t));
+    if ( sentinel == 14 ) return 1;
     
+    // Verify that this is a node in the first place (swap error protection).
+    sentinel = S16(sentinel);
+    if ( sentinel != 14 ) {
+        debug("Node %d (offset %d) is not a node (sentinel: %d != 14).\n", node->nodeNumber, node->nodeOffset, sentinel);
+        errno = EINVAL;
+        return -1 ;
+    }
     
     /* First, swap things universal to all nodes. */
     
@@ -227,9 +244,15 @@ void swap_BTreeNode(BTreeNode *node)
     swap_BTNodeDescriptor(nodeDescriptor);
     node->nodeDescriptor = *nodeDescriptor;
     
-    // Swap record offsets
-    u_int16_t *offsets = (u_int16_t*)(node->buffer.data + node->blockSize - (sizeof(u_int16_t) * node->nodeDescriptor.numRecords));
+    // Verify this is a valid node (additional protection against swap errors)
+    if (node->nodeDescriptor.kind < -1 || node->nodeDescriptor.kind > 2) {
+        debug("Invalid node kind: %d\n", node->nodeDescriptor.kind);
+        errno = EINVAL;
+        return -1 ;
+    }
     
+    // Swap record offsets
+    u_int16_t *offsets = (u_int16_t*)(node->buffer.data + node->bTree.headerRecord.nodeSize - (sizeof(u_int16_t) * node->nodeDescriptor.numRecords));
     for (int i = 0; i < node->nodeDescriptor.numRecords; i++) {
         u_int16_t *offset = &offsets[i];
         *offset = S16(*offset);
@@ -238,19 +261,19 @@ void swap_BTreeNode(BTreeNode *node)
     // Note for branching
     u_int32_t treeID = node->bTree.fork.cnid;
     
-    if (treeID == kHFSCatalogFileID) {
-        // Swap catalog records
+    if (node->nodeDescriptor.kind == kBTHeaderNode) {
+        // Only swap the header.  Don't care about user and map.
+        BTHeaderRec *header = (BTHeaderRec*)(node->buffer.data + sizeof(BTNodeDescriptor));
+        swap_BTHeaderRec(header);
         
-        if (node->nodeDescriptor.kind == kBTHeaderNode) {
-            // Only swap the header.  Don't care about user and map.
-            BTHeaderRec *header = (BTHeaderRec*)(node->buffer.data + sizeof(BTNodeDescriptor));
-            swap_BTHeaderRec(header);
+    } else if (node->nodeDescriptor.kind == kBTIndexNode || node->nodeDescriptor.kind == kBTLeafNode) {
+        for (int i = 0; i < node->nodeDescriptor.numRecords; i++) {
+            char* record;
+            off_t offset = offsets[i];
+            record = (node->buffer.data + offset);
             
-        } else if (node->nodeDescriptor.kind == kBTIndexNode || node->nodeDescriptor.kind == kBTLeafNode) {
-            for (int i = 0; i < node->nodeDescriptor.numRecords; i++) {
-                char* record;
-                off_t offset = offsets[i];
-                record = (node->buffer.data + offset);
+            if (treeID == kHFSCatalogFileID) {
+                // Swap keyed catalog records
                 
                 HFSPlusCatalogKey *key = (HFSPlusCatalogKey*)record;
                 swap_HFSPlusCatalogKey(key);
@@ -260,8 +283,11 @@ void swap_BTreeNode(BTreeNode *node)
                 
                 offset += key_length + 2;
                 record = (node->buffer.data + offset);
-
+                
                 if (node->nodeDescriptor.kind == kBTIndexNode) {
+                    u_int32_t *pointer = (u_int32_t*)record;
+                    *pointer = S32(*pointer);
+                    
                 } else if (node->nodeDescriptor.kind == kBTLeafNode) {
                     u_int16_t recordKind = *(u_int16_t*)record;
                     recordKind = S16(recordKind);
@@ -278,27 +304,41 @@ void swap_BTreeNode(BTreeNode *node)
                     } else if (recordKind == kHFSPlusFileThreadRecord) {
                         swap_HFSPlusCatalogThread((HFSPlusCatalogThread*)record);
                         
-                    } else {
-                        printf("Unknown record.");
                     }
-                    
                 }
+            } else if (treeID == kHFSExtentsFileID) {
+                // Swap extents records
+                HFSPlusExtentKey *key = (HFSPlusExtentKey*) record;
+                swap_HFSPlusExtentKey(key);
+                
+                u_int16_t key_length = key->keyLength;
+                if (key_length%2) key_length++;
+                
+                offset += key_length + 2;
+                record = (node->buffer.data + offset);
+                
+                if (node->nodeDescriptor.kind == kBTIndexNode) {
+                    u_int32_t *pointer = (u_int32_t*)record;
+                    *pointer = S32(*pointer);
+                    
+                } else if (node->nodeDescriptor.kind == kBTLeafNode) {
+                    // HFSPlusExtentKey + HFSPlusExtentRecord
+                    
+                    swap_HFSPlusExtentRecord(*(HFSPlusExtentRecord*)record);
+                }
+                
+            } else if (treeID == kHFSAttributesFileID) {
+                // Swap attributes records
+                
+            } else {
+                // Error? Ignore and watch the fun?
+                
             }
-            
-        } else if (node->nodeDescriptor.kind == kBTMapNode) {
-            // Don't care.  Thanks for playing.
-            
         }
         
-    } else if (treeID == kHFSExtentsFileID) {
-        // Swap extents records
-        
-    } else if (treeID == kHFSAttributesFileID) {
-        // Swap attributes records
-        
-    } else {
-        // Error? Ignore and watch the fun?
+    } else if (node->nodeDescriptor.kind == kBTMapNode) {
+        // Don't care.  Thanks for playing.
         
     }
-    
+    return 1;
 }
