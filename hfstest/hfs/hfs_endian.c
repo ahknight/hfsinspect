@@ -7,14 +7,13 @@
 //
 
 #include <stdlib.h>
-#include <hfs/hfs_format.h>
 #include <string.h>
 #include <signal.h>
 #include <stdio.h>
 #include <errno.h>
 
-#include "hfs_endian.h"
 #include "hfs_structs.h"
+#include "hfs_endian.h"
 #include "hfs_pstruct.h"
 
 
@@ -123,15 +122,13 @@ void swap_HFSPlusExtentKey(HFSPlusExtentKey *record)
     Convert16(record->keyLength);
     Convert32(record->fileID);
     Convert32(record->startBlock);
-    
 }
 
 void swap_HFSUniStr255(HFSUniStr255 *unistr)
 {
     Convert16(unistr->length);
-    for (int i = 0; i < unistr->length; i++) {
+    for (int i = 0; i < unistr->length; i++)
         Convert16(unistr->unicode[i]);
-    }
 }
 
 void swap_HFSPlusCatalogFolder(HFSPlusCatalogFolder *record)
@@ -232,7 +229,7 @@ int swap_BTreeNode(HFSBTreeNode *node)
     // Verify that this is a node in the first place (swap error protection).
     sentinel = S16(sentinel);
     if ( sentinel != 14 ) {
-        debug("Node %d (offset %d) is not a node (sentinel: %d != 14).\n", node->nodeNumber, node->nodeOffset, sentinel);
+        debug("Node %u (offset %u) is not a node (sentinel: %u != 14).", node->nodeNumber, node->nodeOffset, sentinel);
         errno = EINVAL;
         return -1 ;
     }
@@ -246,99 +243,172 @@ int swap_BTreeNode(HFSBTreeNode *node)
     
     // Verify this is a valid node (additional protection against swap errors)
     if (node->nodeDescriptor.kind < -1 || node->nodeDescriptor.kind > 2) {
-        debug("Invalid node kind: %d\n", node->nodeDescriptor.kind);
+        debug("Invalid node kind: %d", node->nodeDescriptor.kind);
         errno = EINVAL;
         return -1 ;
     }
     
     // Swap record offsets
-    u_int16_t *offsets = (u_int16_t*)(node->buffer.data + node->bTree.headerRecord.nodeSize - (sizeof(u_int16_t) * node->nodeDescriptor.numRecords));
-    for (int i = 0; i < node->nodeDescriptor.numRecords; i++) {
+    u_int16_t numRecords = node->nodeDescriptor.numRecords + 1;  // "+1" gets the free space record.
+    u_int16_t *offsets = (u_int16_t*)(node->buffer.data + node->bTree.headerRecord.nodeSize - (sizeof(u_int16_t) * numRecords));
+    for (int i = 0; i < numRecords; i++) {
         u_int16_t *offset = &offsets[i];
         *offset = S16(*offset);
+    }
+    
+    // Record offsets
+    // 0 1 2 3 4 5 | -- offset ID
+    // 5 4 3 2 1 0 | -- record ID
+    int lastRecordIndex = numRecords - 1;
+    for (int offsetID = 0; offsetID < numRecords; offsetID++) {
+        int recordID        = lastRecordIndex - offsetID;
+        int nextOffsetID    = offsetID - 1;
+        
+        HFSBTreeNodeRecord *meta    = &node->records[lastRecordIndex - offsetID];
+        meta->recordID             = recordID;
+        meta->offset                = offsets[offsetID];
+        meta->length                = offsets[nextOffsetID] - offsets[offsetID];
+        meta->record                = node->buffer.data + meta->offset;
     }
     
     // Note for branching
     u_int32_t treeID = node->bTree.fork.cnid;
     
-    if (node->nodeDescriptor.kind == kBTHeaderNode) {
-        // Only swap the header.  Don't care about user and map.
-        BTHeaderRec *header = (BTHeaderRec*)(node->buffer.data + sizeof(BTNodeDescriptor));
-        swap_BTHeaderRec(header);
-        
-    } else if (node->nodeDescriptor.kind == kBTIndexNode || node->nodeDescriptor.kind == kBTLeafNode) {
-        for (int i = 0; i < node->nodeDescriptor.numRecords; i++) {
-            char* record;
-            off_t offset = offsets[i];
-            record = (node->buffer.data + offset);
+    for (int recordNum = 0; recordNum < node->nodeDescriptor.numRecords; recordNum++) {
+        HFSBTreeNodeRecord *meta = &node->records[recordNum];
+
+        if (node->nodeDescriptor.kind == kBTIndexNode || node->nodeDescriptor.kind == kBTLeafNode) {
+/*
+ Immediately following the keyLength is the key itself. The length of the key is determined by the node type and the B-tree attributes. In leaf nodes, the length is always determined by keyLength. In index nodes, the length depends on the value of the kBTVariableIndexKeysMask bit in the B-tree attributes in the header record. If the bit is clear, the key occupies a constant number of bytes, determined by the maxKeyLength field of the B-tree header record. If the bit is set, the key length is determined by the keyLength field of the keyed record.
+ 
+ Following the key is the record's data. The format of this data depends on the node type, as explained in the next two sections. However, the data is always aligned on a two-byte boundary and occupies an even number of bytes. To meet the first alignment requirement, a pad byte must be inserted between the key and the data if the size of the keyLength field plus the size of the key is odd. To meet the second alignment requirement, a pad byte must be added after the data if the data size is odd.
+
+ http://developer.apple.com/legacy/library/technotes/tn/tn1150.html#KeyedRecords
+ */
             
-            if (treeID == kHFSCatalogFileID) {
-                // Swap keyed catalog records
-                
-                HFSPlusCatalogKey *key = (HFSPlusCatalogKey*)record;
-                swap_HFSPlusCatalogKey(key);
-                
-                u_int16_t key_length = key->keyLength;
-                if (key_length % 2) key_length++;
-                
-                offset += key_length + 2;
-                record = (node->buffer.data + offset);
-                
-                if (node->nodeDescriptor.kind == kBTIndexNode) {
-                    u_int32_t *pointer = (u_int32_t*)record;
-                    *pointer = S32(*pointer);
-                    
-                } else if (node->nodeDescriptor.kind == kBTLeafNode) {
-                    u_int16_t recordKind = *(u_int16_t*)record;
-                    recordKind = S16(recordKind);
-                    
-                    if (recordKind == kHFSPlusFolderRecord) {
-                        swap_HFSPlusCatalogFolder((HFSPlusCatalogFolder*)record);
-                        
-                    } else if (recordKind == kHFSPlusFileRecord) {
-                        swap_HFSPlusCatalogFile((HFSPlusCatalogFile*)record);
-                        
-                    } else if (recordKind == kHFSPlusFolderThreadRecord) {
-                        swap_HFSPlusCatalogThread((HFSPlusCatalogThread*)record);
-                        
-                    } else if (recordKind == kHFSPlusFileThreadRecord) {
-                        swap_HFSPlusCatalogThread((HFSPlusCatalogThread*)record);
-                        
-                    }
-                }
-            } else if (treeID == kHFSExtentsFileID) {
-                // Swap extents records
-                HFSPlusExtentKey *key = (HFSPlusExtentKey*) record;
-                swap_HFSPlusExtentKey(key);
-                
-                u_int16_t key_length = key->keyLength;
-                if (key_length%2) key_length++;
-                
-                offset += key_length + 2;
-                record = (node->buffer.data + offset);
-                
-                if (node->nodeDescriptor.kind == kBTIndexNode) {
-                    u_int32_t *pointer = (u_int32_t*)record;
-                    *pointer = S32(*pointer);
-                    
-                } else if (node->nodeDescriptor.kind == kBTLeafNode) {
-                    // HFSPlusExtentKey + HFSPlusExtentRecord
-                    
-                    swap_HFSPlusExtentRecord(*(HFSPlusExtentRecord*)record);
-                }
-                
-            } else if (treeID == kHFSAttributesFileID) {
-                // Swap attributes records
-                
-            } else {
-                // Error? Ignore and watch the fun?
-                
+            if( !(node->bTree.headerRecord.attributes & kBTBigKeysMask) ) {
+                critical("Only HFS Plus B-Trees are supported.");
             }
+            
+            bool variableKeyLength = false;
+            if (node->nodeDescriptor.kind == kBTLeafNode) {
+                variableKeyLength = true;
+            } else if (node->nodeDescriptor.kind == kBTIndexNode && node->bTree.headerRecord.attributes & kBTVariableIndexKeysMask) {
+                variableKeyLength = true;
+            }
+        
+            if (variableKeyLength) {
+                meta->keyLength = *(u_int16_t*)meta->record;
+                meta->keyLength = S16(meta->keyLength);
+            } else {
+                meta->keyLength = node->bTree.headerRecord.maxKeyLength;
+            }
+            
+            meta->key = meta->record;
+            
+            // Each tree has a different key type.
+            switch (node->bTree.fork.cnid) {
+                case kHFSCatalogFileID:
+                {
+                    if (meta->keyLength < kHFSPlusCatalogKeyMinimumLength) {
+                        meta->keyLength = kHFSPlusCatalogKeyMinimumLength;
+                    } else if (meta->keyLength > kHFSPlusCatalogKeyMaximumLength) {
+                        critical("Invalid key length for catalog record: %d", meta->keyLength);
+                    }
+                    swap_HFSPlusCatalogKey(meta->key);
+                    break;
+                }
+                    
+                case kHFSExtentsFileID:
+                {
+                    if (meta->keyLength != kHFSPlusExtentKeyMaximumLength) {
+                        critical("Invalid key length for extent record: %d", meta->keyLength);
+                    }
+                    swap_HFSPlusExtentKey(meta->key);
+                    break;
+                }
+                    
+                default:
+                    critical("Unhandled tree type: %d", node->bTree.fork.cnid);
+                    break;
+            }
+            
+            if (meta->keyLength % 2) meta->keyLength++; // Round up to an even length.
+            
+            meta->value         = meta->key + sizeof(u_int16_t) + meta->keyLength;
+            meta->valueLength  = meta->length - meta->keyLength;
         }
         
-    } else if (node->nodeDescriptor.kind == kBTMapNode) {
-        // Don't care.  Thanks for playing.
-        
+        switch (node->nodeDescriptor.kind) {
+            case kBTIndexNode:
+            {
+                u_int32_t *pointer = (u_int32_t*)meta->value;
+                *pointer = S32(*pointer);
+                break;
+            }
+                
+            case kBTLeafNode:
+            {
+                switch (node->bTree.fork.cnid) {
+                    case kHFSCatalogFileID:
+                    {
+                        u_int16_t recordKind = *(u_int16_t*)meta->value;
+                        recordKind = S16(recordKind);
+                        
+                        if (recordKind == kHFSPlusFolderRecord) {
+                            swap_HFSPlusCatalogFolder((HFSPlusCatalogFolder*)meta->value);
+                            
+                        } else if (recordKind == kHFSPlusFileRecord) {
+                            swap_HFSPlusCatalogFile((HFSPlusCatalogFile*)meta->value);
+                            
+                        } else if (recordKind == kHFSPlusFolderThreadRecord) {
+                            swap_HFSPlusCatalogThread((HFSPlusCatalogThread*)meta->value);
+                            
+                        } else if (recordKind == kHFSPlusFileThreadRecord) {
+                            swap_HFSPlusCatalogThread((HFSPlusCatalogThread*)meta->value);
+                            
+                        }
+                        break;
+                    }
+                        
+                    case kHFSExtentsFileID:
+                    {
+                        swap_HFSPlusExtentRecord(*(HFSPlusExtentRecord*)meta->value);
+                        break;
+                    }
+                        
+                    default:
+                    {
+                        critical("Unknown tree CNID: %d", treeID);
+                        break;
+                    }
+                }
+                break;
+            }
+                
+            case kBTHeaderNode:
+            {
+                // Only swap the header.  Don't care about user and map.
+                if (recordNum == 0) {
+                    swap_BTHeaderRec(meta->record);
+                }
+                break;
+            }
+                
+            case kBTMapNode:
+            {
+                debug("Ignoring map node.");
+                break;
+            }
+                
+            default:
+            {
+                critical("Unknown node kind: %d", node->nodeDescriptor.kind);
+                break;
+            }
+        }
+//        PrintNodeRecord(node, recordNum);
     }
+    
     return 1;
 }

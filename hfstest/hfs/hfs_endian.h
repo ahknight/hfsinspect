@@ -10,7 +10,6 @@
 #define hfstest_hfs_endian_h
 
 #include <libkern/OSByteOrder.h>
-#include <hfs/hfs_format.h>
 #include "hfs_structs.h"
 
 // Define macros to convert big endian ints to host order.
@@ -29,21 +28,21 @@
 
 #endif
 
-void swap_HFSPlusVolumeHeader(HFSPlusVolumeHeader *vh);
-void swap_HFSPlusForkData(HFSPlusForkData *fork);
-void swap_HFSPlusExtentRecord(HFSPlusExtentRecord record);
-void swap_HFSPlusExtentDescriptor(HFSPlusExtentDescriptor *extent);
-void swap_BTNodeDescriptor(BTNodeDescriptor *node);
-void swap_BTHeaderRec(BTHeaderRec *header);
-void swap_HFSPlusCatalogKey(HFSPlusCatalogKey *key);
-void swap_HFSUniStr255(HFSUniStr255 *unistr);
-void swap_HFSPlusCatalogFolder(HFSPlusCatalogFolder *record);
-void swap_HFSPlusBSDInfo(HFSPlusBSDInfo *record);
-void swap_FndrDirInfo(FndrDirInfo *record);
-void swap_FndrFileInfo(FndrFileInfo *record);
-void swap_FndrOpaqueInfo(FndrOpaqueInfo *record);
-void swap_HFSPlusCatalogFile(HFSPlusCatalogFile *record);
-void swap_HFSPlusCatalogThread(HFSPlusCatalogThread *record);
-int  swap_BTreeNode(HFSBTreeNode *node);
+void swap_HFSPlusVolumeHeader       (HFSPlusVolumeHeader *vh);
+void swap_HFSPlusForkData           (HFSPlusForkData *fork);
+void swap_HFSPlusExtentRecord       (HFSPlusExtentRecord record);
+void swap_HFSPlusExtentDescriptor   (HFSPlusExtentDescriptor *extent);
+void swap_BTNodeDescriptor          (BTNodeDescriptor *node);
+void swap_BTHeaderRec               (BTHeaderRec *header);
+void swap_HFSPlusCatalogKey         (HFSPlusCatalogKey *key);
+void swap_HFSUniStr255              (HFSUniStr255 *unistr);
+void swap_HFSPlusCatalogFolder      (HFSPlusCatalogFolder *record);
+void swap_HFSPlusBSDInfo            (HFSPlusBSDInfo *record);
+void swap_FndrDirInfo               (FndrDirInfo *record);
+void swap_FndrFileInfo              (FndrFileInfo *record);
+void swap_FndrOpaqueInfo            (FndrOpaqueInfo *record);
+void swap_HFSPlusCatalogFile        (HFSPlusCatalogFile *record);
+void swap_HFSPlusCatalogThread      (HFSPlusCatalogThread *record);
+int  swap_BTreeNode                 (HFSBTreeNode *node);
 
 #endif

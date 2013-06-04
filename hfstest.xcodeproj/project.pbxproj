@@ -8,11 +8,15 @@
 
 /* Begin PBXBuildFile section */
 		9B2EE368174D1BD6008A0C54 /* debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B2EE367174D1BD6008A0C54 /* debug.c */; };
+		9B7637F4175785E5000620CE /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637F3175785E5000620CE /* logging.c */; };
+		9B7637F7175E3BEF000620CE /* hfs_btree.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637F6175E3BEF000620CE /* hfs_btree.c */; };
+		9B7637FA175E3C13000620CE /* hfs_io.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637F9175E3C13000620CE /* hfs_io.c */; };
+		9B7637FD175E3D7D000620CE /* hfs_extent_ops.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637FC175E3D7D000620CE /* hfs_extent_ops.c */; };
+		9B763800175E3ED4000620CE /* hfs_catalog_ops.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637FF175E3ED4000620CE /* hfs_catalog_ops.c */; };
+		9B968A5F1756214C00924E12 /* udio.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B80F45D17529B5300D27E85 /* udio.c */; };
 		9BBA85071735AFD400273AE9 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9BBA85061735AFD400273AE9 /* Foundation.framework */; };
 		9BBA850A1735AFD400273AE9 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BBA85091735AFD400273AE9 /* main.c */; };
 		9BBA850E1735AFD400273AE9 /* hfstest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9BBA850D1735AFD400273AE9 /* hfstest.1 */; };
-		9BBA9C59174E8E9C0096D7D2 /* stream.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BBA9C58174E8E9C0096D7D2 /* stream.c */; };
-		9BBA9C5B174E9F580096D7D2 /* cfile.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BBA9C5A174E9F580096D7D2 /* cfile.c */; };
 		9BCD794717428E3800CB9BC4 /* buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BCD793E17428E3800CB9BC4 /* buffer.c */; };
 		9BCD797017457F2000CB9BC4 /* hfs_unicode.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BCD796F17457F2000CB9BC4 /* hfs_unicode.c */; };
 		9BDF325E1736D27500F60671 /* hfs_pstruct.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BDF325D1736D27500F60671 /* hfs_pstruct.c */; };
@@ -36,20 +40,30 @@
 /* Begin PBXFileReference section */
 		9B2EE367174D1BD6008A0C54 /* debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = debug.c; sourceTree = "<group>"; };
 		9B2EE369174D1BDB008A0C54 /* debug.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = debug.h; sourceTree = "<group>"; };
-		9B9686501737774B00F31063 /* hfs_structs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_structs.h; sourceTree = "<group>"; };
+		9B7637F2175785E0000620CE /* logging.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = logging.h; sourceTree = "<group>"; };
+		9B7637F3175785E5000620CE /* logging.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = logging.c; sourceTree = "<group>"; };
+		9B7637F5175E3BEA000620CE /* hfs_btree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_btree.h; sourceTree = "<group>"; };
+		9B7637F6175E3BEF000620CE /* hfs_btree.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_btree.c; sourceTree = "<group>"; };
+		9B7637F8175E3C0E000620CE /* hfs_io.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_io.h; sourceTree = "<group>"; };
+		9B7637F9175E3C13000620CE /* hfs_io.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_io.c; sourceTree = "<group>"; };
+		9B7637FB175E3D78000620CE /* hfs_extent_ops.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_extent_ops.h; sourceTree = "<group>"; };
+		9B7637FC175E3D7D000620CE /* hfs_extent_ops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_extent_ops.c; sourceTree = "<group>"; };
+		9B7637FE175E3ECE000620CE /* hfs_catalog_ops.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_catalog_ops.h; sourceTree = "<group>"; };
+		9B7637FF175E3ED4000620CE /* hfs_catalog_ops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_catalog_ops.c; sourceTree = "<group>"; };
+		9B80F45D17529B5300D27E85 /* udio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udio.c; sourceTree = "<group>"; };
+		9B80F45E17529B5300D27E85 /* udio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = udio.h; sourceTree = "<group>"; };
+		9B9686501737774B00F31063 /* hfs_structs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = hfs_structs.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		9B968A6017565F3C00924E12 /* hfs_plus.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = hfs_plus.c; path = hfs/hfs_plus.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		9B968A62175660C300924E12 /* hfs_plus.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = hfs_plus.h; path = hfs/hfs_plus.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		9BBA85031735AFD400273AE9 /* hfstest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = hfstest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9BBA85061735AFD400273AE9 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		9BBA85091735AFD400273AE9 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = main.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		9BBA850C1735AFD400273AE9 /* hfstest-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = "hfstest-Prefix.pch"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		9BBA850D1735AFD400273AE9 /* hfstest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = hfstest.1; sourceTree = "<group>"; };
-		9BBA9C57174E8E980096D7D2 /* stream.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; path = stream.h; sourceTree = "<group>"; };
-		9BBA9C58174E8E9C0096D7D2 /* stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stream.c; sourceTree = "<group>"; };
-		9BBA9C5A174E9F580096D7D2 /* cfile.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cfile.c; sourceTree = "<group>"; };
-		9BBA9C5C174EAB500096D7D2 /* cfile.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cfile.h; sourceTree = "<group>"; };
 		9BCD793E17428E3800CB9BC4 /* buffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = buffer.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BCD793F17428E3800CB9BC4 /* buffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = buffer.h; sourceTree = "<group>"; };
 		9BCD796E17457F1800CB9BC4 /* hfs_unicode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_unicode.h; sourceTree = "<group>"; };
-		9BCD796F17457F2000CB9BC4 /* hfs_unicode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_unicode.c; sourceTree = "<group>"; };
+		9BCD796F17457F2000CB9BC4 /* hfs_unicode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs_unicode.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BDF325D1736D27500F60671 /* hfs_pstruct.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs_pstruct.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BDF325F1736D28300F60671 /* hfs_pstruct.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_pstruct.h; sourceTree = "<group>"; };
 		9BDF32601736D30700F60671 /* hfs_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_endian.h; sourceTree = "<group>"; };
@@ -71,6 +85,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		9B80F45617529B5300D27E85 /* udio */ = {
+			isa = PBXGroup;
+			children = (
+				9B80F45E17529B5300D27E85 /* udio.h */,
+				9B80F45D17529B5300D27E85 /* udio.c */,
+			);
+			name = udio;
+			path = ../../../udio/src/udio;
+			sourceTree = "<group>";
+		};
 		9BBA84FA1735AFD400273AE9 = {
 			isa = PBXGroup;
 			children = (
@@ -103,11 +127,9 @@
 				9BBA850D1735AFD400273AE9 /* hfstest.1 */,
 				9BDF32631736D34500F60671 /* hfs */,
 				9BCD793C17428E3800CB9BC4 /* buffer */,
-				9BBA9C56174E8E780096D7D2 /* stream */,
+				9B80F45617529B5300D27E85 /* udio */,
 				9BDF3267173759B900F60671 /* Apple */,
 				9BBA850B1735AFD400273AE9 /* Supporting Files */,
-				9B2EE369174D1BDB008A0C54 /* debug.h */,
-				9B2EE367174D1BD6008A0C54 /* debug.c */,
 			);
 			path = hfstest;
 			sourceTree = "<group>";
@@ -115,20 +137,15 @@
 		9BBA850B1735AFD400273AE9 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				9B968A62175660C300924E12 /* hfs_plus.h */,
+				9B968A6017565F3C00924E12 /* hfs_plus.c */,
+				9B2EE369174D1BDB008A0C54 /* debug.h */,
+				9B2EE367174D1BD6008A0C54 /* debug.c */,
 				9BBA850C1735AFD400273AE9 /* hfstest-Prefix.pch */,
+				9B7637F2175785E0000620CE /* logging.h */,
+				9B7637F3175785E5000620CE /* logging.c */,
 			);
 			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
-		9BBA9C56174E8E780096D7D2 /* stream */ = {
-			isa = PBXGroup;
-			children = (
-				9BBA9C57174E8E980096D7D2 /* stream.h */,
-				9BBA9C58174E8E9C0096D7D2 /* stream.c */,
-				9BBA9C5A174E9F580096D7D2 /* cfile.c */,
-				9BBA9C5C174EAB500096D7D2 /* cfile.h */,
-			);
-			path = stream;
 			sourceTree = "<group>";
 		};
 		9BCD793C17428E3800CB9BC4 /* buffer */ = {
@@ -143,9 +160,17 @@
 		9BDF32631736D34500F60671 /* hfs */ = {
 			isa = PBXGroup;
 			children = (
-				9B9686501737774B00F31063 /* hfs_structs.h */,
 				9BDF32641737307700F60671 /* hfs.h */,
 				9BDF32651737307D00F60671 /* hfs.c */,
+				9B9686501737774B00F31063 /* hfs_structs.h */,
+				9B7637F8175E3C0E000620CE /* hfs_io.h */,
+				9B7637F9175E3C13000620CE /* hfs_io.c */,
+				9B7637F5175E3BEA000620CE /* hfs_btree.h */,
+				9B7637F6175E3BEF000620CE /* hfs_btree.c */,
+				9B7637FE175E3ECE000620CE /* hfs_catalog_ops.h */,
+				9B7637FF175E3ED4000620CE /* hfs_catalog_ops.c */,
+				9B7637FB175E3D78000620CE /* hfs_extent_ops.h */,
+				9B7637FC175E3D7D000620CE /* hfs_extent_ops.c */,
 				9BDF32601736D30700F60671 /* hfs_endian.h */,
 				9BDF32611736D30E00F60671 /* hfs_endian.c */,
 				9BDF325F1736D28300F60671 /* hfs_pstruct.h */,
@@ -222,8 +247,12 @@
 				9BCD794717428E3800CB9BC4 /* buffer.c in Sources */,
 				9BCD797017457F2000CB9BC4 /* hfs_unicode.c in Sources */,
 				9B2EE368174D1BD6008A0C54 /* debug.c in Sources */,
-				9BBA9C59174E8E9C0096D7D2 /* stream.c in Sources */,
-				9BBA9C5B174E9F580096D7D2 /* cfile.c in Sources */,
+				9B968A5F1756214C00924E12 /* udio.c in Sources */,
+				9B7637F4175785E5000620CE /* logging.c in Sources */,
+				9B7637F7175E3BEF000620CE /* hfs_btree.c in Sources */,
+				9B7637FA175E3C13000620CE /* hfs_io.c in Sources */,
+				9B7637FD175E3D7D000620CE /* hfs_extent_ops.c in Sources */,
+				9B763800175E3ED4000620CE /* hfs_catalog_ops.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -290,6 +319,10 @@
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "hfstest/hfstest-Prefix.pch";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../udio/src/udio/.libs\"",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -299,6 +332,10 @@
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "hfstest/hfstest-Prefix.pch";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../udio/src/udio/.libs\"",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

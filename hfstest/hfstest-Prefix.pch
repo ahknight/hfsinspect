@@ -2,17 +2,40 @@
 // Prefix header for all source files of the 'hfstest' target in the 'hfstest' project
 //
 
-#ifdef __OBJC__
-	#import <Foundation/Foundation.h>
+// ANSI C
+#include <stdlib.h>
+
+// FILE/printf
+#include <stdio.h>
+
+// POSIX
+#include <unistd.h>
+
+// basename
+#include <libgen.h>
+
+// vaargs
+#include <stdarg.h>
+
+// Wide chars
+#include <wchar.h>
+
+// strcpy, memset, etc.
+#include <strings.h>
+
+// errno/perror
+#include <errno.h>
+
+// Logging
+#include "logging.h"
+
+// Bool
+#include <stdbool.h>
+
+#ifndef	MIN
+#define	MIN(a, b)	((a) < (b) ? (a) : (b))
 #endif
 
-#import <stdlib.h>
-#import <stdio.h>
-#import <unistd.h>
-#import <libgen.h>
-#import "debug.h"
-
-#define out(...)   { fprintf(stdout, __VA_ARGS__); }
-#define error(...) { fprintf(stderr, "%s: ", __FUNCTION__); fprintf(stderr, __VA_ARGS__); }
-#define debug(...) if (getenv("DEBUG")) { fprintf(stderr, "D %s:%d (%s): ", basename(__FILE__), __LINE__, __FUNCTION__); fprintf(stderr, __VA_ARGS__); }
-#define critical(...) { fprintf(stderr, "CRITICAL: %s: ", __FUNCTION__); fprintf(stderr, __VA_ARGS__); if (getenv("DEBUG")) { print_trace(); raise(SIGTRAP); } else { exit(1); } }
+#ifndef	MAX
+#define	MAX(a, b)	((a) > (b) ? (a) : (b))
+#endif

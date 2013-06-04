@@ -96,10 +96,10 @@ typedef const UniChar *		ConstUniCharArrayPtr;
 */
 #if !TYPE_BOOL
 
-enum {
-	false						= 0,
-	true						= 1
-};
+//enum {
+//	false						= 0,
+//	true						= 1
+//};
 
 #endif  /*  !TYPE_BOOL */
 

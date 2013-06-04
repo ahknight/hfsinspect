@@ -10,5 +10,6 @@
 #define hfstest_debug_h
 
 void print_trace (void);
+int stack_depth();
 
 #endif
