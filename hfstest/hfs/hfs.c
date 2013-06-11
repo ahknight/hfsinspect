@@ -24,25 +24,13 @@ int hfs_open(HFSVolume *hfs, const char *path) {
 
 int hfs_load(HFSVolume *hfs) {
     debug("Loading volume with descriptor %u", hfs->fd);
-    Buffer buffer = buffer_alloc(4096); //sizeof(HFSPlusVolumeHeader));
-    
-    ssize_t size;
-    size = fread(buffer.data, 2048, 1, hfs->fp);
 
-    if (size < 1) {
-        perror("read");
-        critical("Cannot read volume.");
-        return -1;
-    }
-    HFSPlusVolumeHeader *vh;
-    vh = (HFSPlusVolumeHeader*)(buffer.data+1024);
-    hfs->vh = *vh;
-    
-    swap_HFSPlusVolumeHeader(&hfs->vh);
+    bool success = hfs_get_HFSPlusVolumeHeader(&hfs->vh, hfs);
+    if (!success) critical("Could not read volume header!");
     
     if (hfs->vh.signature != kHFSPlusSigWord && hfs->vh.signature != kHFSXSigWord) {
         error("not an HFS+ or HFX volume signature: 0x%x", hfs->vh.signature);
-        VisualizeData((void*)buffer.data, buffer.size);
+        VisualizeData((void*)&hfs->vh, sizeof(HFSPlusVolumeHeader));
         errno = EFTYPE;
         return -1;
     }
@@ -50,8 +38,60 @@ int hfs_load(HFSVolume *hfs) {
     return 0;
 }
 
-int hfs_close(const HFSVolume *hfs) {
+int hfs_close(HFSVolume *hfs) {
     debug("Closing volume.");
-    return close(hfs->fd);
+    int result = close(hfs->fd);
+    hfs->fd = 0;
+    hfs->fp = NULL;
+    return result;
 }
 
+#pragma mark Volume Structures
+
+bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFSVolume* hfs)
+{
+    if (hfs->fd) {
+        void* buffer = malloc(4096);
+        
+        ssize_t size;
+//        size = hfs_read_raw(&buffer, hfs, 2048, 0); // Breaks on raw devices.
+        size = fread(buffer, 2048, 1, hfs->fp);
+        
+        if (size < 1) {
+            perror("read");
+            critical("Cannot read volume.");
+            free(buffer);
+            return -1;
+        }
+        
+        *vh = *(HFSPlusVolumeHeader*)(buffer+1024);
+        free(buffer);
+        
+        swap_HFSPlusVolumeHeader(vh);
+        
+        return true;
+    }
+    
+    return false;
+}
+
+bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFSVolume* hfs)
+{
+    if (hfs->vh.journalInfoBlock) {
+        void* buffer = malloc(hfs->vh.blockSize);
+        ssize_t read = hfs_read_blocks(buffer, hfs, 1, hfs->vh.journalInfoBlock);
+        if (read < 0) {
+            perror("read");
+            critical("Read error when fetching journal info block");
+        } else if (read < 1) {
+            critical("Didn't read the whole journal info block!");
+        }
+        *block = *(JournalInfoBlock*)buffer; // copies
+        free(buffer);
+        
+        swap_JournalInfoBlock(block);
+        return true;
+    }
+    
+    return false;
+}

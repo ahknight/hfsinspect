@@ -9,7 +9,7 @@
 #ifndef hfstest_debug_h
 #define hfstest_debug_h
 
-void print_trace (void);
-int stack_depth();
+void print_trace (char* comment, ...);
+int stack_depth(int max);
 
 #endif

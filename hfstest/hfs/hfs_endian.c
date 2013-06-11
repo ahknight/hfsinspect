@@ -59,6 +59,31 @@ void swap_HFSPlusVolumeHeader(HFSPlusVolumeHeader *record)
     swap_HFSPlusForkData(&record->startupFile);
 }
 
+void swap_JournalInfoBlock(JournalInfoBlock* record)
+{
+    /*
+     struct JournalInfoBlock {
+     u_int32_t	flags;
+     u_int32_t       device_signature[8];  // signature used to locate our device.
+     u_int64_t       offset;               // byte offset to the journal on the device
+     u_int64_t       size;                 // size in bytes of the journal
+     uuid_string_t   ext_jnl_uuid;
+     char            machine_serial_num[48];
+     char    	reserved[JIB_RESERVED_SIZE];
+     } __attribute__((aligned(2), packed));
+     typedef struct JournalInfoBlock JournalInfoBlock;
+     */
+    Convert32(record->flags);
+    for (int i = 0; i< 8; i++) {
+        Convert32(record->device_signature[i]);
+    }
+    Convert64(record->offset);
+    Convert64(record->size);
+    // uuid_string_t is a series of char
+    // machine_serial_num is a series of char
+    // reserved is untouchable
+}
+
 void swap_HFSPlusForkData(HFSPlusForkData *record)
 {
     Convert64(record->logicalSize);

@@ -29,6 +29,7 @@
 #endif
 
 void swap_HFSPlusVolumeHeader       (HFSPlusVolumeHeader *vh);
+void swap_JournalInfoBlock          (JournalInfoBlock* record);
 void swap_HFSPlusForkData           (HFSPlusForkData *fork);
 void swap_HFSPlusExtentRecord       (HFSPlusExtentRecord record);
 void swap_HFSPlusExtentDescriptor   (HFSPlusExtentDescriptor *extent);

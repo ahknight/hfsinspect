@@ -13,16 +13,23 @@
 #include <stdlib.h>
 
 /* Obtain a backtrace and print it to stdout. */
-void print_trace (void)
+void print_trace (char* comment, ...)
 {
-    void* callstack[25];
-    int size = backtrace(callstack, 25);
-    backtrace_symbols_fd(callstack, size, STDERR_FILENO);
+    va_list args;
+    va_start(args, comment);
+    
+    if (comment != NULL) { vfprintf(stderr, comment, args); }
+    
+    void* stack[100];
+    int size = backtrace(stack, 100);
+    backtrace_symbols_fd(&stack[1], size - 1, STDERR_FILENO);
+    
+    va_end(args);
 }
 
-int stack_depth()
+int stack_depth(int max)
 {
-    void* stack[40];
-    int size = backtrace(stack, 40);
-    return size;
+    void* stack[max];
+    int size = backtrace(stack, max);
+    return size - 1; // Account for stack_depth's frame
 }

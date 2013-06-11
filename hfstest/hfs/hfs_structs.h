@@ -8,6 +8,7 @@
 
 #include <hfs/hfs_format.h>
 #include "buffer.h"
+#include "hfs_extentlist.h"
 
 #ifndef hfstest_hfs_structs_h
 #define hfstest_hfs_structs_h
@@ -33,6 +34,7 @@ struct HFSFork {
     HFSPlusForkData     forkData;           // Contains the initial extents
     u_int8_t            forkType;           // 0x00: data; 0xFF: resource
     u_int32_t           cnid;               // For extents overflow lookups
+    struct _ExtentList  *extents;           // All known extents
 };
 typedef struct HFSFork HFSFork;
 
@@ -67,5 +69,46 @@ struct HFSBTreeNode {
     HFSBTreeNodeRecord  records[512];
 };
 typedef struct HFSBTreeNode HFSBTreeNode;
+
+
+// For volume statistics
+typedef struct Rank {
+    u_int64_t   measure;
+    hfs_node_id cnid;
+    
+} Rank;
+
+typedef struct ForkSummary {
+    u_int64_t   count;
+    u_int64_t   fragmentedCount;
+    u_int64_t   blockCount;
+    u_int64_t   logicalSpace;
+    u_int64_t   extentRecords;
+    u_int64_t   extentDescriptors;
+    u_int64_t   overflowExtentRecords;
+    u_int64_t   overflowExtentDescriptors;
+    
+} ForkSummary;
+
+typedef struct VolumeSummary {
+    u_int64_t   nodeCount;
+    u_int64_t   recordCount;
+    u_int64_t   fileCount;
+    u_int64_t   folderCount;
+    u_int64_t   aliasCount;
+    u_int64_t   hardLinkFileCount;
+    u_int64_t   hardLinkFolderCount;
+    u_int64_t   symbolicLinkCount;
+    u_int64_t   invisibleFileCount;
+    u_int64_t   emptyFileCount;
+    u_int64_t   emptyDirectoryCount;
+    
+    Rank        largestFiles[10];
+    Rank        mostFragmentedFiles[10];
+    
+    ForkSummary dataFork;
+    ForkSummary resourceFork;
+    
+} VolumeSummary;
 
 #endif

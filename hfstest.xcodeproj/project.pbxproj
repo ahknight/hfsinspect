@@ -7,13 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9B066F1A17622BCD00D84F55 /* stringtools.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B066F1917622BCD00D84F55 /* stringtools.c */; };
 		9B2EE368174D1BD6008A0C54 /* debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B2EE367174D1BD6008A0C54 /* debug.c */; };
+		9B63C6C117614F92005E1411 /* hfs_extentlist.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B63C6C017614F92005E1411 /* hfs_extentlist.c */; };
 		9B7637F4175785E5000620CE /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637F3175785E5000620CE /* logging.c */; };
 		9B7637F7175E3BEF000620CE /* hfs_btree.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637F6175E3BEF000620CE /* hfs_btree.c */; };
 		9B7637FA175E3C13000620CE /* hfs_io.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637F9175E3C13000620CE /* hfs_io.c */; };
 		9B7637FD175E3D7D000620CE /* hfs_extent_ops.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637FC175E3D7D000620CE /* hfs_extent_ops.c */; };
 		9B763800175E3ED4000620CE /* hfs_catalog_ops.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637FF175E3ED4000620CE /* hfs_catalog_ops.c */; };
 		9B968A5F1756214C00924E12 /* udio.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B80F45D17529B5300D27E85 /* udio.c */; };
+		9BB1A65E17628DD900202643 /* range.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BB1A65D17628DD900202643 /* range.c */; };
 		9BBA85071735AFD400273AE9 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9BBA85061735AFD400273AE9 /* Foundation.framework */; };
 		9BBA850A1735AFD400273AE9 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BBA85091735AFD400273AE9 /* main.c */; };
 		9BBA850E1735AFD400273AE9 /* hfstest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9BBA850D1735AFD400273AE9 /* hfstest.1 */; };
@@ -38,8 +41,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		9B066F1817622BC900D84F55 /* stringtools.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stringtools.h; sourceTree = "<group>"; };
+		9B066F1917622BCD00D84F55 /* stringtools.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stringtools.c; sourceTree = "<group>"; };
 		9B2EE367174D1BD6008A0C54 /* debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = debug.c; sourceTree = "<group>"; };
 		9B2EE369174D1BDB008A0C54 /* debug.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = debug.h; sourceTree = "<group>"; };
+		9B63C6BF17614F89005E1411 /* hfs_extentlist.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_extentlist.h; sourceTree = "<group>"; };
+		9B63C6C017614F92005E1411 /* hfs_extentlist.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_extentlist.c; sourceTree = "<group>"; };
 		9B7637F2175785E0000620CE /* logging.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = logging.h; sourceTree = "<group>"; };
 		9B7637F3175785E5000620CE /* logging.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = logging.c; sourceTree = "<group>"; };
 		9B7637F5175E3BEA000620CE /* hfs_btree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_btree.h; sourceTree = "<group>"; };
@@ -55,6 +62,9 @@
 		9B9686501737774B00F31063 /* hfs_structs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = hfs_structs.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		9B968A6017565F3C00924E12 /* hfs_plus.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = hfs_plus.c; path = hfs/hfs_plus.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9B968A62175660C300924E12 /* hfs_plus.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = hfs_plus.h; path = hfs/hfs_plus.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		9BB1A65B17625DC800202643 /* vfs_journal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vfs_journal.h; sourceTree = "<group>"; };
+		9BB1A65C17628DD500202643 /* range.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = range.h; sourceTree = "<group>"; };
+		9BB1A65D17628DD900202643 /* range.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = range.c; sourceTree = "<group>"; };
 		9BBA85031735AFD400273AE9 /* hfstest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = hfstest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9BBA85061735AFD400273AE9 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		9BBA85091735AFD400273AE9 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = main.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
@@ -125,6 +135,10 @@
 			children = (
 				9BBA85091735AFD400273AE9 /* main.c */,
 				9BBA850D1735AFD400273AE9 /* hfstest.1 */,
+				9B066F1817622BC900D84F55 /* stringtools.h */,
+				9B066F1917622BCD00D84F55 /* stringtools.c */,
+				9BB1A65C17628DD500202643 /* range.h */,
+				9BB1A65D17628DD900202643 /* range.c */,
 				9BDF32631736D34500F60671 /* hfs */,
 				9BCD793C17428E3800CB9BC4 /* buffer */,
 				9B80F45617529B5300D27E85 /* udio */,
@@ -171,6 +185,8 @@
 				9B7637FF175E3ED4000620CE /* hfs_catalog_ops.c */,
 				9B7637FB175E3D78000620CE /* hfs_extent_ops.h */,
 				9B7637FC175E3D7D000620CE /* hfs_extent_ops.c */,
+				9B63C6BF17614F89005E1411 /* hfs_extentlist.h */,
+				9B63C6C017614F92005E1411 /* hfs_extentlist.c */,
 				9BDF32601736D30700F60671 /* hfs_endian.h */,
 				9BDF32611736D30E00F60671 /* hfs_endian.c */,
 				9BDF325F1736D28300F60671 /* hfs_pstruct.h */,
@@ -182,6 +198,7 @@
 		9BDF3267173759B900F60671 /* Apple */ = {
 			isa = PBXGroup;
 			children = (
+				9BB1A65B17625DC800202643 /* vfs_journal.h */,
 				9BDF326817375A2400F60671 /* hfs_macos_defs.h */,
 				9BCD796E17457F1800CB9BC4 /* hfs_unicode.h */,
 				9BCD796F17457F2000CB9BC4 /* hfs_unicode.c */,
@@ -253,6 +270,9 @@
 				9B7637FA175E3C13000620CE /* hfs_io.c in Sources */,
 				9B7637FD175E3D7D000620CE /* hfs_extent_ops.c in Sources */,
 				9B763800175E3ED4000620CE /* hfs_catalog_ops.c in Sources */,
+				9B63C6C117614F92005E1411 /* hfs_extentlist.c in Sources */,
+				9B066F1A17622BCD00D84F55 /* stringtools.c in Sources */,
+				9BB1A65E17628DD900202643 /* range.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -14,19 +14,25 @@
 
 HFSBTree hfs_get_catalog_btree(const HFSVolume *hfs)
 {
-    HFSFork fork = make_hfsfork(hfs, hfs->vh.catalogFile, HFSDataForkType, kHFSCatalogFileID);
+    debug("Getting catalog B-Tree");
     
-    HFSBTree tree;
-    hfs_btree_init(&tree, &fork);
-    
-    if (tree.headerRecord.keyCompareType == 0xCF) {
-        // Case Folding (normal; case-insensitive)
-        tree.keyCompare = (hfs_compare_keys)hfs_catalog_compare_keys_cf;
+    static HFSBTree tree = {};
+    if (tree.fork.cnid == 0) {
+        debug("Creating catalog B-Tree");
         
-    } else if (tree.headerRecord.keyCompareType == 0xBC) {
-        // Binary Compare (case-sensitive)
-        tree.keyCompare = (hfs_compare_keys)hfs_catalog_compare_keys_bc;
+        HFSFork fork = hfsfork_make(hfs, hfs->vh.catalogFile, HFSDataForkType, kHFSCatalogFileID);
         
+        hfs_btree_init(&tree, &fork);
+        
+        if (tree.headerRecord.keyCompareType == 0xCF) {
+            // Case Folding (normal; case-insensitive)
+            tree.keyCompare = (hfs_compare_keys)hfs_catalog_compare_keys_cf;
+            
+        } else if (tree.headerRecord.keyCompareType == 0xBC) {
+            // Binary Compare (case-sensitive)
+            tree.keyCompare = (hfs_compare_keys)hfs_catalog_compare_keys_bc;
+            
+        }
     }
     
     return tree;
@@ -35,6 +41,8 @@ HFSBTree hfs_get_catalog_btree(const HFSVolume *hfs)
 // Return is the record type (eg. kHFSPlusFolderRecord) and references to the key and value structs.
 int hfs_get_catalog_leaf_record(HFSPlusCatalogKey* const record_key, void const** record_value, const HFSBTreeNode* node, hfs_record_id recordID)
 {
+    debug("Getting catalog leaf record %d of node %d", recordID, node->nodeNumber);
+    
     if (node->nodeDescriptor.kind != kBTLeafNode) return 0;
     
     const HFSBTreeNodeRecord *record    = &node->records[recordID];
@@ -49,6 +57,8 @@ int hfs_get_catalog_leaf_record(HFSPlusCatalogKey* const record_key, void const*
 
 int8_t hfs_catalog_find_record(HFSBTreeNode *node, hfs_record_id *recordID, const HFSVolume *hfs, hfs_node_id parentFolder, const wchar_t name[256], u_int8_t nameLength)
 {
+    debug("Searching catalog for %d:%ls", parentFolder, name);
+    
     HFSPlusCatalogKey catalogKey = {};
     catalogKey.parentID = parentFolder;
     catalogKey.nodeName = wcstohfsuc(name);
@@ -148,17 +158,20 @@ HFSUniStr255 strtohfsuc(const char* input)
 {
     wchar_t* wide = malloc(256);
     size_t size = mbstowcs(wide, input, 255);
-    HFSUniStr255 output = {};
+    HFSUniStr255 output = {0};
     if (size) {
         output = wcstohfsuc(wide);
     } else {
         error("Conversion error: zero size returned from mbstowcs");
     }
+    free(wide);
     return output;
 }
 
 u_int16_t hfs_get_catalog_record_type (const HFSBTreeNode *node, hfs_record_id i)
 {
+    debug("Getting record type of %d:%d", node->nodeNumber, i);
+    
     if(i >= node->nodeDescriptor.numRecords) return 0;
         
     u_int16_t type = *(u_int16_t*)node->records[i].value;

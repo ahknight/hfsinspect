@@ -15,12 +15,16 @@
 #include "hfs_btree.h"
 #include "hfs_catalog_ops.h"
 #include "hfs_extent_ops.h"
+#include "hfs_extentlist.h"
 #include "hfs_pstruct.h"
 
 #pragma Struct Conveniences
 
 int hfs_open    (HFSVolume *hfs, const char *path);
 int hfs_load    (HFSVolume *hfs);
-int hfs_close   (const HFSVolume *hfs);
+int hfs_close   (HFSVolume *hfs);
+
+bool hfs_get_HFSPlusVolumeHeader    (HFSPlusVolumeHeader* vh, const HFSVolume* hfs);
+bool hfs_get_JournalInfoBlock       (JournalInfoBlock* block, const HFSVolume* hfs);
 
 #endif
