@@ -1,13 +1,13 @@
 //
 //  hfs_endian.h
-//  hfstest
+//  hfsinspect
 //
 //  Created by Adam Knight on 5/5/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#ifndef hfstest_hfs_endian_h
-#define hfstest_hfs_endian_h
+#ifndef hfsinspect_hfs_endian_h
+#define hfsinspect_hfs_endian_h
 
 #include <libkern/OSByteOrder.h>
 #include "hfs_structs.h"

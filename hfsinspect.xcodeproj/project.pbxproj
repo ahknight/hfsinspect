@@ -19,7 +19,7 @@
 		9BB1A65E17628DD900202643 /* range.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BB1A65D17628DD900202643 /* range.c */; };
 		9BBA85071735AFD400273AE9 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9BBA85061735AFD400273AE9 /* Foundation.framework */; };
 		9BBA850A1735AFD400273AE9 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BBA85091735AFD400273AE9 /* main.c */; };
-		9BBA850E1735AFD400273AE9 /* hfstest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9BBA850D1735AFD400273AE9 /* hfstest.1 */; };
+		9BBA850E1735AFD400273AE9 /* hfsinspect.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9BBA850D1735AFD400273AE9 /* hfsinspect.1 */; };
 		9BCD794717428E3800CB9BC4 /* buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BCD793E17428E3800CB9BC4 /* buffer.c */; };
 		9BCD797017457F2000CB9BC4 /* hfs_unicode.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BCD796F17457F2000CB9BC4 /* hfs_unicode.c */; };
 		9BDF325E1736D27500F60671 /* hfs_pstruct.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BDF325D1736D27500F60671 /* hfs_pstruct.c */; };
@@ -34,7 +34,7 @@
 			dstPath = /usr/share/man/man1/;
 			dstSubfolderSpec = 0;
 			files = (
-				9BBA850E1735AFD400273AE9 /* hfstest.1 in CopyFiles */,
+				9BBA850E1735AFD400273AE9 /* hfsinspect.1 in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
@@ -65,11 +65,11 @@
 		9BB1A65B17625DC800202643 /* vfs_journal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vfs_journal.h; sourceTree = "<group>"; };
 		9BB1A65C17628DD500202643 /* range.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = range.h; sourceTree = "<group>"; };
 		9BB1A65D17628DD900202643 /* range.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = range.c; sourceTree = "<group>"; };
-		9BBA85031735AFD400273AE9 /* hfstest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = hfstest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9BBA85031735AFD400273AE9 /* hfsinspect */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = hfsinspect; sourceTree = BUILT_PRODUCTS_DIR; };
 		9BBA85061735AFD400273AE9 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		9BBA85091735AFD400273AE9 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = main.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
-		9BBA850C1735AFD400273AE9 /* hfstest-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = "hfstest-Prefix.pch"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
-		9BBA850D1735AFD400273AE9 /* hfstest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = hfstest.1; sourceTree = "<group>"; };
+		9BBA850C1735AFD400273AE9 /* hfsinspect-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = "hfsinspect-Prefix.pch"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
+		9BBA850D1735AFD400273AE9 /* hfsinspect.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = hfsinspect.1; sourceTree = "<group>"; };
 		9BCD793E17428E3800CB9BC4 /* buffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = buffer.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BCD793F17428E3800CB9BC4 /* buffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = buffer.h; sourceTree = "<group>"; };
 		9BCD796E17457F1800CB9BC4 /* hfs_unicode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_unicode.h; sourceTree = "<group>"; };
@@ -108,7 +108,7 @@
 		9BBA84FA1735AFD400273AE9 = {
 			isa = PBXGroup;
 			children = (
-				9BBA85081735AFD400273AE9 /* hfstest */,
+				9BBA85081735AFD400273AE9 /* hfsinspect */,
 				9BBA85051735AFD400273AE9 /* Frameworks */,
 				9BBA85041735AFD400273AE9 /* Products */,
 			);
@@ -117,7 +117,7 @@
 		9BBA85041735AFD400273AE9 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				9BBA85031735AFD400273AE9 /* hfstest */,
+				9BBA85031735AFD400273AE9 /* hfsinspect */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -130,11 +130,11 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		9BBA85081735AFD400273AE9 /* hfstest */ = {
+		9BBA85081735AFD400273AE9 /* hfsinspect */ = {
 			isa = PBXGroup;
 			children = (
 				9BBA85091735AFD400273AE9 /* main.c */,
-				9BBA850D1735AFD400273AE9 /* hfstest.1 */,
+				9BBA850D1735AFD400273AE9 /* hfsinspect.1 */,
 				9B066F1817622BC900D84F55 /* stringtools.h */,
 				9B066F1917622BCD00D84F55 /* stringtools.c */,
 				9BB1A65C17628DD500202643 /* range.h */,
@@ -145,6 +145,7 @@
 				9BDF3267173759B900F60671 /* Apple */,
 				9BBA850B1735AFD400273AE9 /* Supporting Files */,
 			);
+			name = hfsinspect;
 			path = hfstest;
 			sourceTree = "<group>";
 		};
@@ -155,7 +156,7 @@
 				9B968A6017565F3C00924E12 /* hfs_plus.c */,
 				9B2EE369174D1BDB008A0C54 /* debug.h */,
 				9B2EE367174D1BD6008A0C54 /* debug.c */,
-				9BBA850C1735AFD400273AE9 /* hfstest-Prefix.pch */,
+				9BBA850C1735AFD400273AE9 /* hfsinspect-Prefix.pch */,
 				9B7637F2175785E0000620CE /* logging.h */,
 				9B7637F3175785E5000620CE /* logging.c */,
 			);
@@ -209,9 +210,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		9BBA85021735AFD400273AE9 /* hfstest */ = {
+		9BBA85021735AFD400273AE9 /* hfsinspect */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 9BBA85111735AFD400273AE9 /* Build configuration list for PBXNativeTarget "hfstest" */;
+			buildConfigurationList = 9BBA85111735AFD400273AE9 /* Build configuration list for PBXNativeTarget "hfsinspect" */;
 			buildPhases = (
 				9BBA84FF1735AFD400273AE9 /* Sources */,
 				9BBA85001735AFD400273AE9 /* Frameworks */,
@@ -221,9 +222,9 @@
 			);
 			dependencies = (
 			);
-			name = hfstest;
+			name = hfsinspect;
 			productName = hfstest;
-			productReference = 9BBA85031735AFD400273AE9 /* hfstest */;
+			productReference = 9BBA85031735AFD400273AE9 /* hfsinspect */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -235,7 +236,7 @@
 				LastUpgradeCheck = 0460;
 				ORGANIZATIONNAME = "Adam Knight";
 			};
-			buildConfigurationList = 9BBA84FE1735AFD400273AE9 /* Build configuration list for PBXProject "hfstest" */;
+			buildConfigurationList = 9BBA84FE1735AFD400273AE9 /* Build configuration list for PBXProject "hfsinspect" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -247,7 +248,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				9BBA85021735AFD400273AE9 /* hfstest */,
+				9BBA85021735AFD400273AE9 /* hfsinspect */,
 			);
 		};
 /* End PBXProject section */
@@ -338,12 +339,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "hfstest/hfstest-Prefix.pch";
+				GCC_PREFIX_HEADER = "hfstest/hfsinspect-Prefix.pch";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/../../udio/src/udio/.libs\"",
 				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = hfsinspect;
 			};
 			name = Debug;
 		};
@@ -351,19 +352,19 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "hfstest/hfstest-Prefix.pch";
+				GCC_PREFIX_HEADER = "hfstest/hfsinspect-Prefix.pch";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/../../udio/src/udio/.libs\"",
 				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = hfsinspect;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		9BBA84FE1735AFD400273AE9 /* Build configuration list for PBXProject "hfstest" */ = {
+		9BBA84FE1735AFD400273AE9 /* Build configuration list for PBXProject "hfsinspect" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				9BBA850F1735AFD400273AE9 /* Debug */,
@@ -372,7 +373,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		9BBA85111735AFD400273AE9 /* Build configuration list for PBXNativeTarget "hfstest" */ = {
+		9BBA85111735AFD400273AE9 /* Build configuration list for PBXNativeTarget "hfsinspect" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				9BBA85121735AFD400273AE9 /* Debug */,

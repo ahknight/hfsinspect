@@ -1,13 +1,13 @@
 //
 //  hfs_plus.h
-//  hfstest
+//  hfsinspect
 //
 //  Created by Adam Knight on 5/29/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#ifndef hfstest_hfs_plus_h
-#define hfstest_hfs_plus_h
+#ifndef hfsinspect_hfs_plus_h
+#define hfsinspect_hfs_plus_h
 
 #include "udio.h"
 #include <stdbool.h>

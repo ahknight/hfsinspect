@@ -1,13 +1,13 @@
 //
 //  hfs_catalog_ops.h
-//  hfstest
+//  hfsinspect
 //
 //  Created by Adam Knight on 6/4/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#ifndef hfstest_hfs_catalog_ops_h
-#define hfstest_hfs_catalog_ops_h
+#ifndef hfsinspect_hfs_catalog_ops_h
+#define hfsinspect_hfs_catalog_ops_h
 
 #include "hfs_structs.h"
 

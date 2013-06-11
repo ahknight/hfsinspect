@@ -1,13 +1,13 @@
 //
 //  range.h
-//  hfstest
+//  hfsinspect
 //
 //  Created by Adam Knight on 6/7/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#ifndef hfstest_range_h
-#define hfstest_range_h
+#ifndef hfsinspect_range_h
+#define hfsinspect_range_h
 
 #pragma mark Range Helpers
 

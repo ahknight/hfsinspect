@@ -1,6 +1,6 @@
 //
 //  hfs_unicode.c
-//  hfstest
+//  hfsinspect
 //
 //  Created by Adam Knight on 5/16/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.

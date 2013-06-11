@@ -1,6 +1,6 @@
 //
 //  hfs_structs.h
-//  hfstest
+//  hfsinspect
 //
 //  Created by Adam Knight on 5/6/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
@@ -10,8 +10,8 @@
 #include "buffer.h"
 #include "hfs_extentlist.h"
 
-#ifndef hfstest_hfs_structs_h
-#define hfstest_hfs_structs_h
+#ifndef hfsinspect_hfs_structs_h
+#define hfsinspect_hfs_structs_h
 
 typedef u_int8_t    hfs_fork_type;
 typedef u_int32_t   hfs_block;

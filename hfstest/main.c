@@ -1,6 +1,6 @@
 //
 //  main.c
-//  hfstest
+//  hfsinspect
 //
 //  Created by Adam Knight on 5/4/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
@@ -67,16 +67,17 @@ VolumeSummary generateVolumeSummary(HFSVolume* hfs)
                     HFSPlusCatalogFile *file = ((HFSPlusCatalogFile*)record->value);
                     
                     // hard link
-                    if (file->flags & kHFSHasLinkChainMask) { summary.hardLinkFileCount++; }
+                    if (file->userInfo.fdType == kHardLinkFileType) { summary.hardLinkFileCount++; }
+                    
+                    // symlink
+                    if (file->userInfo.fdType == kSymLinkFileType) { summary.symbolicLinkCount++; }
                     
                     // alias
                     if (file->userInfo.fdType == 'alis') { summary.aliasCount++; }
                     
-                    // symlink
-                    if (file->userInfo.fdType == 'slnk') { summary.symbolicLinkCount++; }
-                    
                     if (file->dataFork.logicalSize == 0 && file->resourceFork.logicalSize == 0) {
                         summary.emptyFileCount++;
+                        
                     } else {
                         if (file->dataFork.logicalSize) {
                             summary.dataFork.count++;
@@ -89,7 +90,6 @@ VolumeSummary generateVolumeSummary(HFSVolume* hfs)
                                 
                                 // TODO: Find all extent records
                             }
-                            
                         }
                         
                         if (file->resourceFork.logicalSize) {

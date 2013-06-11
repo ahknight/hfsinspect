@@ -1,13 +1,13 @@
 //
 //  hfs_extentlist.h
-//  hfstest
+//  hfsinspect
 //
 //  Created by Adam Knight on 6/6/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#ifndef hfstest_hfs_extentlist_h
-#define hfstest_hfs_extentlist_h
+#ifndef hfsinspect_hfs_extentlist_h
+#define hfsinspect_hfs_extentlist_h
 
 #include "hfs_structs.h"
 #include <sys/queue.h>

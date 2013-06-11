@@ -1,13 +1,13 @@
 //
 //  hfs_unicode.h
-//  hfstest
+//  hfsinspect
 //
 //  Created by Adam Knight on 5/16/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#ifndef hfstest_hfs_unicode_h
-#define hfstest_hfs_unicode_h
+#ifndef hfsinspect_hfs_unicode_h
+#define hfsinspect_hfs_unicode_h
 
 /*
  * Copyright (c) 2000-2002, 2005 Apple Computer, Inc. All rights reserved.

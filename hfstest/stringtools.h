@@ -1,13 +1,13 @@
 //
 //  stringtools.h
-//  hfstest
+//  hfsinspect
 //
 //  Created by Adam Knight on 6/7/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#ifndef hfstest_stringtools_h
-#define hfstest_stringtools_h
+#ifndef hfsinspect_stringtools_h
+#define hfsinspect_stringtools_h
 
 // repeat character
 char* repchar(char c, int count);

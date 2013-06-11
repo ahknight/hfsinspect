@@ -1,6 +1,6 @@
 //
 //  hfs_pstruct.c
-//  hfstest
+//  hfsinspect
 //
 //  Created by Adam Knight on 5/5/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
@@ -31,7 +31,7 @@
 #define _PrintUIOct(label, value)               _PrintAttributeString(label, "%06o", value)
 #define PrintUIOct(record, value)               _PrintUIOct(#value, record->value)
 
-#define _PrintUIHex(label, value)               _PrintAttributeString(label, "%#X", value)
+#define _PrintUIHex(label, value)               _PrintAttributeString(label, "%#x", value)
 #define PrintUIHex(record, value)               _PrintUIHex(#value, record->value)
 
 #define PrintRawAttribute(record, value, base)  _PrintRawAttribute(#value, &(record->value), sizeof(record->value), base)
@@ -45,7 +45,7 @@
 #define PrintHFSTimestamp(record, value)        _PrintHFSTimestamp(#value, record->value)
 
 #define PrintOctFlag(label, value)              _PrintSubattributeString("%06o (%s)", value, label)
-#define PrintHexFlag(label, value)              _PrintSubattributeString("%s (%#X)", label, value)
+#define PrintHexFlag(label, value)              _PrintSubattributeString("%s (%#x)", label, value)
 #define PrintIntFlag(label, value)              _PrintSubattributeString("%s (%llu)", label, (u_int64_t)value)
 
 #define PrintUIFlagIfSet(source, flag)          { if (((u_int64_t)(source)) & (((u_int64_t)1) << ((u_int64_t)(flag)))) PrintIntFlag(#flag, flag); }

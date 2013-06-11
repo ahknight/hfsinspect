@@ -1,13 +1,13 @@
 //
 //  hfs_io.h
-//  hfstest
+//  hfsinspect
 //
 //  Created by Adam Knight on 6/4/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#ifndef hfstest_hfs_io_h
-#define hfstest_hfs_io_h
+#ifndef hfsinspect_hfs_io_h
+#define hfsinspect_hfs_io_h
 
 #include "hfs_structs.h"
 

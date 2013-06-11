@@ -1,13 +1,13 @@
 //
 //  logging.h
-//  hfstest
+//  hfsinspect
 //
 //  Created by Adam Knight on 5/30/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#ifndef hfstest_logging_h
-#define hfstest_logging_h
+#ifndef hfsinspect_logging_h
+#define hfsinspect_logging_h
 
 #include "debug.h"
 
