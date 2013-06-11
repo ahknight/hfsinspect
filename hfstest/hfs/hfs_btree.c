@@ -39,8 +39,7 @@ ssize_t hfs_btree_init(HFSBTree *tree, const HFSFork *fork)
     
     // If there's a header record, we'll likely want that as well.
     if (tree->nodeDescriptor.numRecords > 0) {
-        buffer_zero(&buffer);
-        buffer.offset = 0;
+        buffer_reset(&buffer);
         
         size2 = hfs_read_fork_range(&buffer, fork, sizeof(BTHeaderRec), sizeof(BTNodeDescriptor));
         tree->headerRecord = *( (BTHeaderRec*) buffer.data);
@@ -78,7 +77,7 @@ int8_t hfs_btree_get_node (HFSBTreeNode *out_node, const HFSBTree *tree, hfs_nod
     
 //    debug("Reading %zu bytes at logical offset %u", node->nodeSize, node->nodeOffset);
     ssize_t result = 0;
-    result = hfs_read_fork_new(node->buffer.data, &tree->fork, node_size, start_block);
+    result = hfs_read_fork(node->buffer.data, &tree->fork, node_size, start_block);
     
     if (result < 0) {
         error("Error reading from fork.");

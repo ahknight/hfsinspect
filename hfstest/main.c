@@ -158,7 +158,7 @@ VolumeSummary generateVolumeSummary(HFSVolume* hfs)
             free(size);
         }
         
-        if (count >= 10000) break;
+//        if (count >= 10000) break;
         
     }
     
@@ -320,6 +320,15 @@ int main(int argc, char **argv)
         error("could not open %s", path);
         perror("hfs_open");
         exit(errno);
+    }
+    
+    // If we're root, drop down.
+    if (getuid() == 0) {
+        if (setgid(99) != 0)
+            critical("Failed to drop group privs.");
+        if (setuid(99) != 0)
+            critical("Failed to drop user privs.");
+        info("Was running as root.  Now running as %u/%u.", getuid(), getgid());
     }
     
     if (-1 == hfs_load(&hfs)) {
@@ -552,7 +561,8 @@ ssize_t extractFork(const HFSFork* fork, const char* extractPath)
     while ( offset < fork->forkData.logicalSize ) {
         info("Remaining: %zu bytes", fork->forkData.logicalSize - offset);
         
-        chunk.offset = 0;
+        buffer_reset(&chunk);
+        
         ssize_t size = hfs_read_fork_range(&chunk, fork, chunkSize, offset);
         if (size < 1) {
             perror("extractFork");

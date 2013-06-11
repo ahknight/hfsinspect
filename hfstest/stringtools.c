@@ -87,12 +87,6 @@ char* memstr(const char* buf, size_t length, u_int8_t base)
     return result;
 }
 
-// Generate a hexadecimal representation of a buffer.
-char* hrep(const char* buf, size_t length)
-{
-    return memstr(buf, length, 16);
-}
-
 // Print a classic memory dump with configurable base and grouping.
 void memdump(const char* data, size_t length, u_int8_t base, u_int8_t gsize, u_int8_t gcount)
 {

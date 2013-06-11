@@ -25,34 +25,47 @@
 #include "hfs.h"
 #include "vfs_journal.h"
 
-#define PrintUI(x, y)                   _PrintUI64(#y, (u_int64_t)x->y)
-#define PrintBase(x, y, base)           _PrintBase(#y, &(x->y), sizeof(x->y), base)
-#define PrintBinary(x, y)               PrintBase(x, y, 2)
-#define PrintOct(x, y)                  PrintBase(x, y, 8)
-#define PrintHex(x, y)                  PrintBase(x, y, 16)
-#define PrintHFSChar(x, y)              _PrintHFSChar(#y, &(x->y), sizeof(x->y))
-#define PrintDataLength(x, y)           _PrintDataLength(#y, (u_int64_t)x->y)
-#define PrintHFSBlocks(x, y)            _PrintHFSBlocks(#y, x->y)
-#define PrintHFSTimestamp(x, y)         _PrintHFSTimestamp(#y, x->y)
-#define PrintFlagIfSet(source, flag)    if ((u_int64_t)(source) & ((u_int64_t)1 << (flag))) _PrintSubattributeString("%s (%u)", #flag, flag);
-#define PrintFlagIfMatch(source, flag)  if (source & flag) _PrintSubattributeString("%s (%u)", #flag, flag);
-#define PrintFlagOctIfMatch(source, flag)  if (source & flag) _PrintSubattributeString("%s (%o)", #flag, flag);
-#define PrintFlagHexIfMatch(source, flag)  if (source & flag) _PrintSubattributeString("%s (0x%x)", #flag, flag);
-#define PrintConstIfEqual(source, c)    if (source == c) _PrintSubattributeString("%s (%u)", #c, c);
+#define _PrintUI(label, value)                  _PrintAttributeString(label, "%llu", (u_int64_t)value);
+#define PrintUI(record, value)                  _PrintUI(#value, record->value)
+
+#define _PrintUIOct(label, value)               _PrintAttributeString(label, "%06o", value)
+#define PrintUIOct(record, value)               _PrintUIOct(#value, record->value)
+
+#define _PrintUIHex(label, value)               _PrintAttributeString(label, "%#X", value)
+#define PrintUIHex(record, value)               _PrintUIHex(#value, record->value)
+
+#define PrintRawAttribute(record, value, base)  _PrintRawAttribute(#value, &(record->value), sizeof(record->value), base)
+#define PrintBinaryDump(record, value)          PrintRawAttribute(record, value, 2)
+#define PrintOctalDump(record, value)           PrintRawAttribute(record, value, 8)
+#define PrintHexDump(record, value)             PrintRawAttribute(record, value, 16)
+
+#define PrintDataLength(record, value)          _PrintDataLength(#value, (u_int64_t)record->value)
+#define PrintHFSBlocks(record, value)           _PrintHFSBlocks(#value, record->value)
+#define PrintHFSChar(record, value)             _PrintHFSChar(#value, &(record->value), sizeof(record->value))
+#define PrintHFSTimestamp(record, value)        _PrintHFSTimestamp(#value, record->value)
+
+#define PrintOctFlag(label, value)              _PrintSubattributeString("%06o (%s)", value, label)
+#define PrintHexFlag(label, value)              _PrintSubattributeString("%s (%#X)", label, value)
+#define PrintIntFlag(label, value)              _PrintSubattributeString("%s (%llu)", label, (u_int64_t)value)
+
+#define PrintUIFlagIfSet(source, flag)          { if (((u_int64_t)(source)) & (((u_int64_t)1) << ((u_int64_t)(flag)))) PrintIntFlag(#flag, flag); }
+
+#define PrintUIFlagIfMatch(source, flag)        { if ((source) & flag) PrintIntFlag(#flag, flag); }
+#define PrintUIOctFlagIfMatch(source, flag)     { if ((source) & flag) PrintOctFlag(#flag, flag); }
+#define PrintUIHexFlagIfMatch(source, flag)     { if ((source) & flag) PrintHexFlag(#flag, flag); }
+
+#define PrintConstIfEqual(source, c)            { if ((source) == c)   PrintIntFlag(#c, c); }
+#define PrintConstOctIfEqual(source, c)         { if ((source) == c)   PrintOctFlag(#c, c); }
+#define PrintConstHexIfEqual(source, c)         { if ((source) == c)   PrintHexFlag(#c, c); }
 
 void _PrintString               (const char* label, const char* value_format, ...);
 void _PrintHeaderString         (const char* value_format, ...);
 void _PrintAttributeString      (const char* label, const char* value_format, ...);
 void _PrintSubattributeString   (const char* str, ...);
 
-void _PrintUI32                 (const char* label, u_int32_t i);
-void _PrintUI64                 (const char* label, u_int64_t i);
-void _PrintBase                 (const char* label, const void* map, size_t size, char base);
+void _PrintRawAttribute         (const char* label, const void* map, size_t size, char base);
 
-void _PrintBinary               (const char* label, const void* map, size_t size);
-void _PrintUI64Hex              (const char* label, u_int64_t i);
 void _PrintDataLength           (const char* label, u_int64_t size);
-
 void _PrintHFSBlocks            (const char* label, u_int64_t blocks);
 void _PrintHFSChar              (const char* label, const void* i, size_t nbytes);
 void _PrintHFSTimestamp         (const char* label, u_int32_t timestamp);
@@ -114,26 +127,6 @@ void _PrintSubattributeString(const char* str, ...)
 
 #pragma mark Value Print Functions
 
-void _PrintUI32 (const char* label, u_int32_t i)
-{
-    _PrintAttributeString(label, "%u", i);
-}
-
-void _PrintUI64 (const char* label, u_int64_t i)
-{
-    _PrintAttributeString(label, "%llu", i);
-}
-
-void _PrintUI64Oct (const char* label, u_int64_t i)
-{
-    _PrintAttributeString(label, "%llo", i);
-}
-
-void _PrintUI64Hex (const char* label, u_int64_t i)
-{
-    _PrintBase(label, &i, sizeof(i), 16);
-}
-
 void _PrintHFSBlocks(const char *label, u_int64_t blocks)
 {
     size_t displaySize = blocks * volume.vh.blockSize;
@@ -150,12 +143,7 @@ void _PrintDataLength(const char *label, u_int64_t size)
     free(sizeLabel);
 }
 
-void _PrintBinary(const char* label, const void* map, size_t size)
-{
-    _PrintBase(label, map, size, 2);
-}
-
-void _PrintBase(const char* label, const void* map, size_t size, char base)
+void _PrintRawAttribute(const char* label, const void* map, size_t size, char base)
 {
     unsigned segmentLength = 32;
     char* str = memstr(map, size, base);
@@ -201,7 +189,7 @@ void _PrintHFSChar(const char* label, const void* i, size_t nbytes)
     str[nbytes] = '\0';
     
     // Grab the hex representation of the input.
-    char* hex = hrep(i, nbytes);
+    char* hex = memstr(i, nbytes, 16);
     
     _PrintAttributeString(label, "0x%s (%s)", hex, str);
     
@@ -227,75 +215,75 @@ void PrintVolumeHeader(const HFSPlusVolumeHeader *vh)
     PrintHFSChar    (vh,    signature);
     PrintUI         (vh,    version);
 
-	PrintBinary         (vh,                attributes);
-    PrintFlagIfMatch    (vh->attributes,    kHFSVolumeHardwareLockMask);
-    PrintFlagIfMatch    (vh->attributes,    kHFSVolumeUnmountedMask);
-    PrintFlagIfMatch    (vh->attributes,    kHFSVolumeSparedBlocksMask);
-    PrintFlagIfMatch    (vh->attributes,    kHFSVolumeNoCacheRequiredMask);
-    PrintFlagIfMatch    (vh->attributes,    kHFSBootVolumeInconsistentMask);
-    PrintFlagIfMatch    (vh->attributes,    kHFSCatalogNodeIDsReusedMask);
-    PrintFlagIfMatch    (vh->attributes,    kHFSVolumeJournaledMask);
-    PrintFlagIfMatch    (vh->attributes,    kHFSVolumeInconsistentMask);
-    PrintFlagIfMatch    (vh->attributes,    kHFSVolumeSoftwareLockMask);
-    PrintFlagIfMatch    (vh->attributes,    kHFSUnusedNodeFixMask);
-    PrintFlagIfMatch    (vh->attributes,    kHFSContentProtectionMask);
-    PrintFlagIfMatch    (vh->attributes,    kHFSMDBAttributesMask);
+	PrintBinaryDump         (vh,                attributes);
+    PrintUIFlagIfMatch      (vh->attributes,    kHFSVolumeHardwareLockMask);
+    PrintUIFlagIfMatch      (vh->attributes,    kHFSVolumeUnmountedMask);
+    PrintUIFlagIfMatch      (vh->attributes,    kHFSVolumeSparedBlocksMask);
+    PrintUIFlagIfMatch      (vh->attributes,    kHFSVolumeNoCacheRequiredMask);
+    PrintUIFlagIfMatch      (vh->attributes,    kHFSBootVolumeInconsistentMask);
+    PrintUIFlagIfMatch      (vh->attributes,    kHFSCatalogNodeIDsReusedMask);
+    PrintUIFlagIfMatch      (vh->attributes,    kHFSVolumeJournaledMask);
+    PrintUIFlagIfMatch      (vh->attributes,    kHFSVolumeInconsistentMask);
+    PrintUIFlagIfMatch      (vh->attributes,    kHFSVolumeSoftwareLockMask);
+    PrintUIFlagIfMatch      (vh->attributes,    kHFSUnusedNodeFixMask);
+    PrintUIFlagIfMatch      (vh->attributes,    kHFSContentProtectionMask);
+    PrintUIFlagIfMatch      (vh->attributes,    kHFSMDBAttributesMask);
     
-    PrintHFSChar        (vh,    lastMountedVersion);
-	PrintUI             (vh,    journalInfoBlock);
-    PrintHFSTimestamp   (vh,    createDate);
-    PrintHFSTimestamp   (vh,    modifyDate);
-    PrintHFSTimestamp   (vh,    backupDate);
-    PrintHFSTimestamp   (vh,    checkedDate);
-    PrintUI             (vh,    fileCount);
-	PrintUI             (vh,    folderCount);
-	PrintDataLength     (vh,    blockSize);
-	PrintHFSBlocks      (vh,    totalBlocks);
-	PrintHFSBlocks      (vh,    freeBlocks);
-    PrintUI             (vh,    nextAllocation);
-    PrintDataLength     (vh,    rsrcClumpSize);
-    PrintDataLength     (vh,    dataClumpSize);
-    PrintUI             (vh,    nextCatalogID);
-    PrintUI             (vh,    writeCount);
+    PrintHFSChar            (vh,    lastMountedVersion);
+	PrintUI                 (vh,    journalInfoBlock);
+    PrintHFSTimestamp       (vh,    createDate);
+    PrintHFSTimestamp       (vh,    modifyDate);
+    PrintHFSTimestamp       (vh,    backupDate);
+    PrintHFSTimestamp       (vh,    checkedDate);
+    PrintUI                 (vh,    fileCount);
+	PrintUI                 (vh,    folderCount);
+	PrintDataLength         (vh,    blockSize);
+	PrintHFSBlocks          (vh,    totalBlocks);
+	PrintHFSBlocks          (vh,    freeBlocks);
+    PrintUI                 (vh,    nextAllocation);
+    PrintDataLength         (vh,    rsrcClumpSize);
+    PrintDataLength         (vh,    dataClumpSize);
+    PrintUI                 (vh,    nextCatalogID);
+    PrintUI                 (vh,    writeCount);
     
-    PrintBinary         (vh,                    encodingsBitmap);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacRoman);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacJapanese);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacChineseTrad);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacKorean);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacArabic);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacHebrew);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacGreek);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacCyrillic);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacDevanagari);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacGurmukhi);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacGujarati);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacOriya);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacBengali);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacTamil);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacTelugu);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacKannada);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacMalayalam);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacSinhalese);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacBurmese);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacKhmer);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacThai);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacLaotian);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacGeorgian);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacArmenian);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacChineseSimp);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacTibetan);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacMongolian);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacEthiopic);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacCentralEurRoman);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacVietnamese);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacExtArabic);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacSymbol);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacDingbats);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacTurkish);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacCroatian);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacIcelandic);
-    PrintFlagIfSet      (vh->encodingsBitmap,   kTextEncodingMacRomanian);
+    PrintBinaryDump         (vh,                    encodingsBitmap);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacRoman);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacJapanese);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacChineseTrad);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacKorean);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacArabic);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacHebrew);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacGreek);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacCyrillic);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacDevanagari);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacGurmukhi);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacGujarati);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacOriya);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacBengali);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacTamil);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacTelugu);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacKannada);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacMalayalam);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacSinhalese);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacBurmese);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacKhmer);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacThai);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacLaotian);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacGeorgian);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacArmenian);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacChineseSimp);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacTibetan);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacMongolian);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacEthiopic);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacCentralEurRoman);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacVietnamese);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacExtArabic);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacSymbol);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacDingbats);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacTurkish);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacCroatian);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacIcelandic);
+    PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacRomanian);
     if (vh->encodingsBitmap & ((u_int64_t)1 << 49)) _PrintSubattributeString("%s (%u)", "kTextEncodingMacFarsi", 49);
     if (vh->encodingsBitmap & ((u_int64_t)1 << 48)) _PrintSubattributeString("%s (%u)", "kTextEncodingMacUkrainian", 48);
 
@@ -304,16 +292,16 @@ void PrintVolumeHeader(const HFSPlusVolumeHeader *vh)
     // The HFS+ documentation says this is an 8-member array of UI32s.
     // It's a 32-member array of UI8s according to their struct.
     
-    _PrintUI32          ("bootDirID",           OSReadBigInt32(&vh->finderInfo, 0));
-    _PrintUI32          ("bootParentID",        OSReadBigInt32(&vh->finderInfo, 4));
-    _PrintUI32          ("openWindowDirID",     OSReadBigInt32(&vh->finderInfo, 8));
-    _PrintUI32          ("os9DirID",            OSReadBigInt32(&vh->finderInfo, 12));
+    _PrintUI            ("bootDirID",           OSReadBigInt32(&vh->finderInfo, 0));
+    _PrintUI            ("bootParentID",        OSReadBigInt32(&vh->finderInfo, 4));
+    _PrintUI            ("openWindowDirID",     OSReadBigInt32(&vh->finderInfo, 8));
+    _PrintUI            ("os9DirID",            OSReadBigInt32(&vh->finderInfo, 12));
     {
         u_int32_t reserved = OSReadBigInt32(&vh->finderInfo, 16);
-        _PrintBinary     ("reserved", &reserved, sizeof(reserved));
+        _PrintRawAttribute("reserved", &reserved, sizeof(reserved), 2);
     }
-    _PrintUI32          ("osXDirID",            OSReadBigInt32(&vh->finderInfo, 20));
-    _PrintUI64Hex       ("volID",               OSReadBigInt64(&vh->finderInfo, 24));
+    _PrintUI            ("osXDirID",            OSReadBigInt32(&vh->finderInfo, 20));
+    _PrintUIHex         ("volID",               OSReadBigInt64(&vh->finderInfo, 24));
     
     if (vh->attributes & kHFSVolumeJournaledMask) {
         if (vh->journalInfoBlock) {
@@ -439,7 +427,7 @@ void PrintBTHeaderRecord(const BTHeaderRec *hr)
 	PrintUI         (hr, leafRecords);
 	PrintUI         (hr, firstLeafNode);
 	PrintUI         (hr, lastLeafNode);
-	PrintHFSBlocks  (hr, nodeSize);
+	PrintDataLength (hr, nodeSize);
 	PrintUI         (hr, maxKeyLength);
 	PrintUI         (hr, totalNodes);
 	PrintUI         (hr, freeNodes);
@@ -463,8 +451,8 @@ void PrintBTHeaderRecord(const BTHeaderRec *hr)
                 _PrintAttributeString("btreeType", "%s (%u)", att_names[i], att_values[i]);
         }
     }
-	PrintHex        (hr,    keyCompareType);
-	PrintBinary     (hr,    attributes);
+	PrintHexDump        (hr,    keyCompareType);
+	PrintBinaryDump     (hr,    attributes);
     
     {
         u_int64_t attributes = hr->attributes;
@@ -518,7 +506,7 @@ void PrintHFSPlusBSDInfo(const HFSPlusBSDInfo *record)
         "append (superuser)",
     };
     
-    PrintOct(record, adminFlags);
+    PrintUIOct(record, adminFlags);
     
     for (int i = 0; i < 10; i++) {
         u_int8_t flag = record->adminFlags;
@@ -527,7 +515,7 @@ void PrintHFSPlusBSDInfo(const HFSPlusBSDInfo *record)
         }
     }
     
-    PrintOct(record, ownerFlags);
+    PrintUIOct(record, ownerFlags);
     
     for (int i = 0; i < 10; i++) {
         u_int8_t flag = record->ownerFlags;
@@ -536,77 +524,105 @@ void PrintHFSPlusBSDInfo(const HFSPlusBSDInfo *record)
         }
     }
     
-    PrintOct(record, fileMode);
+    PrintUIOct(record, fileMode);
     
     u_int16_t mode = record->fileMode;
+    char modeString[11] = "";
     
     if (S_ISBLK(mode)) {
-        _PrintSubattributeString("%05o block special", S_IFBLK);
+        modeString[0] = 'b';
     }
     if (S_ISCHR(mode)) {
-        _PrintSubattributeString("%05o character special", S_IFCHR);
+        modeString[0] = 'c';
     }
     if (S_ISDIR(mode)) {
-        _PrintSubattributeString("%05o directory", S_IFDIR);
+        modeString[0] = 'd';
     }
     if (S_ISFIFO(mode)) {
-        _PrintSubattributeString("%05o named pipe", S_IFIFO);
+        modeString[0] = 'p';
     }
     if (S_ISREG(mode)) {
-        _PrintSubattributeString("%05o regular file", S_IFREG);
+        modeString[0] = '-';
     }
     if (S_ISLNK(mode)) {
-        _PrintSubattributeString("%05o symbolic link", S_IFLNK);
+        modeString[0] = 'l';
     }
     if (S_ISSOCK(mode)) {
-        _PrintSubattributeString("%05o socket", S_IFSOCK);
+        modeString[0] = 's';
     }
     if (S_ISWHT(mode)) {
-        _PrintSubattributeString("%05o whiteout", S_IFWHT);
+        modeString[0] = 'x';
     }
     
-    int modes[] = {
-        S_ISUID,
-        S_ISGID,
-        S_ISTXT,
-        
-        S_IRUSR,
-        S_IWUSR,
-        S_IXUSR,
-        
-        S_IRGRP,
-        S_IWGRP,
-        S_IXGRP,
-        
-        S_IROTH,
-        S_IWOTH,
-        S_IXOTH,
-    };
-    char* names[] = {
-        "setUID",
-        "setGID",
-        "sticky",
-        
-        "read (owner)",
-        "write (owner)",
-        "execute (owner)",
-        
-        "read (group)",
-        "write (group)",
-        "execute (group)",
-        
-        "read (others)",
-        "write (others)",
-        "execute (others)",
-    };
+    modeString[1] = (mode & S_IRUSR ? 'r' : '-');
+    modeString[2] = (mode & S_IWUSR ? 'w' : '-');
     
-    for (int i = 0; i < 12; i++) {
-        u_int16_t mode = record->fileMode;
-        if (mode & modes[i]) {
-            _PrintSubattributeString("%05o %s", modes[i], names[i]);
-        }
+    modeString[4] = (mode & S_IRGRP ? 'r' : '-');
+    modeString[5] = (mode & S_IWGRP ? 'w' : '-');
+    
+    modeString[7] = (mode & S_IROTH ? 'r' : '-');
+    modeString[8] = (mode & S_IWOTH ? 'w' : '-');
+    
+    if ((mode & S_ISUID) && !(mode & S_IXUSR)) {
+        modeString[3] = 'S';
+    } else if ((mode & S_ISUID) && (mode & S_IXUSR)) {
+        modeString[3] = 's';
+    } else if (!(mode & S_ISUID) && (mode & S_IXUSR)) {
+        modeString[3] = 'x';
+    } else {
+        modeString[3] = '-';
+    }
+
+    if ((mode & S_ISGID) && !(mode & S_IXGRP)) {
+        modeString[6] = 'S';
+    } else if ((mode & S_ISGID) && (mode & S_IXGRP)) {
+        modeString[6] = 's';
+    } else if (!(mode & S_ISGID) && (mode & S_IXGRP)) {
+        modeString[6] = 'x';
+    } else {
+        modeString[6] = '-';
+    }
+
+    if ((mode & S_ISTXT) && !(mode & S_IXOTH)) {
+        modeString[9] = 'T';
+    } else if ((mode & S_ISTXT) && (mode & S_IXOTH)) {
+        modeString[9] = 't';
+    } else if (!(mode & S_ISTXT) && (mode & S_IXOTH)) {
+        modeString[9] = 'x';
+    } else {
+        modeString[9] = '-';
     }
     
+    modeString[10] = '\0';
+    
+    _PrintAttributeString("mode", modeString);
+
+    PrintConstOctIfEqual(mode & S_IFMT, S_IFBLK);
+    PrintConstOctIfEqual(mode & S_IFMT, S_IFCHR);
+    PrintConstOctIfEqual(mode & S_IFMT, S_IFDIR);
+    PrintConstOctIfEqual(mode & S_IFMT, S_IFIFO);
+    PrintConstOctIfEqual(mode & S_IFMT, S_IFREG);
+    PrintConstOctIfEqual(mode & S_IFMT, S_IFLNK);
+    PrintConstOctIfEqual(mode & S_IFMT, S_IFSOCK);
+    PrintConstOctIfEqual(mode & S_IFMT, S_IFWHT);
+    
+    PrintUIOctFlagIfMatch(mode, S_ISUID);
+    PrintUIOctFlagIfMatch(mode, S_ISGID);
+    PrintUIOctFlagIfMatch(mode, S_ISTXT);
+    
+    PrintUIOctFlagIfMatch(mode, S_IRUSR);
+    PrintUIOctFlagIfMatch(mode, S_IWUSR);
+    PrintUIOctFlagIfMatch(mode, S_IXUSR);
+    
+    PrintUIOctFlagIfMatch(mode, S_IRGRP);
+    PrintUIOctFlagIfMatch(mode, S_IWGRP);
+    PrintUIOctFlagIfMatch(mode, S_IXGRP);
+    
+    PrintUIOctFlagIfMatch(mode, S_IROTH);
+    PrintUIOctFlagIfMatch(mode, S_IWOTH);
+    PrintUIOctFlagIfMatch(mode, S_IXOTH);
+    
+
     PrintUI(record, special.linkCount);
 }
 
@@ -614,22 +630,48 @@ void PrintFndrFileInfo(const FndrFileInfo *record)
 {
     PrintHFSChar    (record, fdType);
     PrintHFSChar    (record, fdCreator);
-    PrintUI         (record, fdFlags);
-    PrintUI         (record, fdLocation.v);
-    PrintUI         (record, fdLocation.h);
+    PrintBinaryDump     (record, fdFlags);
+    PrintFinderFlags(record->fdFlags);
+    _PrintAttributeString("fdLocation", "(%u, %u)", record->fdLocation.v, record->fdLocation.h);
     PrintUI         (record, opaque);
 }
 
 void PrintFndrDirInfo(const FndrDirInfo *record)
 {
-    PrintUI(record, frRect.top);
-    PrintUI(record, frRect.left);
-    PrintUI(record, frRect.bottom);
-    PrintUI(record, frRect.right);
-    PrintUI(record, frFlags);
-    PrintUI(record, frLocation.v);
-    PrintUI(record, frLocation.h);
-    PrintUI(record, opaque);
+    _PrintAttributeString("frRect", "(%u, %u, %u, %u)", record->frRect.top, record->frRect.left, record->frRect.bottom, record->frRect.right);
+    PrintBinaryDump         (record, frFlags);
+    PrintFinderFlags    (record->frFlags);
+    _PrintAttributeString("frLocation", "(%u, %u)", record->frLocation.v, record->frLocation.h);
+    PrintUI             (record, opaque);
+}
+
+void PrintFinderFlags(u_int16_t record)
+{
+    u_int16_t kIsOnDesk             = 0x0001;     /* Files and folders (System 6) */
+    u_int16_t kRequireSwitchLaunch  = 0x0020;     /* Old */
+    u_int16_t kColor                = 0x000E;     /* Files and folders */
+    u_int16_t kIsShared             = 0x0040;     /* Files only (Applications only) If */
+    u_int16_t kHasNoINITs           = 0x0080;     /* Files only (Extensions/Control */
+    u_int16_t kHasBeenInited        = 0x0100;     /* Files only.  Clear if the file */
+    u_int16_t kHasCustomIcon        = 0x0400;     /* Files and folders */
+    u_int16_t kIsStationery         = 0x0800;     /* Files only */
+    u_int16_t kNameLocked           = 0x1000;     /* Files and folders */
+    u_int16_t kHasBundle            = 0x2000;     /* Files only */
+    u_int16_t kIsInvisible          = 0x4000;     /* Files and folders */
+    u_int16_t kIsAlias              = 0x8000;     /* Files only */
+    
+    PrintUIFlagIfMatch(record, kIsOnDesk);
+    PrintUIFlagIfMatch(record, kRequireSwitchLaunch);
+    PrintUIFlagIfMatch(record, kColor);
+    PrintUIFlagIfMatch(record, kIsShared);
+    PrintUIFlagIfMatch(record, kHasNoINITs);
+    PrintUIFlagIfMatch(record, kHasBeenInited);
+    PrintUIFlagIfMatch(record, kHasCustomIcon);
+    PrintUIFlagIfMatch(record, kIsStationery);
+    PrintUIFlagIfMatch(record, kNameLocked);
+    PrintUIFlagIfMatch(record, kHasBundle);
+    PrintUIFlagIfMatch(record, kIsInvisible);
+    PrintUIFlagIfMatch(record, kIsAlias);
 }
 
 void PrintFndrOpaqueInfo(const FndrOpaqueInfo *record)
@@ -640,7 +682,7 @@ void PrintFndrOpaqueInfo(const FndrOpaqueInfo *record)
 void PrintHFSPlusCatalogFolder(const HFSPlusCatalogFolder *record)
 {
     _PrintAttributeString("recordType", "kHFSPlusFolderRecord");
-    PrintBinary(record, flags);
+    PrintBinaryDump(record, flags);
     if (record->flags & kHFSFileLockedMask)
         _PrintSubattributeString("kHFSFileLockedMask");
     if (record->flags & kHFSThreadExistsMask)
@@ -674,7 +716,7 @@ void PrintHFSPlusCatalogFolder(const HFSPlusCatalogFolder *record)
 void PrintHFSPlusCatalogFile(const HFSPlusCatalogFile *record)
 {
     _PrintAttributeString("recordType", "kHFSPlusFileRecord");
-    PrintBinary(record, flags);
+    PrintBinaryDump(record, flags);
     if (record->flags & kHFSFileLockedMask)
         _PrintSubattributeString("kHFSFileLockedMask");
     if (record->flags & kHFSThreadExistsMask)
@@ -742,18 +784,13 @@ void PrintJournalInfoBlock(const JournalInfoBlock *record)
      */
     
     _PrintHeaderString("Journal Info Block");
-    PrintBinary         (record, flags);
-    PrintFlagIfMatch    (record->flags, kJIJournalInFSMask);
-    PrintFlagIfMatch    (record->flags, kJIJournalOnOtherDeviceMask);
-    PrintFlagIfMatch    (record->flags, kJIJournalNeedInitMask);
-    
-    _PrintBase("device_signature", &record->device_signature[0], 32, 16);
-//    char* hex = memstr((char*)&record->device_signature[0], 32, 16);
-//    _PrintAttributeString("device_signature", hex);
-//    free(hex);
-    
-    PrintDataLength     (record, offset);
-    PrintDataLength     (record, size);
+    PrintBinaryDump         (record, flags);
+    PrintUIFlagIfMatch      (record->flags, kJIJournalInFSMask);
+    PrintUIFlagIfMatch      (record->flags, kJIJournalOnOtherDeviceMask);
+    PrintUIFlagIfMatch      (record->flags, kJIJournalNeedInitMask);
+    _PrintRawAttribute      ("device_signature", &record->device_signature[0], 32, 16);
+    PrintDataLength         (record, offset);
+    PrintDataLength         (record, size);
 
     char* str = malloc(sizeof(uuid_string_t));
     str[sizeof(uuid_string_t) - 1] = '\0';
@@ -1031,7 +1068,7 @@ void PrintNodeRecord(const HFSBTreeNode* node, int recordNumber)
                 case kBTIndexNode:
                 {
                     u_int32_t *pointer = (u_int32_t*) record->value;
-                    _PrintUI32("nextNodeID", *pointer);
+                    _PrintUI("nextNodeID", *pointer);
                     break;
                 }
                     

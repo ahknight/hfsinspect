@@ -25,6 +25,7 @@ void PrintBTHeaderRecord            (const BTHeaderRec *hr);
 void PrintHFSPlusBSDInfo            (const HFSPlusBSDInfo *record);
 void PrintFndrFileInfo              (const FndrFileInfo *record);
 void PrintFndrDirInfo               (const FndrDirInfo *record);
+void PrintFinderFlags               (u_int16_t record);
 void PrintFndrOpaqueInfo            (const FndrOpaqueInfo *record);
 void PrintHFSPlusCatalogFolder      (const HFSPlusCatalogFolder *record);
 void PrintHFSPlusCatalogFile        (const HFSPlusCatalogFile *record);
