@@ -71,7 +71,7 @@ void _PrintHFSChar              (const char* label, const void* i, size_t nbytes
 void _PrintHFSTimestamp         (const char* label, u_int32_t timestamp);
 void _PrintHFSUniStr255         (const char* label, const HFSUniStr255 *record);
 
-static HFSVolume volume = {};
+static HFSVolume volume = {0};
 void set_hfs_volume(HFSVolume *v) { volume = *v; }
 
 
@@ -305,7 +305,7 @@ void PrintVolumeHeader(const HFSPlusVolumeHeader *vh)
     
     if (vh->attributes & kHFSVolumeJournaledMask) {
         if (vh->journalInfoBlock) {
-            JournalInfoBlock block = {};
+            JournalInfoBlock block = {0};
             bool success = hfs_get_JournalInfoBlock(&block, &volume);
             if (!success) critical("Could not get the journal info block!");
             PrintJournalInfoBlock(&block);
@@ -378,6 +378,11 @@ void PrintHFSPlusForkData(const HFSPlusForkData *fork, u_int32_t cnid, u_int8_t 
     } else if (forktype == HFSResourceForkType) {
         _PrintAttributeString("fork", "resource");
     }
+    if (fork->logicalSize == 0) {
+        _PrintAttributeString("logicalSize", "(empty)");
+        return;
+    }
+    
     PrintDataLength (fork, logicalSize);
     PrintDataLength (fork, clumpSize);
     PrintHFSBlocks  (fork, totalBlocks);
@@ -396,20 +401,19 @@ void PrintBTNodeDescriptor(const BTNodeDescriptor *node)
     PrintUI(node, bLink);
     {
         u_int64_t attributes = node->kind;
-        const int attribute_count = 4;
-        int att_values[attribute_count] = {
+        int att_values[4] = {
             kBTLeafNode,
             kBTIndexNode,
             kBTHeaderNode,
             kBTMapNode
         };
-        char* att_names[attribute_count] = {
+        char* att_names[4] = {
             "kBTLeafNode",
             "kBTIndexNode",
             "kBTHeaderNode",
             "kBTMapNode"
         };
-        for (int i = 0; i < attribute_count; i++) {
+        for (int i = 0; i < 4; i++) {
             if (attributes == att_values[i])
                 _PrintAttributeString("kind", "%s (%u)", att_names[i], att_values[i]);
         }
@@ -435,18 +439,17 @@ void PrintBTHeaderRecord(const BTHeaderRec *hr)
 	PrintDataLength (hr, clumpSize);
     {
         u_int64_t attributes = hr->btreeType;
-        const int attribute_count = 3;
-        int att_values[attribute_count] = {
+        int att_values[3] = {
             0,
             128,
             255
         };
-        char* att_names[attribute_count] = {
+        char* att_names[3] = {
             "kHFSBTreeType",
             "kUserBTreeType",
             "kReservedBTreeType"
         };
-        for (int i = 0; i < attribute_count; i++) {
+        for (int i = 0; i < 3; i++) {
             if (attributes == att_values[i])
                 _PrintAttributeString("btreeType", "%s (%u)", att_names[i], att_values[i]);
         }
@@ -456,18 +459,17 @@ void PrintBTHeaderRecord(const BTHeaderRec *hr)
     
     {
         u_int64_t attributes = hr->attributes;
-        const int attribute_count = 3;
-        int att_values[attribute_count] = {
+        int att_values[3] = {
             kBTBadCloseMask,
             kBTBigKeysMask,
             kBTVariableIndexKeysMask
         };
-        char* att_names[attribute_count] = {
+        char* att_names[3] = {
             "kBTBadCloseMask",
             "kBTBigKeysMask",
             "kBTVariableIndexKeysMask"
         };
-        for (int i = 0; i < attribute_count; i++) {
+        for (int i = 0; i < 3; i++) {
             if (attributes & att_values[i])
                 _PrintSubattributeString("%s (%u)", att_names[i], att_values[i]);
         }
@@ -523,9 +525,7 @@ void PrintHFSPlusBSDInfo(const HFSPlusBSDInfo *record)
             _PrintSubattributeString("%05o %s", flagMasks[i], flagNames[i]);
         }
     }
-    
-    PrintUIOct(record, fileMode);
-    
+        
     u_int16_t mode = record->fileMode;
     char modeString[11] = "";
     
@@ -595,8 +595,10 @@ void PrintHFSPlusBSDInfo(const HFSPlusBSDInfo *record)
     
     modeString[10] = '\0';
     
-    _PrintAttributeString("mode", modeString);
-
+    _PrintAttributeString("modeString", modeString);
+    
+    PrintUIOct(record, fileMode);
+    
     PrintConstOctIfEqual(mode & S_IFMT, S_IFBLK);
     PrintConstOctIfEqual(mode & S_IFMT, S_IFCHR);
     PrintConstOctIfEqual(mode & S_IFMT, S_IFDIR);
@@ -834,10 +836,10 @@ void PrintVolumeSummary(const VolumeSummary *summary)
     PrintForkSummary    (&summary->resourceFork);
     
     _PrintHeaderString  ("Largest Files");
-    out("# %10s %10s", "Size", "CNID");
+    print("# %10s %10s", "Size", "CNID");
     for (int i = 9; i > 0; i--) {
         char* size = sizeString(summary->largestFiles[i].measure);
-        out("%d %10s %10u", 10-i, size, summary->largestFiles[i].cnid);
+        print("%d %10s %10u", 10-i, size, summary->largestFiles[i].cnid);
         free(size);
     }
 }
@@ -954,7 +956,7 @@ void PrintTreeNode(const HFSBTree *tree, u_int32_t nodeID)
 {
     debug("PrintTreeNode");
     
-    HFSBTreeNode node = {};
+    HFSBTreeNode node;
     int8_t result = hfs_btree_get_node(&node, tree, nodeID);
     if (result == -1) {
         error("node %u is invalid or out of range.", nodeID);

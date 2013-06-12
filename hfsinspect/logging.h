@@ -14,7 +14,7 @@
 #include <signal.h>
 #include <stdbool.h>
 
-#define out(...)        PrintLine(stderr, L_STANDARD, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define print(...)        PrintLine(stderr, L_STANDARD, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
 #define critical(...)   { PrintLine(stderr, L_CRITICAL, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); if (getenv("DEBUG")) { print_trace(NULL); raise(SIGTRAP); } else { exit(1); }; }
 #define error(...)      { PrintLine(stderr, L_ERROR, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); if (getenv("DEBUG")) { print_trace(NULL); } }
 #define warning(...)    { PrintLine(stderr, L_WARNING, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); if (getenv("DEBUG")) { print_trace(NULL); } }

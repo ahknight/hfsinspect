@@ -16,7 +16,7 @@ HFSBTree hfs_get_catalog_btree(const HFSVolume *hfs)
 {
     debug("Getting catalog B-Tree");
     
-    static HFSBTree tree = {};
+    static HFSBTree tree;
     if (tree.fork.cnid == 0) {
         debug("Creating catalog B-Tree");
         
@@ -59,14 +59,14 @@ int8_t hfs_catalog_find_record(HFSBTreeNode *node, hfs_record_id *recordID, cons
 {
     debug("Searching catalog for %d:%ls", parentFolder, name);
     
-    HFSPlusCatalogKey catalogKey = {};
+    HFSPlusCatalogKey catalogKey;
     catalogKey.parentID = parentFolder;
     catalogKey.nodeName = wcstohfsuc(name);
     catalogKey.keyLength = sizeof(catalogKey.parentID) + catalogKey.nodeName.length;
     catalogKey.keyLength = MAX(kHFSPlusCatalogKeyMinimumLength, catalogKey.keyLength);
     
     HFSBTree catalogTree = hfs_get_catalog_btree(hfs);
-    HFSBTreeNode searchNode = {};
+    HFSBTreeNode searchNode;
     hfs_record_id searchIndex = 0;
     
     bool result = hfs_btree_search_tree(&searchNode, &searchIndex, &catalogTree, &catalogKey);
@@ -137,7 +137,7 @@ wchar_t* hfsuctowcs(const HFSUniStr255* input)
 HFSUniStr255 wcstohfsuc(const wchar_t* input)
 {
     // Allocate the return value
-    HFSUniStr255 output = {};
+    HFSUniStr255 output;
     
     // Get the length of the input
     size_t len = MIN(wcslen(input), 255);
@@ -158,7 +158,7 @@ HFSUniStr255 strtohfsuc(const char* input)
 {
     wchar_t* wide = malloc(256);
     size_t size = mbstowcs(wide, input, 255);
-    HFSUniStr255 output = {0};
+    HFSUniStr255 output;
     if (size) {
         output = wcstohfsuc(wide);
     } else {

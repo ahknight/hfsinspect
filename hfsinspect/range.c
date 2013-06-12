@@ -49,7 +49,7 @@ size_t range_max(range r)
 range range_intersection(range a, range b)
 {
     // A range is considered to intersect if the start or end is within our bounds.
-    range r = {};
+    range r = {0};
     
     if (
         ( range_contains(a.start, b) || range_contains(range_max(a), b) ) ||

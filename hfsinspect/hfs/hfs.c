@@ -51,7 +51,7 @@ int hfs_close(HFSVolume *hfs) {
 bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFSVolume* hfs)
 {
     if (hfs->fd) {
-        void* buffer = malloc(4096);
+        char* buffer = malloc(4096);
         
         ssize_t size;
 //        size = hfs_read_raw(&buffer, hfs, 2048, 0); // Breaks on raw devices.

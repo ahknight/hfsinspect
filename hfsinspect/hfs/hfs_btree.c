@@ -130,7 +130,7 @@ bool hfs_btree_search_tree(HFSBTreeNode *node, hfs_record_id *index, const HFSBT
     
     int depth                   = tree->headerRecord.treeDepth;
     hfs_node_id currentNode     = tree->headerRecord.rootNode;
-    HFSBTreeNode searchNode     = {};
+    HFSBTreeNode searchNode;
     hfs_record_id searchIndex   = 0;
     bool search_result          = false;
     int level                   = depth;

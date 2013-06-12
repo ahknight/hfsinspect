@@ -11,13 +11,13 @@
 #include "hfs_pstruct.h"
 #include "range.h"
 
-#pragma Struct Conveniences
+#pragma mark Struct Conveniences
 
 HFSFork hfsfork_make(const HFSVolume *hfs, const HFSPlusForkData forkData, hfs_fork_type forkType, hfs_node_id cnid)
 {
     debug("Creating fork for CNID %d and fork %d", cnid, forkType);
     
-    HFSFork fork = {};
+    HFSFork fork;
     fork.hfs = *hfs;
     fork.forkData = forkData;
     fork.forkType = forkType;
@@ -123,7 +123,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
         }
         
         debug("Remaining: (%zd, %zd)", remaining.start, remaining.count);
-        range read_range = {0};
+        range read_range;
         bool found = extentlist_find(extentList, remaining.start, &read_range.start, &read_range.count);
         if (!found) {
             PrintExtentList(extentList, fork->forkData.totalBlocks);
@@ -196,7 +196,7 @@ ssize_t hfs_read_fork_range(Buffer *buffer, const HFSFork *fork, size_t size, si
     size_t block_count = (size / (size_t)block_size) + ( ((offset + size) % block_size) ? 1 : 0);
     
     // Use the calculated size instead of the passed size to account for block alignment.
-    void* read_buffer = malloc(block_count * block_size);
+    char* read_buffer = malloc(block_count * block_size);
     
     // Fetch the data into a read buffer (it may fail).
     ssize_t read_blocks = hfs_read_fork(read_buffer, fork, block_count, start_block);

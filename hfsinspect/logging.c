@@ -153,12 +153,14 @@ void PrintLine(FILE* f, enum LogLevel level, const char* file, const char* funct
         inputstr = (char*)format;
     
     // Indent the string with the call depth.
-    int depth = stack_depth(40) - 1; // remove our frame
+    unsigned int depth = stack_depth(40) - 1; // remove our frame
+    depth = MIN(depth, 40);
     char* indent = malloc(100);
     memset(indent, ' ', malloc_size(indent));
     indent[depth] = '\0';
     strlcat(indent, inputstr, malloc_size(indent));
     
+    bool showLineInfo = (getenv("DEBUG") != 0);
     char* levelName;
     
     switch (level) {
@@ -192,7 +194,7 @@ void PrintLine(FILE* f, enum LogLevel level, const char* file, const char* funct
     
     // Now add our format to that string and print to stdout.
     _printColor(f, level);
-    if (file != NULL)
+    if (file != NULL && showLineInfo)
         fprintf(f, "[%2d] [%-5s]%-80s [%s:%u %s()]\n", depth, levelName, indent, basename((char*)file), line, function);
     else
         fprintf(f, "%s\n", inputstr);

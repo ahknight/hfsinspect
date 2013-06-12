@@ -18,7 +18,7 @@
 #include "hfs_extentlist.h"
 #include "hfs_pstruct.h"
 
-#pragma Struct Conveniences
+#pragma mark Struct Conveniences
 
 int hfs_open    (HFSVolume *hfs, const char *path);
 int hfs_load    (HFSVolume *hfs);

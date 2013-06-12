@@ -340,7 +340,7 @@ int swap_BTreeNode(HFSBTreeNode *node)
                     } else if (meta->keyLength > kHFSPlusCatalogKeyMaximumLength) {
                         critical("Invalid key length for catalog record: %d", meta->keyLength);
                     }
-                    swap_HFSPlusCatalogKey(meta->key);
+                    swap_HFSPlusCatalogKey((HFSPlusCatalogKey*)meta->key);
                     break;
                 }
                     
@@ -349,7 +349,7 @@ int swap_BTreeNode(HFSBTreeNode *node)
                     if (meta->keyLength != kHFSPlusExtentKeyMaximumLength) {
                         critical("Invalid key length for extent record: %d", meta->keyLength);
                     }
-                    swap_HFSPlusExtentKey(meta->key);
+                    swap_HFSPlusExtentKey((HFSPlusExtentKey*)meta->key);
                     break;
                 }
                     
@@ -415,7 +415,7 @@ int swap_BTreeNode(HFSBTreeNode *node)
             {
                 // Only swap the header.  Don't care about user and map.
                 if (recordNum == 0) {
-                    swap_BTHeaderRec(meta->record);
+                    swap_BTHeaderRec((BTHeaderRec*)meta->record);
                 }
                 break;
             }

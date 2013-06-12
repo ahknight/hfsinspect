@@ -50,11 +50,11 @@ struct HFSBTreeNodeRecord {
     hfs_record_id       recordID;
     hfs_record_offset   offset;
     hfs_record_offset   length;
-    void*               record;
+    char*               record;
     hfs_record_offset   keyLength;
-    void*               key;
+    char*               key;
     hfs_record_offset   valueLength;
-    void*               value;
+    char*               value;
 };
 typedef struct HFSBTreeNodeRecord HFSBTreeNodeRecord;
 
