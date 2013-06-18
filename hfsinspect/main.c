@@ -12,6 +12,7 @@
 #include <sys/mount.h>
 #include <locale.h>
 #include <malloc/malloc.h>
+#include <sys/stat.h>
 
 #include "hfs.h"
 #include "stringtools.h"
@@ -50,6 +51,7 @@ enum HIModes {
     HIModeShowHelp = 0,
     HIModeShowVersion,
     HIModeShowVolumeInfo,
+    HIModeShowJournalInfo,
     HIModeShowSummary,
     HIModeShowBTreeInfo,
     HIModeShowBTreeNode,
@@ -99,54 +101,63 @@ void usage(int status)
      -e,        --examples      display some usage examples
      -f,        --fragmentation display all fragmented files on the volume
      -H,        --hotfiles      display the hottest files on the volume; requires
-     the -t (--top=TOP) option for the number to list
-     -j,        --journalinfo   display information about the volume's journal
+                                    the -t (--top=TOP) option for the number to list
      -J,        --journalbuffer display detailed information about the journal
      -l TYPE,   --list=TYPE     specify an HFS+ B-Tree's leaf nodes' type, where
-         TYPE is one of "file", "folder", "filethread", or
-         "folderthread" for the Catalog B-Tree; one of
-         "hfcfile" or "hfcthread" for the Hot Files B-Tree
-         B-Tree; or "extents" for the Extents B-Tree
-         You can use the type "any" if you wish to display
-         all node types. Currently, "any" is the only
-         type supported for the Attributes B-Tree
+                                     TYPE is one of "file", "folder", "filethread", or
+                                     "folderthread" for the Catalog B-Tree; one of
+                                     "hfcfile" or "hfcthread" for the Hot Files B-Tree
+                                     B-Tree; or "extents" for the Extents B-Tree
+                                     You can use the type "any" if you wish to display
+                                     all node types. Currently, "any" is the only
+                                     type supported for the Attributes B-Tree
      -m,        --mountdata     display a mounted volume's in-memory data
      -S,        --summary_rsrc  calculate and display volume usage summary
      -t TOP,    --top=TOP       specify the number of most fragmented files
-         to display (when used with the --fragmentation
-         option), or the number of largest files to display
-         (when used with the --summary option)
+                                     to display (when used with the --fragmentation
+                                     option), or the number of largest files to display
+                                     (when used with the --summary option)
      -x FILTERDYLIB, --filter=FILTERDYLIB
-         run the filter implemented in the dynamic library
-         whose path is FILTERDYLIB. Alternatively,
-         FILTERDYLIB can be 'builtin:<name>', where <name>
-         specifies one of the built-in filters: atime,
-         crtime, dirhardlink, hardlink, mtime, and sxid
+                                 run the filter implemented in the dynamic library
+                                     whose path is FILTERDYLIB. Alternatively,
+                                     FILTERDYLIB can be 'builtin:<name>', where <name>
+                                     specifies one of the built-in filters: atime,
+                                     crtime, dirhardlink, hardlink, mtime, and sxid
      -X FILTERARGS, --filter_args=FILTERARGS
-         pass this argument string to the filter callback
+                                 pass this argument string to the filter callback
      */
-    char* help = "hfsinspect [hd:vn:b:o:sp:F:] \n\
-    SOURCES: \n\
+    char* help = "usage: hfsinspect [-hvjs] [-d file] [-V volumepath] [ [-b btree] [-n nodeid] ] [-p path] [-P absolutepath] [-F parent:name] [-o file] [--version] [path] \n\
+\n\
+SOURCES: \n\
     hfsinspect will use the root filesystem by default, or the filesystem containing a target file in some cases. If you wish to\n\
     specify a specific device or volume, you can with the following options:\n\
+\n\
     -d DEV,     --device DEV    Path to device or file containing a bare HFS+ filesystem (no partition map or HFS wrapper) \n\
     -V VOLUME   --volume VOLUME Use the path to a mounted disk or any file on the disk to use a mounted volume. \n\
-    \n\
-    INFO: \n\
+\n\
+INFO: \n\
     By default, hfsinspect will just show you the volume header and quit.  Use the following options to get more specific data.\n\
+\n\
     -h,         --help          Show help and quit. \n\
                 --version       Show version information and quit. \n\
     -b NAME,    --btree NAME    Specify which HFS+ B-Tree to work with. Supported options: attributes, catalog, extents, or hotfile. \n\
     -n,         --node ID       Dump an HFS+ B-Tree node by ID (must specify tree with -b). \n\
     -v,         --volumeheader  Dump the volume header. \n\
+    -j,         --journalinfo   Dump the volume's journal info block structure. \n\
     -c CNID,    --cnid CNID     Lookup and display a record by its catalog node ID. \n\
     -l,         --list          If the specified FSOB is a folder, list the contents. \n\
-    \n\
-    OUTPUT: \n\
+\n\
+OUTPUT: \n\
     You can optionally have hfsinspect dump any fork it finds as the result of an operation. This includes B-Trees or file forks.\n\
     Use a command like \"-b catalog -o catalog.dump\" to extract the catalog file from the boot drive, for instance.\n\
+\n\
     -o PATH,    --output PATH   Use with -b or -p to dump a raw data fork (when used with -b, will dump the HFS+ tree file). \n\
-    ";
+\n\
+ENVIRONMENT: \n\
+    Set NOCOLOR to hide ANSI colors (TODO: check terminal for support, etc.). \n\
+    Set DEBUG to be overwhelmed with useless data. \n\
+\n\
+";
     fprintf(stderr, "%s", help);
     exit(status);
 }
@@ -459,7 +470,7 @@ void generateForkSummary(ForkSummary* forkSummary, const HFSPlusCatalogFile* fil
 
 ssize_t extractFork(const HFSFork* fork, const char* extractPath)
 {
-    print("Extracting data fork to %s", extractPath);
+    print("Extracting fork to %s", extractPath);
     PrintHFSPlusForkData(&fork->forkData, fork->cnid, fork->forkType);
     
     FILE* f = fopen(extractPath, "w");
@@ -611,11 +622,12 @@ int main (int argc, char* const *argv)
         { "path_abs",       required_argument,      NULL,                   'P' },
         { "cnid",           required_argument,      NULL,                   'c' },
         { "list",           no_argument,            NULL,                   'l' },
+        { "journalinfo",    no_argument,            NULL,                   'j' },
         { NULL,             0,                      NULL,                   0   }
     };
     
     /* short options */
-    char* shortopts = "hd:vn:b:o:sp:P:F:V:c:l";
+    char* shortopts = "hd:vjn:b:o:sp:P:F:V:c:l";
     
     char opt;
     while ((opt = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -634,6 +646,8 @@ int main (int argc, char* const *argv)
             case 'Z': set_mode(HIModeShowVersion); break;
                 
             case 'h': set_mode(HIModeShowHelp); break;
+                
+            case 'j': set_mode(HIModeShowJournalInfo); break;
                 
                 // Set device with path to file or device
             case 'd': HIOptions.device_path = strdup(optarg); break;
@@ -767,13 +781,35 @@ OPEN:
         }
     }
     
+    uid_t uid = 99;
+    gid_t gid = 99;
+    
+    // If extracting, determine the UID to become by checking the owner of the output directory (so we can create any requested files later).
+    if (check_mode(HIModeExtractFile)) {
+        char* dir = strdup(dirname(HIOptions.extract_path));
+        if ( !strlen(dir) ) {
+            error("Output file directory does not exist: %s", dir);
+            exit(1);
+        }
+        
+        struct stat dirstat = {0};
+        int result = stat(dir, &dirstat);
+        if (result == -1) {
+            perror("stat");
+            exit(1);
+        }
+        
+        uid = dirstat.st_uid;
+        gid = dirstat.st_gid;
+    }
+
 #pragma mark Drop Permissions
     
     // If we're root, drop down.
     if (getuid() == 0) {
         debug("Dropping privs");
-        if (setgid(99) != 0) critical("Failed to drop group privs.");
-        if (setuid(99) != 0) critical("Failed to drop user privs.");
+        if (setgid(gid) != 0) critical("Failed to drop group privs.");
+        if (setuid(uid) != 0) critical("Failed to drop user privs.");
         info("Was running as root.  Now running as %u/%u.", getuid(), getgid());
     }
     
@@ -823,6 +859,9 @@ OPEN:
     
 #pragma mark Process Requests
     
+    // Always detail what volume we're working on at the very least
+    PrintVolumeInfo(&HIOptions.hfs);
+    
     // Default to volume info if there are no other specifiers.
     if (HIOptions.mode == 0) set_mode(HIModeShowVolumeInfo);
     
@@ -833,19 +872,33 @@ OPEN:
         PrintVolumeSummary(&summary);
     }
     
+    // Show volume info
+    if (check_mode(HIModeShowVolumeInfo)) {
+        debug("Printing volume header.");
+        PrintVolumeHeader(&HIOptions.hfs.vh);
+    }
+    
+    // Journal info
+    if (check_mode(HIModeShowJournalInfo)) {
+        if (HIOptions.hfs.vh.attributes & kHFSVolumeJournaledMask) {
+            if (HIOptions.hfs.vh.journalInfoBlock != 0) {
+                JournalInfoBlock block = {0};
+                bool success = hfs_get_JournalInfoBlock(&block, &HIOptions.hfs);
+                if (!success) critical("Could not get the journal info block!");
+                PrintJournalInfoBlock(&block);
+            } else {
+                warning("Consistency error: volume attributes indicate it is journaled but the journal info block is empty!");
+            }
+        }
+    }
+    
     // Show a path's series of records
     if (check_mode(HIModeShowPathInfo)) {
         debug("Show path info.");
         showPathInfo();
     }
     
-    // Show requested data
-    if (check_mode(HIModeShowVolumeInfo)) {
-        debug("Printing volume header.");
-        PrintVolumeInfo(&HIOptions.hfs);
-        PrintVolumeHeader(&HIOptions.hfs.vh);
-    }
-    
+    // Show B-Tree info
     if (check_mode(HIModeShowBTreeInfo)) {
         debug("Printing tree info.");
         if (HIOptions.tree.fork.cnid == kHFSCatalogFileID) {
@@ -864,6 +917,7 @@ OPEN:
         PrintTreeNode(&HIOptions.tree, 0);
     }
     
+    // Show a B-Tree node by ID
     if (check_mode(HIModeShowBTreeNode)) {
         debug("Printing tree node.");
         if (HIOptions.tree_type == BTreeOptionCatalog) {
@@ -882,18 +936,21 @@ OPEN:
         PrintTreeNode(&HIOptions.tree, HIOptions.node_id);
     }
     
+    // Show a catalog record by FSSpec
     if (check_mode(HIModeShowCatalogRecord)) {
         debug("Finding catalog record for %d:%s", HIOptions.record_parent, HIOptions.record_filename);
         HFSUniStr255 search_string = strtohfsuc(HIOptions.record_filename);
         showCatalogRecord(HIOptions.record_parent, search_string, false);
     }
     
+    // Show a catalog record by its CNID (file/folder ID)
     if (check_mode(HIModeShowCNID)) {
         debug("Showing CNID %d", HIOptions.cnid);
         HFSUniStr255 emptyKey = { 0, {'\0'} };
         showCatalogRecord(HIOptions.cnid, emptyKey, true);
     }
     
+    // Extract any found files (not complete; FIXME: dropping perms breaks right now)
     if (check_mode(HIModeExtractFile)) {
         if (HIOptions.extract_HFSFork.cnid == 0 && HIOptions.tree.fork.cnid != 0) {
             HIOptions.extract_HFSFork = HIOptions.tree.fork;

@@ -337,17 +337,6 @@ void PrintVolumeHeader(const HFSPlusVolumeHeader *vh)
     PrintCatalogName        (finderInfo, osXDirID);
     PrintHexDump            (finderInfo, volID);
     
-    if (vh->attributes & kHFSVolumeJournaledMask) {
-        if (vh->journalInfoBlock != 0) {
-            JournalInfoBlock block = {0};
-            bool success = hfs_get_JournalInfoBlock(&block, &volume);
-            if (!success) critical("Could not get the journal info block!");
-            PrintJournalInfoBlock(&block);
-        } else {
-            warning("Consistency error: volume attributes indicate it is journaled but the journal info block is empty!");
-        }
-    }
-    
     PrintHeaderString("Allocation Bitmap File");
     PrintHFSPlusForkData(&vh->allocationFile, kHFSAllocationFileID, HFSDataForkType);
     
