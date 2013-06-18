@@ -50,7 +50,14 @@ void swap_HFSPlusVolumeHeader(HFSPlusVolumeHeader *record)
     Convert32(record->writeCount);
     Convert64(record->encodingsBitmap);
     
-    //    record->finderInfo is an array of bytes; swap as-used.
+    HFSPlusVolumeFinderInfo* finderInfo = (HFSPlusVolumeFinderInfo*)&record->finderInfo;
+    Convert32(finderInfo->bootDirID);
+    Convert32(finderInfo->bootParentID);
+    Convert32(finderInfo->openWindowDirID);
+    Convert32(finderInfo->os9DirID);
+    // reserved
+    Convert32(finderInfo->osXDirID);
+    Convert64(finderInfo->volID);
     
     swap_HFSPlusForkData(&record->allocationFile);
     swap_HFSPlusForkData(&record->extentsFile);
@@ -149,6 +156,16 @@ void swap_HFSPlusExtentKey(HFSPlusExtentKey *record)
     Convert32(record->startBlock);
 }
 
+void swap_HFSPlusAttrKey(HFSPlusAttrKey *record)
+{
+    Convert16(record->keyLength);
+    Convert32(record->fileID);
+    Convert32(record->startBlock);
+    Convert16(record->attrNameLen);
+    for (int i = 0; i < record->attrNameLen; i++)
+        Convert16(record->attrName[i]);
+}
+
 void swap_HFSUniStr255(HFSUniStr255 *unistr)
 {
     Convert16(unistr->length);
@@ -241,6 +258,52 @@ void swap_HFSPlusCatalogThread(HFSPlusCatalogThread *record)
     swap_HFSUniStr255(&record->nodeName);
 }
 
+void swap_HFSPlusAttrInlineData(HFSPlusAttrInlineData* record)
+{
+    // Marked as unused in headers; not found in kernel source outside of that.
+    Convert32(record->recordType);
+//    Convert32(record->reserved);
+    Convert32(record->logicalSize);
+}
+
+void swap_HFSPlusAttrData(HFSPlusAttrData* record)
+{
+    Convert32(record->recordType);
+//    Convert32(record->reserved[0]);
+//    Convert32(record->reserved[1]);
+    Convert32(record->attrSize);
+}
+
+void swap_HFSPlusAttrForkData(HFSPlusAttrForkData* record)
+{
+    Convert32(record->recordType);
+//    Convert32(record->reserved);
+    swap_HFSPlusForkData(&record->theFork);
+}
+
+void swap_HFSPlusAttrExtents(HFSPlusAttrExtents* record)
+{
+    Convert32(record->recordType);
+//    Convert32(record->reserved);
+    swap_HFSPlusExtentRecord(record->extents);
+}
+
+void swap_HFSPlusAttrRecord(HFSPlusAttrRecord* record)
+{
+    Convert32(record->recordType);
+    if (record->recordType == kHFSPlusAttrInlineData) {
+        swap_HFSPlusAttrData((HFSPlusAttrData*)record);
+        
+    } else if (record->recordType == kHFSPlusAttrForkData) {
+        swap_HFSPlusAttrForkData((HFSPlusAttrForkData*)record);
+        
+    } else if (record->recordType == kHFSPlusAttrExtents) {
+        swap_HFSPlusAttrExtents((HFSPlusAttrExtents*)record);
+    } else {
+        critical("Unknown attribute record type: %d", record->recordType);
+    }
+}
+
 int swap_BTreeNode(HFSBTreeNode *node)
 {
     // node->buffer is a 4-8KB block read from disk in BE format.
@@ -290,7 +353,10 @@ int swap_BTreeNode(HFSBTreeNode *node)
         int nextOffsetID    = offsetID - 1;
         
         HFSBTreeNodeRecord *meta    = &node->records[lastRecordIndex - offsetID];
-        meta->recordID             = recordID;
+        meta->treeCNID              = node->bTree.fork.cnid;
+        meta->nodeID                = node->nodeNumber;
+        meta->node                  = node;
+        meta->recordID              = recordID;
         meta->offset                = offsets[offsetID];
         meta->length                = offsets[nextOffsetID] - offsets[offsetID];
         meta->record                = node->buffer.data + meta->offset;
@@ -310,6 +376,7 @@ int swap_BTreeNode(HFSBTreeNode *node)
 
  http://developer.apple.com/legacy/library/technotes/tn/tn1150.html#KeyedRecords
  */
+            if (node->bTree.fork.cnid == kHFSAttributesFileID) VisualizeData(meta->record, meta->length);
             
             if( !(node->bTree.headerRecord.attributes & kBTBigKeysMask) ) {
                 critical("Only HFS Plus B-Trees are supported.");
@@ -321,12 +388,17 @@ int swap_BTreeNode(HFSBTreeNode *node)
             } else if (node->nodeDescriptor.kind == kBTIndexNode && node->bTree.headerRecord.attributes & kBTVariableIndexKeysMask) {
                 variableKeyLength = true;
             }
-        
+            
             if (variableKeyLength) {
+//                debug("Variable key length: %u", meta->keyLength);
                 meta->keyLength = *(u_int16_t*)meta->record;
                 meta->keyLength = S16(meta->keyLength);
+//                debug("Variable key length: %u", meta->keyLength);
+                
             } else {
+//                debug("Max key length: %u", meta->keyLength);
                 meta->keyLength = node->bTree.headerRecord.maxKeyLength;
+//                debug("Max key length: %u", meta->keyLength);
             }
             
             meta->key = meta->record;
@@ -335,6 +407,7 @@ int swap_BTreeNode(HFSBTreeNode *node)
             switch (node->bTree.fork.cnid) {
                 case kHFSCatalogFileID:
                 {
+//                    debug("Swapping catalog key");
                     if (meta->keyLength < kHFSPlusCatalogKeyMinimumLength) {
                         meta->keyLength = kHFSPlusCatalogKeyMinimumLength;
                     } else if (meta->keyLength > kHFSPlusCatalogKeyMaximumLength) {
@@ -346,13 +419,27 @@ int swap_BTreeNode(HFSBTreeNode *node)
                     
                 case kHFSExtentsFileID:
                 {
+//                    debug("Swapping extent key");
                     if (meta->keyLength != kHFSPlusExtentKeyMaximumLength) {
                         critical("Invalid key length for extent record: %d", meta->keyLength);
                     }
                     swap_HFSPlusExtentKey((HFSPlusExtentKey*)meta->key);
                     break;
                 }
+                
+                case kHFSAttributesFileID:
+                {
+                    warning("Swapping attribute key for record %u (key length %u)", recordNum, meta->keyLength);
+                    if (meta->keyLength < kHFSPlusAttrKeyMinimumLength) {
+                        meta->keyLength = kHFSPlusAttrKeyMinimumLength;
+                    } else if (meta->keyLength > kHFSPlusAttrKeyMaximumLength) {
+                        critical("Invalid key length for attribute record: %d", meta->keyLength);
+                    }
+                    swap_HFSPlusAttrKey((HFSPlusAttrKey*)meta->key);
+                    break;
+                }
                     
+                   
                 default:
                     critical("Unhandled tree type: %d", node->bTree.fork.cnid);
                     break;
@@ -361,7 +448,7 @@ int swap_BTreeNode(HFSBTreeNode *node)
             if (meta->keyLength % 2) meta->keyLength++; // Round up to an even length.
             
             meta->value         = meta->key + sizeof(u_int16_t) + meta->keyLength;
-            meta->valueLength  = meta->length - meta->keyLength;
+            meta->valueLength   = meta->length - meta->keyLength;
         }
         
         switch (node->nodeDescriptor.kind) {
@@ -401,6 +488,11 @@ int swap_BTreeNode(HFSBTreeNode *node)
                         swap_HFSPlusExtentRecord(*(HFSPlusExtentRecord*)meta->value);
                         break;
                     }
+                    
+                    case kHFSAttributesFileID:
+                    {
+                        swap_HFSPlusAttrRecord((HFSPlusAttrRecord*)meta->value);
+                    }
                         
                     default:
                     {
@@ -432,7 +524,6 @@ int swap_BTreeNode(HFSBTreeNode *node)
                 break;
             }
         }
-//        PrintNodeRecord(node, recordNum);
     }
     
     return 1;

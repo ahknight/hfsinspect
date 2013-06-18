@@ -26,8 +26,8 @@
  * @APPLE_OSREFERENCE_LICENSE_HEADER_END@
  */
 
-//#ifndef __HFS_MACOS_TYPES__
-//#define __HFS_MACOS_TYPES__
+#ifndef __HFS_MACOS_TYPES__
+#define __HFS_MACOS_TYPES__
 
 
 /****** START OF MACOSTYPES *********/
@@ -210,3 +210,4 @@ enum {
 	kTextEncodingMacUkrainian	= 0x98,	/* The following use script code 32, smUnimplemented */
 };
 
+#endif // __HFS_MACOS_TYPES__

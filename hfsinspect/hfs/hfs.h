@@ -13,8 +13,9 @@
 #include "hfs_endian.h"
 #include "hfs_io.h"
 #include "hfs_btree.h"
-#include "hfs_catalog_ops.h"
 #include "hfs_extent_ops.h"
+#include "hfs_catalog_ops.h"
+#include "hfs_attribute_ops.h"
 #include "hfs_extentlist.h"
 #include "hfs_pstruct.h"
 

@@ -41,20 +41,20 @@ void hfsfork_free(HFSFork *fork)
 
 ssize_t hfs_read_raw(void* buffer, const HFSVolume *hfs, size_t size, size_t offset)
 {
-    info("Reading %zu bytes at offset %zd.", size, offset);
+//    info("Reading %zu bytes at offset %zd.", size, offset);
     ssize_t result = pread(hfs->fd, buffer, size, offset);
     if (result < 0) {
         perror("read raw");
         critical("read error");
     }
-    debug("read %zd bytes", result);
+//    debug("read %zd bytes", result);
     return result;
 }
 
 // Block arguments are relative to the volume.
 ssize_t hfs_read_blocks(void* buffer, const HFSVolume *hfs, size_t block_count, size_t start_block)
 {
-    debug("Reading %u blocks starting at block %u", block_count, start_block);
+//    debug("Reading %u blocks starting at block %u", block_count, start_block);
     if (start_block > hfs->vh.totalBlocks) {
         error("Request for a block past the end of the volume (%d, %d)", start_block, hfs->vh.totalBlocks);
         errno = ESPIPE; // Illegal seek
@@ -76,7 +76,7 @@ ssize_t hfs_read_blocks(void* buffer, const HFSVolume *hfs, size_t block_count, 
         critical("read error");
         return bytes_read;
     }
-    debug("read %zd bytes", bytes_read);
+//    debug("read %zd bytes", bytes_read);
     return (bytes_read / hfs->vh.blockSize); // This layer thinks in blocks. Blocks in, blocks out.
 }
 
@@ -122,7 +122,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
             critical("We're stuck in a read loop: request (%zd, %zd); remaining (%zd, %zd)", request.start, request.count, remaining.start, remaining.count);
         }
         
-        debug("Remaining: (%zd, %zd)", remaining.start, remaining.count);
+//        debug("Remaining: (%zd, %zd)", remaining.start, remaining.count);
         range read_range;
         bool found = extentlist_find(extentList, remaining.start, &read_range.start, &read_range.count);
         if (!found) {
@@ -137,7 +137,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
         
         read_range.count = MIN(read_range.count, request.count);
         
-        debug("Next section: (%zd, %zd)", read_range.start, read_range.count);
+//        debug("Next section: (%zd, %zd)", read_range.start, read_range.count);
         
         ssize_t blocks = hfs_read_blocks(read_buffer, &fork->hfs, read_range.count, read_range.start);
         if (blocks < 0) {
@@ -152,11 +152,11 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
             
         if (remaining.count == 0) break;
     }
-    debug("Appending bytes");
+//    debug("Appending bytes");
     memcpy(buffer, read_buffer, MIN(block_count, request.count) * fork->hfs.vh.blockSize);
     free(read_buffer);
     
-    debug("returning %zd", request.count);
+//    debug("returning %zd", request.count);
     return request.count;
 }
 

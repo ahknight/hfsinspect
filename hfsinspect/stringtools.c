@@ -14,7 +14,7 @@
 // repeat character
 char* repchar(char c, int count)
 {
-    char* str = malloc(sizeof(c) * count);
+    char* str = malloc( (sizeof(c) * count) + 1);
     memset(str, c, count);
     str[count] = '\0';
     return str;
@@ -98,7 +98,7 @@ void memdump(const char* data, size_t length, u_int8_t base, u_int8_t gsize, u_i
     while (length > offset) {
         const char* line = &data[offset];
         size_t lineMax = MIN((length - offset), line_width);
-        printf("  %06u |", offset);
+        printf("  %p %06u |", &line[0], offset);
         for (int c = 0; c < lineMax; c++) {
             if ( (c % group_size) == 0 ) printf(" ");
             char* str = memstr(&line[c], 1, base);

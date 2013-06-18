@@ -21,6 +21,8 @@
 #define info(...)       if (getenv("DEBUG")) { PrintLine(stderr, L_INFO, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); }
 #define debug(...)      if (getenv("DEBUG")) { PrintLine(stderr, L_DEBUG, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); }
 
+#define fatal(...)      { fprintf(stderr, __VA_ARGS__); exit(1); }
+
 enum LogLevel {
     L_CRITICAL = 0,
     L_ERROR,

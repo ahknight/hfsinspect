@@ -38,15 +38,20 @@ int8_t hfs_extents_find_record(HFSPlusExtentRecord *record, hfs_block *record_st
     hfs_node_id fileID = fork->cnid;
     hfs_fork_type forkType = fork->forkType;
     
+    HFSBTree extentsTree = hfs_get_extents_btree(&hfs);
+    HFSBTreeNode node;
+    hfs_record_id index = 0;
+    
+    if (extentsTree.headerRecord.rootNode == 0) {
+        //Empty tree; no extents
+        return false;
+    }
+    
     HFSPlusExtentKey extentKey;
     extentKey.keyLength = kHFSPlusExtentKeyMaximumLength;
     extentKey.fileID = fileID;
     extentKey.forkType = forkType;
     extentKey.startBlock = (hfs_block)startBlock;
-    
-    HFSBTree extentsTree = hfs_get_extents_btree(&hfs);
-    HFSBTreeNode node;
-    hfs_record_id index = 0;
     
     bool result = hfs_btree_search_tree(&node, &index, &extentsTree, &extentKey);
     

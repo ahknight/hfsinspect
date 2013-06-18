@@ -11,6 +11,14 @@
 #include "hfs_io.h"
 #include "hfs_pstruct.h"
 #include "hfs_unicode.h" // Apple's FastUnicodeCompare and conversion table.
+#include <malloc/malloc.h>
+
+const u_int32_t kAliasCreator       = 'MACS';
+const u_int32_t kFileAliasType      = 'alis';
+const u_int32_t kFolderAliasType    = 'fdrp';
+
+wchar_t* HFSPlusMetadataFolder = L"\0\0\0\0HFS+ Private Data";
+wchar_t* HFSPlusDirMetadataFolder = L".HFS+ Private Directory Data\xd";
 
 HFSBTree hfs_get_catalog_btree(const HFSVolume *hfs)
 {
@@ -24,14 +32,19 @@ HFSBTree hfs_get_catalog_btree(const HFSVolume *hfs)
         
         hfs_btree_init(&tree, &fork);
         
-        if (tree.headerRecord.keyCompareType == 0xCF) {
+        if (hfs->vh.signature == kHFSXSigWord) {
+            if (tree.headerRecord.keyCompareType == kHFSCaseFolding) {
+                // Case Folding (normal; case-insensitive)
+                tree.keyCompare = (hfs_compare_keys)hfs_catalog_compare_keys_cf;
+                
+            } else if (tree.headerRecord.keyCompareType == kHFSBinaryCompare) {
+                // Binary Compare (case-sensitive)
+                tree.keyCompare = (hfs_compare_keys)hfs_catalog_compare_keys_bc;
+                
+            }
+        } else {
             // Case Folding (normal; case-insensitive)
             tree.keyCompare = (hfs_compare_keys)hfs_catalog_compare_keys_cf;
-            
-        } else if (tree.headerRecord.keyCompareType == 0xBC) {
-            // Binary Compare (case-sensitive)
-            tree.keyCompare = (hfs_compare_keys)hfs_catalog_compare_keys_bc;
-            
         }
     }
     
@@ -39,29 +52,30 @@ HFSBTree hfs_get_catalog_btree(const HFSVolume *hfs)
 }
 
 // Return is the record type (eg. kHFSPlusFolderRecord) and references to the key and value structs.
-int hfs_get_catalog_leaf_record(HFSPlusCatalogKey* const record_key, void const** record_value, const HFSBTreeNode* node, hfs_record_id recordID)
+int hfs_get_catalog_leaf_record(HFSPlusCatalogKey* const record_key, HFSPlusCatalogRecord* const record_value, const HFSBTreeNode* node, hfs_record_id recordID)
 {
     debug("Getting catalog leaf record %d of node %d", recordID, node->nodeNumber);
     
     if (node->nodeDescriptor.kind != kBTLeafNode) return 0;
     
     const HFSBTreeNodeRecord *record    = &node->records[recordID];
-    u_int16_t record_type               = hfs_get_catalog_record_type(node, recordID);
     
-    *record_key     = *( (HFSPlusCatalogKey*) record->key );
-    *record_value   = record->value;
+    if (record->key != NULL) *record_key        = *( (HFSPlusCatalogKey*) record->key );
+    if (record->value != NULL) *record_value    = *( (HFSPlusCatalogRecord*) record->value);
     
-    return record_type;
+    return record_value->record_type;
 }
 
 
-int8_t hfs_catalog_find_record(HFSBTreeNode *node, hfs_record_id *recordID, const HFSVolume *hfs, hfs_node_id parentFolder, const wchar_t name[256], u_int8_t nameLength)
+int8_t hfs_catalog_find_record(HFSBTreeNode *node, hfs_record_id *recordID, const HFSVolume *hfs, hfs_node_id parentFolder, HFSUniStr255 name)
 {
-    debug("Searching catalog for %d:%ls", parentFolder, name);
+    wchar_t* wc_name = hfsuctowcs(&name);
+    debug("Searching catalog for %d:%ls", parentFolder, wc_name);
+    free(wc_name);
     
     HFSPlusCatalogKey catalogKey;
     catalogKey.parentID = parentFolder;
-    catalogKey.nodeName = wcstohfsuc(name);
+    catalogKey.nodeName = name;
     catalogKey.keyLength = sizeof(catalogKey.parentID) + catalogKey.nodeName.length;
     catalogKey.keyLength = MAX(kHFSPlusCatalogKeyMinimumLength, catalogKey.keyLength);
     
@@ -82,11 +96,11 @@ int8_t hfs_catalog_find_record(HFSBTreeNode *node, hfs_record_id *recordID, cons
 
 int hfs_catalog_compare_keys_cf(const HFSPlusCatalogKey *key1, const HFSPlusCatalogKey *key2)
 {
-    if (getenv("DEBUG")) {
-        debug("compare catalog keys (CF)");
-        VisualizeHFSPlusCatalogKey(key1, "Search Key", 1);
-        VisualizeHFSPlusCatalogKey(key2, "Test Key  ", 1);
-    }
+//    if (getenv("DEBUG")) {
+//        debug("compare catalog keys (CF)");
+//        VisualizeHFSPlusCatalogKey(key1, "Search Key", 1);
+//        VisualizeHFSPlusCatalogKey(key2, "Test Key  ", 1);
+//    }
     if (key1->parentID == key2->parentID) {
         return FastUnicodeCompare(key1->nodeName.unicode, key1->nodeName.length, key2->nodeName.unicode, key2->nodeName.length);
     } else if (key1->parentID > key2->parentID) return 1;
@@ -96,11 +110,11 @@ int hfs_catalog_compare_keys_cf(const HFSPlusCatalogKey *key1, const HFSPlusCata
 
 int hfs_catalog_compare_keys_bc(const HFSPlusCatalogKey *key1, const HFSPlusCatalogKey *key2)
 {
-    if (getenv("DEBUG")) {
-        debug("compare catalog keys (BC)");
-        VisualizeHFSPlusCatalogKey(key1, "Search Key", 1);
-        VisualizeHFSPlusCatalogKey(key2, "Test Key  ", 1);
-    }
+//    if (getenv("DEBUG")) {
+//        debug("compare catalog keys (BC)");
+//        VisualizeHFSPlusCatalogKey(key1, "Search Key", 1);
+//        VisualizeHFSPlusCatalogKey(key2, "Test Key  ", 1);
+//    }
     if (key1->parentID == key2->parentID) {
         wchar_t* key1Name = hfsuctowcs(&key1->nodeName);
         wchar_t* key2Name = hfsuctowcs(&key2->nodeName);
@@ -116,11 +130,11 @@ int hfs_catalog_compare_keys_bc(const HFSPlusCatalogKey *key1, const HFSPlusCata
 
 wchar_t* hfsuctowcs(const HFSUniStr255* input)
 {
-    // Allocate the return value
-    wchar_t* output = malloc(256*sizeof(wchar_t));
-    
     // Get the length of the input
     int len = MIN(input->length, 255);
+    
+    // Allocate the return value
+    wchar_t* output = malloc(sizeof(wchar_t) * (len+1));
     
     // Iterate over the input
     for (int i = 0; i < len; i++) {
@@ -130,6 +144,11 @@ wchar_t* hfsuctowcs(const HFSUniStr255* input)
     
     // Terminate the output at the length
     output[len] = L'\0';
+    
+    // Replace the catalog version with a printable version.
+    if ( ( ! wcscmp(output, HFSPlusMetadataFolder)) ) {
+        mbstowcs(output, HFSPLUSMETADATAFOLDER, len);
+    }
     
     return output;
 }
@@ -156,54 +175,136 @@ HFSUniStr255 wcstohfsuc(const wchar_t* input)
 
 HFSUniStr255 strtohfsuc(const char* input)
 {
+    HFSUniStr255 output = {0, {'\0','\0'}};
     wchar_t* wide = malloc(256);
-    size_t size = mbstowcs(wide, input, 255);
-    HFSUniStr255 output;
-    if (size) {
-        output = wcstohfsuc(wide);
-    } else {
-        error("Conversion error: zero size returned from mbstowcs");
+    
+    size_t char_count = strlen(input);
+    size_t wide_char_count = mbstowcs(wide, input, 255);
+    if (wide_char_count > 0) output = wcstohfsuc(wide);
+    
+    if (char_count != wide_char_count) {
+        error("Conversion error: mbstowcs returned a string of a different length than the input: %zd in; %zd out", char_count, wide_char_count);
     }
     free(wide);
+    
     return output;
 }
 
-u_int16_t hfs_get_catalog_record_type (const HFSBTreeNode *node, hfs_record_id i)
+u_int16_t hfs_get_catalog_record_type (const HFSBTreeNodeRecord* catalogRecord)
 {
-    debug("Getting record type of %d:%d", node->nodeNumber, i);
+    debug("Getting record type of %d:%d", catalogRecord->nodeID, catalogRecord->recordID);
     
-    if(i >= node->nodeDescriptor.numRecords) return 0;
-        
-    u_int16_t type = *(u_int16_t*)node->records[i].value;
+    u_int16_t type = *(u_int16_t*)catalogRecord->value;
+    
     return type;
 }
 
 
 #pragma mark Fetch and List
 
-// int8_t hfs_find_catalog_record(HFSBTreeNode *node, hfs_record_id *recordID, const HFSVolume *hfs, hfs_node_id parentFolder, const wchar_t name[256], u_int8_t nameLength)
+bool hfs_catalog_record_is_hard_link(HFSPlusCatalogRecord* record)
+{
+    return (
+            (record->record_type == kHFSPlusFileRecord) &&
+            (
+             (record->catalogFile.userInfo.fdCreator == kHFSPlusCreator && record->catalogFile.userInfo.fdType == kHardLinkFileType) || // File link
+             ( (record->catalogFile.flags & kHFSHasLinkChainMask) && hfs_catalog_record_is_alias(record) )                              // Folder link
+             )
+            );
+}
 
-/*
- hfs_get_record_by_path
- Input: an absolute POSIX-style path
- Method:
- Split path on '/' and work from the left.
- Start with the root dir (2) for the leading '/' and find the first component's record. (eg. 2:System)
- Return if file. Return error if file and not last path component.
- Read the records after it (with the same parent ID) until the name is found.
- Return if last path component.
- Repeat until file or last path component.
- */
+bool hfs_catalog_record_is_symbolic_link(HFSPlusCatalogRecord* record)
+{
+    return (
+            (record->record_type == kHFSPlusFileRecord) &&
+            (record->catalogFile.userInfo.fdCreator == kSymLinkCreator) &&
+            (record->catalogFile.userInfo.fdType == kSymLinkFileType)
+            );
+}
 
-/*
- hfs_get_record_by_parent...
- */
+bool hfs_catalog_record_is_alias(HFSPlusCatalogRecord* record)
+{
+    return (
+            (record->record_type == kHFSPlusFileRecord) &&
+            (record->catalogFile.userInfo.fdFlags & kIsAlias) &&
+            (record->catalogFile.userInfo.fdCreator == kAliasCreator) &&
+            (record->catalogFile.userInfo.fdType == kFileAliasType || record->catalogFile.userInfo.fdType == kFolderAliasType)
+            );
+}
 
-/*
- hfs_list_directory
- Input: a file path
- Output: a list of node/record pairs for all files in a directory
- Method:
- Find the thread record for the directory (CNID and empty name). List all records after it with the same parent ID (traversing the node fLink pointers as needed).
- */
+HFSBTreeNodeRecord* hfs_catalog_target_of_catalog_record (const HFSBTreeNodeRecord* nodeRecord)
+{
+    // Follow hard and soft links.
+    HFSPlusCatalogRecord* catalogRecord = (HFSPlusCatalogRecord*)nodeRecord->value;
+    u_int16_t kind = catalogRecord->record_type;
+    
+    if (kind == kHFSFileRecord) {
+        // Hard link
+        if (hfs_catalog_record_is_hard_link(catalogRecord)) {
+            print("Record is a hard link.");
+//            hfs_node_id destinationCNID = catalogRecord->catalogFile.bsdInfo.special.iNodeNum;
+            // TODO: fetch CNID
+        }
+        
+        // Soft link
+        if (hfs_catalog_record_is_symbolic_link(catalogRecord)) {
+            print("Record is a symbolic link.");
+            // TODO: read data fork for volume-absolute path
+        }
+        
+    }
+    
+    // If this isn't a link, then the right answer is "itself".
+    return (HFSBTreeNodeRecord*)nodeRecord;
+}
 
+// Returned node is guaranteed to be in the same node for memory-management reasons (who releases the node?).
+HFSBTreeNodeRecord* hfs_catalog_next_in_folder (const HFSBTreeNodeRecord* catalogRecord)
+{
+    // See if next record is the same parent ID. Return if so, otherwise NULL.
+    HFSBTreeNode *node = catalogRecord->node;
+    hfs_record_id recordID = catalogRecord->recordID;
+    HFSBTreeNodeRecord* nextRecord = NULL;
+    
+    if ( (recordID + 1) < node->recordCount) {
+        nextRecord = &node->records[recordID + 1];
+    } else {
+        debug("There is no next record in this node (%d). Follow fLink and try again.", node->nodeNumber);
+        return NULL; // Follow fLink yourself if (recordID+1 >= recordCount) so you can release the node.
+    }
+    
+    if ( ((HFSPlusCatalogKey*)catalogRecord->key)->parentID == ((HFSPlusCatalogKey*)nextRecord->key)->parentID ) {
+        return nextRecord;
+    }
+    
+    return NULL;
+}
+
+wchar_t* hfs_catalog_record_to_path (const HFSBTreeNodeRecord* catalogRecord)
+{
+    // Crawl parent ID up, gathering names along the way. Build path from that.
+    return NULL;
+}
+
+wchar_t* hfs_catalog_get_cnid_name(const HFSVolume *hfs, hfs_node_id cnid)
+{
+    HFSBTreeNode node; memset(&node, 0, sizeof(node));
+    hfs_record_id recordID = 0;
+    HFSPlusCatalogKey key;
+    key.parentID = cnid;
+    key.nodeName.length = 0;
+    key.nodeName.unicode[0] = '\0';
+    key.nodeName.unicode[1] = '\0';
+    
+    HFSBTree tree = hfs_get_catalog_btree(hfs);
+    
+    int found = hfs_btree_search_tree(&node, &recordID, &tree, &key);
+    if (found != 1) {
+        error("No thread record for %d found.");
+    }
+    
+    debug("Found thread record %d:%d", node.nodeNumber, recordID);
+    
+    HFSPlusCatalogThread *threadRecord = (HFSPlusCatalogThread*)node.records[recordID].value;
+    return hfsuctowcs(&threadRecord->nodeName);
+}

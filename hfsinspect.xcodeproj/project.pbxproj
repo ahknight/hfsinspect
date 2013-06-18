@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		9B066F1A17622BCD00D84F55 /* stringtools.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B066F1917622BCD00D84F55 /* stringtools.c */; };
+		9B112988176E1D74009BC4D4 /* hfs_attribute_ops.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B112987176E1D74009BC4D4 /* hfs_attribute_ops.c */; };
 		9B2EE368174D1BD6008A0C54 /* debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B2EE367174D1BD6008A0C54 /* debug.c */; };
 		9B63C6C117614F92005E1411 /* hfs_extentlist.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B63C6C017614F92005E1411 /* hfs_extentlist.c */; };
 		9B7637F4175785E5000620CE /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637F3175785E5000620CE /* logging.c */; };
@@ -42,6 +43,8 @@
 /* Begin PBXFileReference section */
 		9B066F1817622BC900D84F55 /* stringtools.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stringtools.h; sourceTree = "<group>"; };
 		9B066F1917622BCD00D84F55 /* stringtools.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stringtools.c; sourceTree = "<group>"; };
+		9B112986176E1D63009BC4D4 /* hfs_attribute_ops.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_attribute_ops.h; sourceTree = "<group>"; };
+		9B112987176E1D74009BC4D4 /* hfs_attribute_ops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_attribute_ops.c; sourceTree = "<group>"; };
 		9B2EE367174D1BD6008A0C54 /* debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = debug.c; sourceTree = "<group>"; };
 		9B2EE369174D1BDB008A0C54 /* debug.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = debug.h; sourceTree = "<group>"; };
 		9B63C6BF17614F89005E1411 /* hfs_extentlist.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_extentlist.h; sourceTree = "<group>"; };
@@ -196,6 +199,8 @@
 				9B7637F9175E3C13000620CE /* hfs_io.c */,
 				9B7637F5175E3BEA000620CE /* hfs_btree.h */,
 				9B7637F6175E3BEF000620CE /* hfs_btree.c */,
+				9B112986176E1D63009BC4D4 /* hfs_attribute_ops.h */,
+				9B112987176E1D74009BC4D4 /* hfs_attribute_ops.c */,
 				9B7637FE175E3ECE000620CE /* hfs_catalog_ops.h */,
 				9B7637FF175E3ED4000620CE /* hfs_catalog_ops.c */,
 				9B7637FB175E3D78000620CE /* hfs_extent_ops.h */,
@@ -287,6 +292,7 @@
 				9B066F1A17622BCD00D84F55 /* stringtools.c in Sources */,
 				9BB1A65E17628DD900202643 /* range.c in Sources */,
 				9BB1A68617682DA400202643 /* buffer.c in Sources */,
+				9B112988176E1D74009BC4D4 /* hfs_attribute_ops.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -28,8 +28,14 @@ int hfs_load(HFSVolume *hfs) {
     bool success = hfs_get_HFSPlusVolumeHeader(&hfs->vh, hfs);
     if (!success) critical("Could not read volume header!");
     
+    if (hfs->vh.signature == kHFSSigWord) {
+        error("This tool does not suport HFS Standard volumes.");
+        errno = EFTYPE;
+        return -1;
+    }
+    
     if (hfs->vh.signature != kHFSPlusSigWord && hfs->vh.signature != kHFSXSigWord) {
-        error("not an HFS+ or HFX volume signature: 0x%x", hfs->vh.signature);
+        error("not an HFS+ or HFSX volume signature: 0x%x", hfs->vh.signature);
         VisualizeData((void*)&hfs->vh, sizeof(HFSPlusVolumeHeader));
         errno = EFTYPE;
         return -1;

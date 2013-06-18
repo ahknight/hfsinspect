@@ -68,35 +68,35 @@ int8_t hfs_btree_get_node (HFSBTreeNode *out_node, const HFSBTree *tree, hfs_nod
     size_t node_size = (tree->headerRecord.nodeSize / tree->fork.hfs.vh.blockSize); // In blocks
     size_t start_block = nodeNumber * node_size;
     
-    HFSBTreeNode *node = malloc(sizeof(HFSBTreeNode));
-    node->nodeSize      = tree->headerRecord.nodeSize;
-    node->nodeOffset    = start_block;
-    node->nodeNumber    = nodeNumber;
-    node->bTree         = *tree;
-    node->buffer        = buffer_alloc(node->nodeSize);
+    HFSBTreeNode node;
+    node.nodeSize       = tree->headerRecord.nodeSize;
+    node.nodeOffset     = start_block;
+    node.nodeNumber     = nodeNumber;
+    node.bTree          = *tree;
+    node.buffer         = buffer_alloc(node.nodeSize);
     
 //    debug("Reading %zu bytes at logical offset %u", node->nodeSize, node->nodeOffset);
     ssize_t result = 0;
-    result = hfs_read_fork(node->buffer.data, &tree->fork, node_size, start_block);
+    result = hfs_read_fork(node.buffer.data, &tree->fork, node_size, start_block);
     
     if (result < 0) {
         error("Error reading from fork.");
-        buffer_free(&node->buffer);
-        free(node);
+        buffer_free(&node.buffer);
         return result;
         
     } else {
-        int swap_result = swap_BTreeNode(node);
+        int swap_result = swap_BTreeNode(&node);
         if (swap_result == -1) {
-            buffer_free(&node->buffer);
-            free(node);
+            buffer_free(&node.buffer);
             debug("Byte-swap of node failed.");
             errno = EINVAL;
             return -1;
         }
     }
     
-    *out_node = *node;
+    node.recordCount = node.nodeDescriptor.numRecords;
+    
+    *out_node = node;
     return 1;
 }
 

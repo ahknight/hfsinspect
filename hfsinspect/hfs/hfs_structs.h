@@ -22,12 +22,17 @@ typedef u_int16_t   hfs_record_offset;
 
 typedef int(*hfs_compare_keys)(const void*, const void*);
 
+typedef struct HFSVolume            HFSVolume;
+typedef struct HFSFork              HFSFork;
+typedef struct HFSBTree             HFSBTree;
+typedef struct HFSBTreeNode         HFSBTreeNode;
+typedef struct HFSBTreeNodeRecord   HFSBTreeNodeRecord;
+
 struct HFSVolume {
     int                 fd;                 // File descriptor
     FILE                *fp;                // File pointer
     HFSPlusVolumeHeader vh;                 // Volume header
 };
-typedef struct HFSVolume HFSVolume;
 
 struct HFSFork {
     HFSVolume           hfs;                // File system descriptor
@@ -36,7 +41,6 @@ struct HFSFork {
     u_int32_t           cnid;               // For extents overflow lookups
     struct _ExtentList  *extents;           // All known extents
 };
-typedef struct HFSFork HFSFork;
 
 struct HFSBTree {
     HFSFork             fork;               // For data access
@@ -44,9 +48,11 @@ struct HFSBTree {
     BTHeaderRec         headerRecord;       // From the header node
     hfs_compare_keys    keyCompare;         // Function used to compare the keys in this tree.
 };
-typedef struct HFSBTree HFSBTree;
 
 struct HFSBTreeNodeRecord {
+    u_int32_t           treeCNID;
+    hfs_node_id         nodeID;
+    HFSBTreeNode*       node;
     hfs_record_id       recordID;
     hfs_record_offset   offset;
     hfs_record_offset   length;
@@ -56,19 +62,17 @@ struct HFSBTreeNodeRecord {
     hfs_record_offset   valueLength;
     char*               value;
 };
-typedef struct HFSBTreeNodeRecord HFSBTreeNodeRecord;
 
 struct HFSBTreeNode {
     struct Buffer       buffer;             // Raw data buffer
     HFSBTree            bTree;              // Parent tree
     BTNodeDescriptor    nodeDescriptor;     // This node's descriptor record
-    size_t              nodeSize;          // Node/buffer size in bytes
+    size_t              nodeSize;           // Node/buffer size in bytes
     u_int32_t           nodeNumber;         // Node number in the tree file
     off_t               nodeOffset;         // Block offset within the tree file
     u_int16_t           recordCount;
     HFSBTreeNodeRecord  records[512];
 };
-typedef struct HFSBTreeNode HFSBTreeNode;
 
 
 // For volume statistics
@@ -110,5 +114,21 @@ typedef struct VolumeSummary {
     ForkSummary resourceFork;
     
 } VolumeSummary;
+
+
+//Patching up a section of the volume header
+union HFSPlusVolumeFinderInfo {
+    u_int8_t 	finderInfo[32];
+    struct {
+        u_int32_t   bootDirID;
+        u_int32_t   bootParentID;
+        u_int32_t   openWindowDirID;
+        u_int32_t   os9DirID;
+        u_int32_t   reserved;
+        u_int32_t   osXDirID;
+        u_int64_t   volID;
+    };
+};
+typedef union HFSPlusVolumeFinderInfo HFSPlusVolumeFinderInfo;
 
 #endif
