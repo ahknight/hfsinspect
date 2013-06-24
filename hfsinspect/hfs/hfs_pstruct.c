@@ -23,49 +23,6 @@
 #include "hfs.h"
 #include "vfs_journal.h"
 
-
-void _PrintRawAttribute         (const char* label, const void* map, size_t size, char base);
-void _PrintDataLength           (const char* label, u_int64_t size);
-void _PrintHFSBlocks            (const char* label, u_int64_t blocks);
-void _PrintHFSChar              (const char* label, const void* i, size_t nbytes);
-void _PrintHFSTimestamp         (const char* label, u_int32_t timestamp);
-void _PrintHFSUniStr255         (const char* label, const HFSUniStr255 *record);
-void _PrintCatalogName          (char* label, hfs_node_id cnid);
-
-#define _PrintUI(label, value)                  PrintAttributeString(label, "%llu", (u_int64_t)value);
-#define PrintUI(record, value)                  _PrintUI(#value, record->value)
-
-#define _PrintUIOct(label, value)               PrintAttributeString(label, "%06o", value)
-#define PrintUIOct(record, value)               _PrintUIOct(#value, record->value)
-
-#define _PrintUIHex(label, value)               PrintAttributeString(label, "%#x", value)
-#define PrintUIHex(record, value)               _PrintUIHex(#value, record->value)
-
-#define PrintRawAttribute(record, value, base)  _PrintRawAttribute(#value, &(record->value), sizeof(record->value), base)
-#define PrintBinaryDump(record, value)          PrintRawAttribute(record, value, 2)
-#define PrintOctalDump(record, value)           PrintRawAttribute(record, value, 8)
-#define PrintHexDump(record, value)             PrintRawAttribute(record, value, 16)
-
-#define PrintCatalogName(record, value)         _PrintCatalogName(#value, record->value)
-#define PrintDataLength(record, value)          _PrintDataLength(#value, (u_int64_t)record->value)
-#define PrintHFSBlocks(record, value)           _PrintHFSBlocks(#value, record->value)
-#define PrintHFSChar(record, value)             _PrintHFSChar(#value, &(record->value), sizeof(record->value))
-#define PrintHFSTimestamp(record, value)        _PrintHFSTimestamp(#value, record->value)
-
-#define PrintOctFlag(label, value)              PrintSubattributeString("%06o (%s)", value, label)
-#define PrintHexFlag(label, value)              PrintSubattributeString("%s (%#x)", label, value)
-#define PrintIntFlag(label, value)              PrintSubattributeString("%s (%llu)", label, (u_int64_t)value)
-
-#define PrintUIFlagIfSet(source, flag)          { if (((u_int64_t)(source)) & (((u_int64_t)1) << ((u_int64_t)(flag)))) PrintIntFlag(#flag, flag); }
-
-#define PrintUIFlagIfMatch(source, flag)        { if ((source) & flag) PrintIntFlag(#flag, flag); }
-#define PrintUIOctFlagIfMatch(source, flag)     { if ((source) & flag) PrintOctFlag(#flag, flag); }
-#define PrintUIHexFlagIfMatch(source, flag)     { if ((source) & flag) PrintHexFlag(#flag, flag); }
-
-#define PrintConstIfEqual(source, c)            { if ((source) == c)   PrintIntFlag(#c, c); }
-#define PrintConstOctIfEqual(source, c)         { if ((source) == c)   PrintOctFlag(#c, c); }
-#define PrintConstHexIfEqual(source, c)         { if ((source) == c)   PrintHexFlag(#c, c); }
-
 static HFSVolume volume = {0};
 void set_hfs_volume(HFSVolume *v) { volume = *v; }
 
@@ -252,6 +209,48 @@ void PrintVolumeInfo(const HFSVolume* hfs)
         PrintAttributeString("bootable", "no");
     }
     
+}
+
+void PrintHFSMasterDirectoryBlock(const HFSMasterDirectoryBlock* vcb)
+{
+    PrintHeaderString("HFS Master Directory Block");
+    
+    PrintHFSChar(vcb, drSigWord);
+    PrintHFSTimestamp(vcb, drCrDate);
+    PrintHFSTimestamp(vcb, drLsMod);
+    PrintRawAttribute(vcb, drAtrb, 2);
+    PrintUI(vcb, drNmFls);
+    PrintUI(vcb, drVBMSt);
+    PrintUI(vcb, drAllocPtr);
+    PrintUI(vcb, drNmAlBlks);
+    PrintDataLength(vcb, drAlBlkSiz);
+    PrintDataLength(vcb, drClpSiz);
+    PrintUI(vcb, drAlBlSt);
+    PrintUI(vcb, drNxtCNID);
+    PrintUI(vcb, drFreeBks);
+    
+    char name[32]; memset(name, '\0', 32); memcpy(name, vcb->drVN, 31);
+    PrintAttributeString("drVN", "%s", name);
+    
+    PrintHFSTimestamp(vcb, drVolBkUp);
+    PrintUI(vcb, drVSeqNum);
+    PrintUI(vcb, drWrCnt);
+    PrintDataLength(vcb, drXTClpSiz);
+    PrintDataLength(vcb, drCTClpSiz);
+    PrintUI(vcb, drNmRtDirs);
+    PrintUI(vcb, drFilCnt);
+    PrintUI(vcb, drDirCnt);
+    PrintUI(vcb, drFndrInfo[0]);
+    PrintUI(vcb, drFndrInfo[1]);
+    PrintUI(vcb, drFndrInfo[2]);
+    PrintUI(vcb, drFndrInfo[3]);
+    PrintUI(vcb, drFndrInfo[4]);
+    PrintUI(vcb, drFndrInfo[5]);
+    PrintUI(vcb, drFndrInfo[6]);
+    PrintUI(vcb, drFndrInfo[7]);
+    PrintHFSChar(vcb, drEmbedSigWord);
+    PrintUI(vcb, drEmbedExtent.startBlock);
+    PrintUI(vcb, drEmbedExtent.blockCount);
 }
 
 void PrintVolumeHeader(const HFSPlusVolumeHeader *vh)

@@ -54,6 +54,34 @@ int hfs_close(HFSVolume *hfs) {
 
 #pragma mark Volume Structures
 
+bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFSVolume* hfs)
+{
+    if (hfs->fd) {
+        char* buffer;
+        INIT_BUFFER(buffer, 2048)
+        
+        ssize_t size;
+//        size = fread(buffer, sizeof(char), 2048, hfs->fp);
+        size = hfs_read_raw(buffer, hfs, 2048, 0); // Breaks on raw devices.
+        
+        if (size < 1) {
+            perror("read");
+            critical("Cannot read volume.");
+            FREE_BUFFER(buffer);
+            return -1;
+        }
+        
+        *vh = *(HFSMasterDirectoryBlock*)(buffer+1024);
+        FREE_BUFFER(buffer);
+        
+        swap_HFSMasterDirectoryBlock(vh);
+        
+        return true;
+    }
+    
+    return false;
+}
+
 bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFSVolume* hfs)
 {
     if (hfs->fd) {

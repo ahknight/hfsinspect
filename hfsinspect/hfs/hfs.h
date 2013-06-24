@@ -25,6 +25,8 @@ int hfs_open    (HFSVolume *hfs, const char *path);
 int hfs_load    (HFSVolume *hfs);
 int hfs_close   (HFSVolume *hfs);
 
+bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFSVolume* hfs);
+
 bool hfs_get_HFSPlusVolumeHeader    (HFSPlusVolumeHeader* vh, const HFSVolume* hfs);
 bool hfs_get_JournalInfoBlock       (JournalInfoBlock* block, const HFSVolume* hfs);
 

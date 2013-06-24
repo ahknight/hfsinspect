@@ -37,7 +37,7 @@ void hfsfork_free(HFSFork *fork)
     extentlist_free(fork->extents);
 }
 
-#pragma mark FS I/O
+#pragma mark - Volume I/O
 
 ssize_t hfs_read_raw(void* buffer, const HFSVolume *hfs, size_t size, size_t offset)
 {

@@ -28,6 +28,14 @@
 
 #endif
 
+#pragma mark HFS
+
+void swap_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* record);
+void swap_HFSExtentRecord(HFSExtentRecord* record);
+void swap_HFSExtentDescriptor(HFSExtentDescriptor* record);
+
+#pragma mark HFS Plus
+
 void swap_HFSPlusVolumeHeader       (HFSPlusVolumeHeader *vh);
 void swap_JournalInfoBlock          (JournalInfoBlock* record);
 void swap_HFSPlusForkData           (HFSPlusForkData *fork);

@@ -21,6 +21,48 @@
 #define Convert32(x)    x = OSSwapBigToHostInt32(x)
 #define Convert64(x)    x = OSSwapBigToHostInt64(x)
 
+void swap_HFSExtentDescriptor(HFSExtentDescriptor* record)
+{
+    Convert16(record->startBlock);
+    Convert16(record->blockCount);
+}
+
+void swap_HFSExtentRecord(HFSExtentRecord* record)
+{
+    FOR_UNTIL(i, kHFSExtentDensity) swap_HFSExtentDescriptor(record[i]);
+}
+
+void swap_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* record)
+{
+    Convert16(record->drSigWord);	/* == kHFSSigWord */
+	Convert32(record->drCrDate);	/* date and time of volume creation */
+	Convert32(record->drLsMod);	/* date and time of last modification */
+	Convert16(record->drAtrb);		/* volume attributes */
+	Convert16(record->drNmFls);	/* number of files in root folder */
+	Convert16(record->drVBMSt);	/* first block of volume bitmap */
+	Convert16(record->drAllocPtr);	/* start of next allocation search */
+	Convert16(record->drNmAlBlks);	/* number of allocation blocks in volume */
+	Convert32(record->drAlBlkSiz);	/* size (in bytes) of allocation blocks */
+	Convert32(record->drClpSiz);	/* default clump size */
+	Convert16(record->drAlBlSt);	/* first allocation block in volume */
+	Convert32(record->drNxtCNID);	/* next unused catalog node ID */
+	Convert16(record->drFreeBks);	/* number of unused allocation blocks */
+	Convert32(record->drVolBkUp);	/* date and time of last backup */
+	Convert16(record->drVSeqNum);	/* volume backup sequence number */
+	Convert32(record->drWrCnt);	/* volume write count */
+	Convert32(record->drXTClpSiz);	/* clump size for extents overflow file */
+	Convert32(record->drCTClpSiz);	/* clump size for catalog file */
+	Convert16(record->drNmRtDirs);	/* number of directories in root folder */
+	Convert32(record->drFilCnt);	/* number of files in volume */
+	Convert32(record->drDirCnt);	/* number of directories in volume */
+//	Convert32(record->drFndrInfo[8]);	/* information used by the Finder */
+	Convert16(record->drEmbedSigWord);	/* embedded volume signature (formerly drVCSize) */
+	swap_HFSExtentDescriptor(&record->drEmbedExtent);	/* embedded volume location and size (formerly drVBMCSize and drCtlCSize) */
+	Convert32(record->drXTFlSize);	/* size of extents overflow file */
+	swap_HFSExtentRecord(&record->drXTExtRec);	/* extent record for extents overflow file */
+	Convert32(record->drCTFlSize);	/* size of catalog file */
+	swap_HFSExtentRecord(&record->drCTExtRec);	/* extent record for catalog file */
+}
 
 void swap_HFSPlusVolumeHeader(HFSPlusVolumeHeader *record)
 {
