@@ -29,17 +29,24 @@ wchar_t* repwchar(wchar_t c, int count)
 }
 
 // Generate a human-readable string representing file size
-char* sizeString(size_t size)
+char* sizeString(size_t size, bool metric)
 {
+    float divisor = 1024.0;
+    if (metric) divisor = 1000.0;
+
+    char* sizeNames[] = { "bytes", "KiB", "MiB", "GiB", "TiB", "EiB", "PiB", "ZiB", "YiB" };
+    char* metricNames[] = { "bytes", "KB", "MB", "GB", "TB", "EB", "PB", "ZB", "YB" };
+
     long double displaySize = size;
     int count = 0;
-    char* sizeNames[] = { "bytes", "KiB", "MiB", "GiB", "TiB", "EiB", "PiB", "ZiB", "YiB" };
     while (count < 9) {
-        if (displaySize < 1024.) break;
-        displaySize /= 1024.;
+        if (displaySize < divisor) break;
+        displaySize /= divisor;
         count++;
     }
-    char* sizeLabel = sizeNames[count];
+    char* sizeLabel;
+
+    if (metric) sizeLabel = metricNames[count]; else sizeLabel = sizeNames[count];
     
     char* label = NULL;
     

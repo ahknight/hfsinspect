@@ -134,7 +134,7 @@ void _PrintCatalogName(char* label, hfs_node_id cnid)
 void _PrintHFSBlocks(const char *label, u_int64_t blocks)
 {
     size_t displaySize = blocks * volume.vh.blockSize;
-    char* sizeLabel = sizeString(displaySize);
+    char* sizeLabel = sizeString(displaySize, false);
     PrintAttributeString(label, "%s (%d blocks)", sizeLabel, blocks);
     FREE_BUFFER(sizeLabel);
 }
@@ -142,9 +142,20 @@ void _PrintHFSBlocks(const char *label, u_int64_t blocks)
 void _PrintDataLength(const char *label, u_int64_t size)
 {
     size_t displaySize = size;
-    char* sizeLabel = sizeString(displaySize);
-    PrintAttributeString(label, "%s (%lu bytes)", sizeLabel, size);
+    char* sizeLabel;
+    char* metricLabel;
+    if (size > 1024*1024) {
+        sizeLabel = sizeString(displaySize, false);
+        metricLabel = sizeString(displaySize, true);
+        PrintAttributeString(label, "%s/%s (%lu bytes)", sizeLabel, metricLabel, size);
+        FREE_BUFFER(sizeLabel); FREE_BUFFER(metricLabel);
+    } else if (size > 1024) {
+        sizeLabel = sizeString(displaySize, false);
+        PrintAttributeString(label, "%s (%lu bytes)", sizeLabel, size);
         FREE_BUFFER(sizeLabel);
+    } else {
+        PrintAttributeString(label, "%lu bytes", size);
+    }
 }
 
 void _PrintRawAttribute(const char* label, const void* map, size_t size, char base)
@@ -915,7 +926,7 @@ void PrintVolumeSummary(const VolumeSummary *summary)
     for (int i = 9; i > 0; i--) {
         if (summary->largestFiles[i].cnid == 0) continue;
         
-        char* size = sizeString(summary->largestFiles[i].measure);
+        char* size = sizeString(summary->largestFiles[i].measure, false);
         wchar_t* name = hfs_catalog_get_cnid_name(&volume, summary->largestFiles[i].cnid);
         print("%d %10s %10u %ls", 10-i, size, summary->largestFiles[i].cnid, name);
         FREE_BUFFER(size); FREE_BUFFER(name);
@@ -1066,7 +1077,7 @@ void VisualizeHFSBTreeNodeRecord(const HFSBTreeNodeRecord* record, const char* l
     printf("Value data:\n");
     VisualizeData(record->value, record->valueLength);
     
-    free(dashes);
+    FREE_BUFFER(dashes);
 }
 
 void VisualizeData(const char* data, size_t length)
@@ -1194,8 +1205,8 @@ void PrintFolderListing(u_int32_t folderID)
                 mode        = _genModeString(catalogRecord->catalogFile.bsdInfo.fileMode);
                 
                 if (catalogRecord->record_type == kHFSPlusFileRecord) {
-                    dataSize    = sizeString(catalogRecord->catalogFile.dataFork.logicalSize);
-                    rsrcSize    = sizeString(catalogRecord->catalogFile.resourceFork.logicalSize);
+                    dataSize    = sizeString(catalogRecord->catalogFile.dataFork.logicalSize, false);
+                    rsrcSize    = sizeString(catalogRecord->catalogFile.resourceFork.logicalSize, false);
                     
                     if (catalogRecord->catalogFile.dataFork.totalBlocks > 0) {
                         folderStats.dataForkCount++;
@@ -1249,8 +1260,8 @@ void PrintFolderListing(u_int32_t folderID)
         debug("Checking node %d", node.nodeNumber);
     }
     
-    char* dataTotal = sizeString(folderStats.dataForkSize);
-    char* rsrcTotal = sizeString(folderStats.rsrcForkCount);
+    char* dataTotal = sizeString(folderStats.dataForkSize, false);
+    char* rsrcTotal = sizeString(folderStats.rsrcForkCount, false);
     
     printf("%s\n", lineStr);
     printf(headerFormat, "", "", "", "", "", dataTotal, rsrcTotal, "");

@@ -434,7 +434,7 @@ VolumeSummary generateVolumeSummary(HFSVolume* hfs)
         if ((count % (catalog.headerRecord.leafRecords/10000)) == 0) {
             // Update
             size_t space = summary.dataFork.logicalSpace + summary.resourceFork.logicalSpace;
-            char* size = sizeString(space);
+            char* size = sizeString(space, false);
             
             fprintf(stdout, "\x1b[G%0.2f%% (files: %llu; directories: %llu; size: %s)",
                     (float)count / (float)catalog.headerRecord.leafRecords * 100.,

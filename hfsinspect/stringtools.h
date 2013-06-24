@@ -16,7 +16,7 @@ char* repchar(char c, int count);
 wchar_t* repwchar(wchar_t c, int count);
 
 // Generate a human-readable string representing file size
-char* sizeString(size_t size);
+char* sizeString(size_t size, bool metric);
 
 // Generate a string representation of a buffer with adjustable number base (2-36).
 char* memstr(const char* buf, size_t length, u_int8_t base);
