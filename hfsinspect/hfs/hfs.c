@@ -57,7 +57,8 @@ int hfs_close(HFSVolume *hfs) {
 bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFSVolume* hfs)
 {
     if (hfs->fd) {
-        char* buffer = malloc(4096);
+        char* buffer;
+        INIT_BUFFER(buffer, 2048)
         
         ssize_t size;
 //        size = hfs_read_raw(&buffer, hfs, 2048, 0); // Breaks on raw devices.
@@ -66,12 +67,12 @@ bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFSVolume* hfs)
         if (size < 1) {
             perror("read");
             critical("Cannot read volume.");
-            free(buffer);
+            FREE_BUFFER(buffer);
             return -1;
         }
         
         *vh = *(HFSPlusVolumeHeader*)(buffer+1024);
-        free(buffer);
+        FREE_BUFFER(buffer);
         
         swap_HFSPlusVolumeHeader(vh);
         
@@ -84,7 +85,9 @@ bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFSVolume* hfs)
 bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFSVolume* hfs)
 {
     if (hfs->vh.journalInfoBlock) {
-        void* buffer = malloc(hfs->vh.blockSize);
+        char* buffer;
+        INIT_BUFFER(buffer, hfs->vh.blockSize);
+        
         ssize_t read = hfs_read_blocks(buffer, hfs, 1, hfs->vh.journalInfoBlock);
         if (read < 0) {
             perror("read");
@@ -93,7 +96,7 @@ bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFSVolume* hfs)
             critical("Didn't read the whole journal info block!");
         }
         *block = *(JournalInfoBlock*)buffer; // copies
-        free(buffer);
+        FREE_BUFFER(buffer);
         
         swap_JournalInfoBlock(block);
         return true;

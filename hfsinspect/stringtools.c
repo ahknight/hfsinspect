@@ -9,7 +9,6 @@
 #include "stringtools.h"
 
 #include <stdio.h>
-#include <malloc/malloc.h>
 
 // repeat character
 char* repchar(char c, int count)
@@ -63,7 +62,8 @@ char* memstr(const char* buf, size_t length, u_int8_t base)
     
     // Size of the result string.
     size_t rlength = (length * chars_per_byte);
-    char* result = malloc(rlength + 1);
+    char* result;
+    INIT_STRING(result, rlength + 1);
     
     // Init the string's bytes to the character zero so that positions we don't write to have something printable.
     memset(result, '0', malloc_size(result));
@@ -102,7 +102,7 @@ void memdump(const char* data, size_t length, u_int8_t base, u_int8_t gsize, u_i
         for (int c = 0; c < lineMax; c++) {
             if ( (c % group_size) == 0 ) printf(" ");
             char* str = memstr(&line[c], 1, base);
-            printf("%s ", str); free(str);
+            printf("%s ", str); FREE_BUFFER(str);
         }
         printf("|");
         for (int c = 0; c < lineMax; c++) {

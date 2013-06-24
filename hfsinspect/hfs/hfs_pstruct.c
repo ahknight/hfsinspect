@@ -15,7 +15,6 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <libkern/OSByteOrder.h>
-#include <malloc/malloc.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <stdbool.h>
@@ -80,8 +79,7 @@ void PrintString(const char* label, const char* value_format, ...)
     char* str;
     vasprintf(&str, value_format, argp);
     printf("  %-23s  %s\n", label, str);
-    if (malloc_size(str))
-        free(str);
+    FREE_BUFFER(str);
     va_end(argp);
 }
 
@@ -92,8 +90,7 @@ void PrintHeaderString(const char* value_format, ...)
     char* str;
     vasprintf(&str, value_format, argp);
     printf("\n# %s\n", str);
-    if (malloc_size(str))
-        free(str);
+    FREE_BUFFER(str);
     va_end(argp);
 }
 
@@ -104,8 +101,7 @@ void PrintAttributeString(const char* label, const char* value_format, ...)
     char* str;
     vasprintf(&str, value_format, argp);
     printf("  %-23s= %s\n", label, str);
-    if (malloc_size(str))
-        free(str);
+    FREE_BUFFER(str);
     va_end(argp);
 }
 
@@ -116,8 +112,7 @@ void PrintSubattributeString(const char* str, ...)
     char* s;
     vasprintf(&s, str, argp);
     printf("  %-23s. %s\n", "", s);
-    if (malloc_size(s))
-        free(s);
+    FREE_BUFFER(s);
     va_end(argp);
 }
 
@@ -133,7 +128,7 @@ void _PrintCatalogName(char* label, hfs_node_id cnid)
     
     PrintAttributeString(label, "%d (%ls)", cnid, name);
     
-    if (malloc_size(name)) free(name);
+    FREE_BUFFER(name);
 }
 
 void _PrintHFSBlocks(const char *label, u_int64_t blocks)
@@ -141,7 +136,7 @@ void _PrintHFSBlocks(const char *label, u_int64_t blocks)
     size_t displaySize = blocks * volume.vh.blockSize;
     char* sizeLabel = sizeString(displaySize);
     PrintAttributeString(label, "%s (%d blocks)", sizeLabel, blocks);
-    free(sizeLabel);
+    FREE_BUFFER(sizeLabel);
 }
 
 void _PrintDataLength(const char *label, u_int64_t size)
@@ -149,7 +144,7 @@ void _PrintDataLength(const char *label, u_int64_t size)
     size_t displaySize = size;
     char* sizeLabel = sizeString(displaySize);
     PrintAttributeString(label, "%s (%lu bytes)", sizeLabel, size);
-    free(sizeLabel);
+        FREE_BUFFER(sizeLabel);
 }
 
 void _PrintRawAttribute(const char* label, const void* map, size_t size, char base)
@@ -161,11 +156,11 @@ void _PrintRawAttribute(const char* label, const void* map, size_t size, char ba
     for (int i = 0; i < len; i += segmentLength) {
         char* segment = strndup(&str[i], MIN(segmentLength, len - i));
         PrintAttributeString(label, "%s%s", (base==16?"0x":""), segment);
-        free(segment);
+        FREE_BUFFER(segment);
         if (i == 0) label = "";
     }
     
-    free(str);
+    FREE_BUFFER(str);
 }
 
 void _PrintHFSTimestamp(const char* label, u_int32_t timestamp)
@@ -179,11 +174,11 @@ void _PrintHFSTimestamp(const char* label, u_int32_t timestamp)
     time_t seconds = timestamp;
     struct tm *t = gmtime(&seconds);
     
-    char* buf = malloc(50);
-    bzero(buf, 50);
+    char* buf;
+    INIT_STRING(buf, 50);
     strftime(buf, 50, "%c %Z\0", t);
     PrintAttributeString(label, buf);
-    free(buf);
+    FREE_BUFFER(buf);
 }
 
 void _PrintHFSChar(const char* label, const void* i, size_t nbytes)
@@ -191,7 +186,8 @@ void _PrintHFSChar(const char* label, const void* i, size_t nbytes)
     // Iterates over the input (i) from left to right, copying bytes
     // in reverse order as chars in a string. Reverse order because we
     // presume the host is little-endian.
-    char* str = malloc(nbytes + 1);
+    char* str;
+    INIT_STRING(str, nbytes + 1);
     for (size_t byte = 0; byte < nbytes; byte++) {
         str[byte] = ((char*)i)[(nbytes-1) - byte];
     }
@@ -203,15 +199,15 @@ void _PrintHFSChar(const char* label, const void* i, size_t nbytes)
     PrintAttributeString(label, "0x%s (%s)", hex, str);
     
     // Cleanup
-    free(hex);
-    free(str);
+    FREE_BUFFER(hex);
+    FREE_BUFFER(str);
 }
 
 void _PrintHFSUniStr255(const char* label, const HFSUniStr255 *record)
 {
     wchar_t *wide = hfsuctowcs(record);
     wprintf(L"  %-23s= \"%ls\" (%u)\n", label, wide, record->length);
-    free(wide);
+    FREE_BUFFER(wide);
 }
 
 
@@ -228,7 +224,7 @@ void PrintVolumeInfo(const HFSVolume* hfs)
     
     wchar_t* volumeName = hfs_catalog_get_cnid_name(hfs, kHFSRootFolderID);
     PrintAttributeString("volume name", "%ls", volumeName);
-    free(volumeName);
+    FREE_BUFFER(volumeName);
     
     HFSBTree catalog = hfs_get_catalog_btree(hfs);
     
@@ -377,7 +373,7 @@ void PrintExtentList(const ExtentList* list, u_int32_t totalBlocks)
     
     char* sumLine = repchar('-', 38);
     PrintString("", sumLine);
-    free(sumLine);
+    FREE_BUFFER(sumLine);
     
     if (totalBlocks) {
         PrintString("", "%4d extents %12d %12.2f", usedExtents, catalogBlocks, total);
@@ -628,7 +624,7 @@ void PrintHFSPlusBSDInfo(const HFSPlusBSDInfo *record)
     
     char* modeString = _genModeString(mode);
     PrintAttributeString("fileMode", modeString);
-    free(modeString);
+    FREE_BUFFER(modeString);
     
     PrintUIOct(record, fileMode);
     
@@ -872,17 +868,18 @@ void PrintJournalInfoBlock(const JournalInfoBlock *record)
     PrintDataLength         (record, offset);
     PrintDataLength         (record, size);
 
-    char* str = malloc(sizeof(uuid_string_t));
+    char* str;
+    INIT_STRING(str, sizeof(uuid_string_t));
     str[sizeof(uuid_string_t) - 1] = '\0';
     memcpy(str, &record->ext_jnl_uuid[0], sizeof(uuid_string_t));
     PrintAttributeString("ext_jnl_uuid", str);
-    free(str); str=NULL;
+    FREE_BUFFER(str);
 
-    str = malloc(49);
-    str[48] = '\0';
+    INIT_STRING(str, 49);
     memcpy(str, &record->machine_serial_num[0], 48);
+    str[48] = '\0';
     PrintAttributeString("machine_serial_num", str);
-    free(str); str=NULL;
+    FREE_BUFFER(str);
     
     // (u_int32_t) reserved[32]
 }
@@ -921,7 +918,7 @@ void PrintVolumeSummary(const VolumeSummary *summary)
         char* size = sizeString(summary->largestFiles[i].measure);
         wchar_t* name = hfs_catalog_get_cnid_name(&volume, summary->largestFiles[i].cnid);
         print("%d %10s %10u %ls", 10-i, size, summary->largestFiles[i].cnid, name);
-        free(size); free(name);
+        FREE_BUFFER(size); FREE_BUFFER(name);
     }
 }
 
@@ -1002,10 +999,10 @@ void VisualizeHFSPlusCatalogKey(const HFSPlusCatalogKey *record, const char* lab
         printf(format, record->keyLength, record->parentID, record->nodeName.length, name);
         printf(line_f, dashes);
         
-        free(dashes);
+        FREE_BUFFER(dashes);
     }
     
-    free(name);
+    FREE_BUFFER(name);
 }
 
 void VisualizeHFSPlusAttrKey(const HFSPlusAttrKey *record, const char* label, bool oneLine)
@@ -1045,10 +1042,10 @@ void VisualizeHFSPlusAttrKey(const HFSPlusAttrKey *record, const char* label, bo
         printf(format, record->keyLength, record->fileID, record->startBlock, record->attrNameLen, name);
         printf(line_f, dashes);
         
-        free(dashes);
+        FREE_BUFFER(dashes);
     }
     
-    free(name);
+    FREE_BUFFER(name);
 }
 
 void VisualizeHFSBTreeNodeRecord(const HFSBTreeNodeRecord* record, const char* label)
@@ -1151,7 +1148,7 @@ void PrintFolderListing(u_int32_t folderID)
     memset(&folderStats, 0, sizeof(folderStats));
 
     printf("Listing for %ls\n", name);
-    free(name);
+    FREE_BUFFER(name);
     
     printf(headerFormat, "CNID", "kind", "mode", "user", "group", "data", "rsrc", "name");
 
@@ -1217,11 +1214,11 @@ void PrintFolderListing(u_int32_t folderID)
                 
                 printf(rowFormat, cnid, kind, mode, user, group, dataSize, rsrcSize, name);
                 
-                free(name);
-                free(mode);
-                free(dataSize);
-                free(rsrcSize);
-                free(kind);
+                FREE_BUFFER(name);
+                FREE_BUFFER(mode);
+                FREE_BUFFER(dataSize);
+                FREE_BUFFER(rsrcSize);
+                FREE_BUFFER(kind);
             }
             recordID = record->recordID;
         }
@@ -1276,9 +1273,9 @@ void PrintFolderListing(u_int32_t folderID)
            folderStats.symlinkCount
            );
     
-    free(dataTotal);
-    free(rsrcTotal);
-    free(lineStr);
+    FREE_BUFFER(dataTotal);
+    FREE_BUFFER(rsrcTotal);
+    FREE_BUFFER(lineStr);
     hfs_btree_free_node(&node);
     
     debug("Done listing.");

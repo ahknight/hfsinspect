@@ -11,7 +11,6 @@
 #include <sys/param.h>
 #include <sys/mount.h>
 #include <locale.h>
-#include <malloc/malloc.h>
 #include <sys/stat.h>
 
 #include "hfs.h"
@@ -188,7 +187,7 @@ void showPathInfo()
     
     while ( (segment = strsep(&file_path, "/")) != NULL ) {
         debug("Segment: %d:%s", parentID, segment);
-        if (last_segment != NULL) free(last_segment);
+        if (last_segment != NULL) FREE_BUFFER(last_segment);
         last_segment = strdup(segment);
         last_parentID = parentID;
         
@@ -269,7 +268,7 @@ void showCatalogRecord(hfs_node_id parent, HFSUniStr255 filename, bool follow)
         if (type == kHFSPlusFileThreadRecord || type == kHFSPlusFolderThreadRecord) {
             if (follow) {
                 debug("Following thread for %d:%ls", parent, filename_str);
-                free(filename_str);
+                FREE_BUFFER(filename_str);
                 showCatalogRecord(catalogRecord.catalogThread.parentID, catalogRecord.catalogThread.nodeName, follow);
                 return;
                 
@@ -313,7 +312,7 @@ void showCatalogRecord(hfs_node_id parent, HFSUniStr255 filename, bool follow)
         error("Record not found: %d:%ls", parent, filename_str);
     }
     
-    free(filename_str);
+    FREE_BUFFER(filename_str);
 }
 
 int compare_ranked_files(const Rank * a, const Rank * b)
@@ -444,7 +443,7 @@ VolumeSummary generateVolumeSummary(HFSVolume* hfs)
                     size
                     );
             fflush(stdout);
-            free(size);
+            FREE_BUFFER(size);
         }
     
     }
@@ -517,7 +516,8 @@ void extractHFSPlusCatalogFile(const HFSVolume *hfs, const HFSPlusCatalogFile* f
         hfsfork_free(&fork);
     }
     if (file->resourceFork.logicalSize > 0) {
-        char* outputPath = malloc(FILENAME_MAX);
+        char* outputPath;
+        INIT_STRING(outputPath, FILENAME_MAX);
         ssize_t size;
         size = strlcpy(outputPath, extractPath, sizeof(outputPath));
         if (size < 1) critical("Could not create destination filename.");
@@ -531,7 +531,7 @@ void extractHFSPlusCatalogFile(const HFSVolume *hfs, const HFSPlusCatalogFile* f
             critical("Extract resource fork failed.");
         }
         hfsfork_free(&fork);
-        free(outputPath);
+        FREE_BUFFER(outputPath);
     }
     // TODO: Merge forks, set attributes ... essentially copy it. Maybe extract in AppleSingle/Double/MacBinary format?
 }
@@ -662,8 +662,8 @@ int main (int argc, char* const *argv)
             case 'p':
                 set_mode(HIModeShowPathInfo);
                 
-                HIOptions.device_path   = malloc(PATH_MAX); memset(HIOptions.device_path, '\0', PATH_MAX);
-                HIOptions.file_path     = malloc(PATH_MAX); memset(HIOptions.file_path, '\0', PATH_MAX);
+                INIT_STRING(HIOptions.device_path, PATH_MAX);
+                INIT_STRING(HIOptions.file_path,   PATH_MAX);
                 
                 bool success = resolveDeviceAndPath(optarg, HIOptions.device_path, HIOptions.file_path);
                 if ( !success || !strlen(HIOptions.device_path ) ) fatal("Device could not be determined. Specify manually with -d/--device.");
@@ -699,7 +699,7 @@ int main (int argc, char* const *argv)
                 if (parent && strlen(parent)) sscanf(parent, "%u", &HIOptions.record_parent);
                 if (filename) HIOptions.record_filename = strdup(filename);
                 
-                free(option);
+                FREE_BUFFER(option);
                 
                 if (HIOptions.record_filename == NULL || HIOptions.record_parent == 0) fatal("option -F/--fsspec requires a parent ID and file (eg. 2:.journal)");
                 
@@ -764,11 +764,12 @@ OPEN:
         if (errno == EBUSY) {
             // If the device is busy, see if we can use the raw disk instead (and aren't already).
             if (strstr(HIOptions.device_path, "/dev/disk") != NULL) {
-                char* newDevicePath = malloc(PATH_MAX + 1);
+                char* newDevicePath;
+                INIT_STRING(newDevicePath, PATH_MAX + 1);
                 strlcat(newDevicePath, "/dev/rdisk", PATH_MAX);
                 strlcat(newDevicePath, &HIOptions.device_path[9], PATH_MAX);
                 info("Device %s busy. Trying the raw disk instead: %s", HIOptions.device_path, newDevicePath);
-                free(HIOptions.device_path); HIOptions.device_path = NULL;
+                FREE_BUFFER(HIOptions.device_path);
                 HIOptions.device_path = newDevicePath;
                 goto OPEN;
             }

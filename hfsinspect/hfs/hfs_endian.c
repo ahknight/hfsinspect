@@ -81,14 +81,12 @@ void swap_JournalInfoBlock(JournalInfoBlock* record)
      typedef struct JournalInfoBlock JournalInfoBlock;
      */
     Convert32(record->flags);
-    for (int i = 0; i< 8; i++) {
-        Convert32(record->device_signature[i]);
-    }
+    FOR_UNTIL(i, 8) Convert32(record->device_signature[i]);
     Convert64(record->offset);
     Convert64(record->size);
     // uuid_string_t is a series of char
     // machine_serial_num is a series of char
-    // reserved is untouchable
+    // reserved is reserved
 }
 
 void swap_HFSPlusForkData(HFSPlusForkData *record)

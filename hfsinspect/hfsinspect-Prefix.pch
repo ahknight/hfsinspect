@@ -32,6 +32,9 @@
 // Bool
 #include <stdbool.h>
 
+// malloc functions
+#include <malloc/malloc.h>
+
 #ifndef	MIN
 #define	MIN(a, b)	((a) < (b) ? (a) : (b))
 #endif
@@ -39,3 +42,18 @@
 #ifndef	MAX
 #define	MAX(a, b)	((a) > (b) ? (a) : (b))
 #endif
+
+#ifndef INIT_BUFFER
+#define INIT_BUFFER(name, size) { (name) = valloc( (size) ); if ((name) == NULL) { perror("valloc"); exit(errno); }; memset((name), 0, malloc_size((name))); }
+#endif
+
+#ifndef INIT_STRING
+#define INIT_STRING(name, size) { (name) = malloc( (size) ); if ( (name) == NULL) { perror("malloc"); exit(errno); }; memset( (name), '\0', malloc_size( (name) )); }
+#endif
+
+#ifndef FREE_BUFFER
+#define FREE_BUFFER(name)  { if (malloc_size( (name) )) { memset( (name), 0, malloc_size( (name) )); free( (name) ); (name) = NULL; } }
+#endif
+
+
+#define FOR_UNTIL(var, end) for(int var = 0; var < end; var++)

@@ -7,7 +7,6 @@
 //
 
 #include "logging.h"
-#include <malloc/malloc.h>
 #include <signal.h>
 
 struct _colorState {
@@ -155,7 +154,8 @@ void PrintLine(FILE* f, enum LogLevel level, const char* file, const char* funct
     // Indent the string with the call depth.
     unsigned int depth = stack_depth(40) - 1; // remove our frame
     depth = MIN(depth, 40);
-    char* indent = malloc(100);
+    char* indent;
+    INIT_STRING(indent, 100);
     memset(indent, ' ', malloc_size(indent));
     indent[depth] = '\0';
     strlcat(indent, inputstr, malloc_size(indent));
@@ -201,8 +201,8 @@ void PrintLine(FILE* f, enum LogLevel level, const char* file, const char* funct
     _print_reset(f);
     
     // Clean up.
-    if (malloc_size(inputstr)) free(inputstr);
-    free(indent);
+    FREE_BUFFER(inputstr);
+    FREE_BUFFER(indent);
     
     va_end(argp);
 }

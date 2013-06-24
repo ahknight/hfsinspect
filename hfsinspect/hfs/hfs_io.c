@@ -106,7 +106,8 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
         debug("Trimmed request to (%d, %d) (file only has %d blocks)", request.start, request.count, fork->forkData.totalBlocks);
     }
     
-    void* read_buffer  = malloc(block_count * fork->hfs.vh.blockSize);
+    char* read_buffer;
+    INIT_BUFFER(read_buffer, block_count * fork->hfs.vh.blockSize);
     ExtentList *extentList = fork->extents;;
     
     // Keep track of what's left to get
@@ -141,7 +142,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
         
         ssize_t blocks = hfs_read_blocks(read_buffer, &fork->hfs, read_range.count, read_range.start);
         if (blocks < 0) {
-            free(read_buffer);
+            FREE_BUFFER(read_buffer);
             perror("read fork");
             critical("Read error.");
             return -1;
@@ -154,7 +155,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
     }
 //    debug("Appending bytes");
     memcpy(buffer, read_buffer, MIN(block_count, request.count) * fork->hfs.vh.blockSize);
-    free(read_buffer);
+    FREE_BUFFER(read_buffer);
     
 //    debug("returning %zd", request.count);
     return request.count;
@@ -196,7 +197,7 @@ ssize_t hfs_read_fork_range(Buffer *buffer, const HFSFork *fork, size_t size, si
     size_t block_count = (size / (size_t)block_size) + ( ((offset + size) % block_size) ? 1 : 0);
     
     // Use the calculated size instead of the passed size to account for block alignment.
-    char* read_buffer = malloc(block_count * block_size);
+    char* read_buffer; INIT_BUFFER(read_buffer, block_count * block_size);
     
     // Fetch the data into a read buffer (it may fail).
     ssize_t read_blocks = hfs_read_fork(read_buffer, fork, block_count, start_block);
@@ -205,7 +206,7 @@ ssize_t hfs_read_fork_range(Buffer *buffer, const HFSFork *fork, size_t size, si
     if (read_blocks) buffer_append(buffer, read_buffer + byte_offset, size);
     
     // Clean up.
-    free(read_buffer);
+    FREE_BUFFER(read_buffer);
     
     // The amount we added to the buffer.
     return size;

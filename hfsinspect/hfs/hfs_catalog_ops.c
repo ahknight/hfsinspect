@@ -11,7 +11,6 @@
 #include "hfs_io.h"
 #include "hfs_pstruct.h"
 #include "hfs_unicode.h" // Apple's FastUnicodeCompare and conversion table.
-#include <malloc/malloc.h>
 
 const u_int32_t kAliasCreator       = 'MACS';
 const u_int32_t kFileAliasType      = 'alis';
@@ -71,7 +70,7 @@ int8_t hfs_catalog_find_record(HFSBTreeNode *node, hfs_record_id *recordID, cons
 {
     wchar_t* wc_name = hfsuctowcs(&name);
     debug("Searching catalog for %d:%ls", parentFolder, wc_name);
-    free(wc_name);
+    FREE_BUFFER(wc_name);
     
     HFSPlusCatalogKey catalogKey;
     catalogKey.parentID = parentFolder;
@@ -119,7 +118,7 @@ int hfs_catalog_compare_keys_bc(const HFSPlusCatalogKey *key1, const HFSPlusCata
         wchar_t* key1Name = hfsuctowcs(&key1->nodeName);
         wchar_t* key2Name = hfsuctowcs(&key2->nodeName);
         int result = wcscmp(key1Name, key2Name);
-        free(key1Name); free(key2Name);
+        FREE_BUFFER(key1Name); FREE_BUFFER(key2Name);
         return result;
     } else if (key1->parentID > key2->parentID) return 1;
     
@@ -134,7 +133,8 @@ wchar_t* hfsuctowcs(const HFSUniStr255* input)
     int len = MIN(input->length, 255);
     
     // Allocate the return value
-    wchar_t* output = malloc(sizeof(wchar_t) * (len+1));
+    wchar_t* output;
+    INIT_STRING(output, sizeof(wchar_t) * (len+1));
     
     // Iterate over the input
     for (int i = 0; i < len; i++) {
@@ -176,7 +176,8 @@ HFSUniStr255 wcstohfsuc(const wchar_t* input)
 HFSUniStr255 strtohfsuc(const char* input)
 {
     HFSUniStr255 output = {0, {'\0','\0'}};
-    wchar_t* wide = malloc(256);
+    wchar_t* wide;
+    INIT_STRING(wide, 256);
     
     size_t char_count = strlen(input);
     size_t wide_char_count = mbstowcs(wide, input, 255);
@@ -185,7 +186,7 @@ HFSUniStr255 strtohfsuc(const char* input)
     if (char_count != wide_char_count) {
         error("Conversion error: mbstowcs returned a string of a different length than the input: %zd in; %zd out", char_count, wide_char_count);
     }
-    free(wide);
+    FREE_BUFFER(wide);
     
     return output;
 }
