@@ -399,7 +399,7 @@ void PrintForkExtentsSummary(const HFSFork* fork)
 {
     info("Printing extents summary");
     
-    PrintExtentList(fork->extents, fork->forkData.totalBlocks);
+    PrintExtentList(fork->extents, fork->totalBlocks);
 }
 
 void PrintHFSPlusForkData(const HFSPlusForkData *fork, u_int32_t cnid, u_int8_t forktype)

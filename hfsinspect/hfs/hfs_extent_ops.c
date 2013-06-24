@@ -110,7 +110,7 @@ bool hfs_extents_get_extentlist_for_fork(ExtentList* list, const HFSFork* fork)
     extentlist_add_record(list, fork->forkData.extents);
     for (int i = 0; i < kHFSPlusExtentDensity; i++) blocks += fork->forkData.extents[i].blockCount;
     
-    while (blocks < fork->forkData.totalBlocks) {
+    while (blocks < fork->totalBlocks) {
         debug("Fetching more extents");
         HFSPlusExtentRecord record;
         hfs_block startBlock = 0;

@@ -22,6 +22,8 @@ HFSFork hfsfork_make(const HFSVolume *hfs, const HFSPlusForkData forkData, hfs_f
     fork.forkData = forkData;
     fork.forkType = forkType;
     fork.cnid = cnid;
+    fork.totalBlocks = forkData.totalBlocks;
+    fork.logicalSize = forkData.logicalSize;
     
     fork.extents = extentlist_alloc();
     bool success = hfs_extents_get_extentlist_for_fork(fork.extents, &fork);
@@ -149,15 +151,15 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
         return -1;
     }
     
-    if ( request.start > fork->forkData.totalBlocks ) {
-        error("Request would begin beyond the end of the file (start block: %u; file size: %u blocks.", request.start, fork->forkData.totalBlocks);
+    if ( request.start > fork->totalBlocks ) {
+        error("Request would begin beyond the end of the file (start block: %u; file size: %u blocks.", request.start, fork->totalBlocks);
         return -1;
     }
     
-    if ( range_max(request) >= fork->forkData.totalBlocks ) {
-        request.count = fork->forkData.totalBlocks - request.start;
+    if ( range_max(request) >= fork->totalBlocks ) {
+        request.count = fork->totalBlocks - request.start;
         request.count = MAX(request.count, 1);
-        debug("Trimmed request to (%d, %d) (file only has %d blocks)", request.start, request.count, fork->forkData.totalBlocks);
+        debug("Trimmed request to (%d, %d) (file only has %d blocks)", request.start, request.count, fork->totalBlocks);
     }
     
     char* read_buffer;
@@ -173,7 +175,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
             TAILQ_FOREACH(extent, extentList, extents) {
                 printf("%10zd: %10zd %10zd\n", extent->logicalStart, extent->startBlock, extent->blockCount);
             }
-            PrintExtentList(extentList, fork->forkData.totalBlocks);
+            PrintExtentList(extentList, fork->totalBlocks);
             critical("We're stuck in a read loop: request (%zd, %zd); remaining (%zd, %zd)", request.start, request.count, remaining.start, remaining.count);
         }
         
@@ -181,7 +183,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
         range read_range;
         bool found = extentlist_find(extentList, remaining.start, &read_range.start, &read_range.count);
         if (!found) {
-            PrintExtentList(extentList, fork->forkData.totalBlocks);
+            PrintExtentList(extentList, fork->totalBlocks);
             critical("Logical block %zd not found in the extents for CNID %d!", remaining.start, fork->cnid);
         }
         
@@ -224,14 +226,14 @@ ssize_t hfs_read_fork_range(Buffer *buffer, const HFSFork *fork, size_t size, si
     size_t block_size = fork->hfs.vh.blockSize;
     
     // Range check.
-    if (offset > fork->forkData.logicalSize) {
-        error("Request for logical offset larger than the size of the fork (%d, %d)", offset, fork->forkData.logicalSize);
+    if (offset > fork->logicalSize) {
+        error("Request for logical offset larger than the size of the fork (%d, %d)", offset, fork->logicalSize);
         errno = ESPIPE; // Illegal seek
         return -1;
     }
     
-    if ( (offset + size) > fork->forkData.logicalSize ) {
-        size = fork->forkData.logicalSize - offset;
+    if ( (offset + size) > fork->logicalSize ) {
+        size = fork->logicalSize - offset;
         debug("Adjusted read to (%d, %d)", offset, size);
     }
     

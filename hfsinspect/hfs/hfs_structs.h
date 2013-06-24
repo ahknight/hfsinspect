@@ -31,14 +31,21 @@ typedef struct HFSBTreeNodeRecord   HFSBTreeNodeRecord;
 struct HFSVolume {
     int                 fd;                 // File descriptor
     FILE                *fp;                // File pointer
+    char                device[PATH_MAX];   // Device path
+//    struct statfs       stat_fs;            // statfs record for the device path
+//    struct stat         stat;               // stat record for the device path
     HFSPlusVolumeHeader vh;                 // Volume header
+    off_t               offset;             // Partition offset, if known/needed
+    size_t              length;             // Partition length, if known/needed
 };
 
 struct HFSFork {
     HFSVolume           hfs;                // File system descriptor
     HFSPlusForkData     forkData;           // Contains the initial extents
-    u_int8_t            forkType;           // 0x00: data; 0xFF: resource
-    u_int32_t           cnid;               // For extents overflow lookups
+    hfs_fork_type       forkType;           // 0x00: data; 0xFF: resource
+    hfs_node_id         cnid;               // For extents overflow lookups
+    hfs_block           totalBlocks;
+    hfs_size            logicalSize;
     struct _ExtentList  *extents;           // All known extents
 };
 
@@ -50,7 +57,7 @@ struct HFSBTree {
 };
 
 struct HFSBTreeNodeRecord {
-    u_int32_t           treeCNID;
+    hfs_node_id         treeCNID;
     hfs_node_id         nodeID;
     HFSBTreeNode*       node;
     hfs_record_id       recordID;
@@ -68,9 +75,9 @@ struct HFSBTreeNode {
     HFSBTree            bTree;              // Parent tree
     BTNodeDescriptor    nodeDescriptor;     // This node's descriptor record
     size_t              nodeSize;           // Node/buffer size in bytes
-    u_int32_t           nodeNumber;         // Node number in the tree file
+    hfs_node_id         nodeNumber;         // Node number in the tree file
     off_t               nodeOffset;         // Block offset within the tree file
-    u_int16_t           recordCount;
+    hfs_record_id       recordCount;
     HFSBTreeNodeRecord  records[512];
 };
 
