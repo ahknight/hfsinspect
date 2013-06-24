@@ -281,6 +281,11 @@ HFSBTreeNodeRecord* hfs_catalog_next_in_folder (const HFSBTreeNodeRecord* catalo
     return NULL;
 }
 
+HFSBTreeNodeRecord* hfs_catalog_path_to_record(const HFSVolume* hfs, const wchar_t* path)
+{
+    return NULL;
+}
+
 wchar_t* hfs_catalog_record_to_path (const HFSBTreeNodeRecord* catalogRecord)
 {
     // Crawl parent ID up, gathering names along the way. Build path from that.

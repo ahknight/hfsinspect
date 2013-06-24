@@ -7,7 +7,7 @@
 //
 
 #include "hfs.h"
-
+#include "format_sniffers.h"
 
 #pragma mark Volume Abstractions
 
@@ -23,7 +23,7 @@ int hfs_open(HFSVolume *hfs, const char *path) {
 }
 
 int hfs_load(HFSVolume *hfs) {
-    debug("Loading volume with descriptor %u", hfs->fd);
+    debug("Loading volume header for descriptor %u", hfs->fd);
 
     bool success = hfs_get_HFSPlusVolumeHeader(&hfs->vh, hfs);
     if (!success) critical("Could not read volume header!");
@@ -35,9 +35,13 @@ int hfs_load(HFSVolume *hfs) {
     }
     
     if (hfs->vh.signature != kHFSPlusSigWord && hfs->vh.signature != kHFSXSigWord) {
-        error("not an HFS+ or HFSX volume signature: 0x%x", hfs->vh.signature);
-        VisualizeData((void*)&hfs->vh, sizeof(HFSPlusVolumeHeader));
-        errno = EFTYPE;
+        debug("Not HFS+ or HFSX. Detecting format...");
+        if (! sniff_and_print(hfs)) {
+            error("not an HFS+ or HFSX volume signature: 0x%x", hfs->vh.signature);
+            VisualizeData((void*)&hfs->vh, sizeof(HFSPlusVolumeHeader));
+            errno = EFTYPE;
+        }
+        errno = 0;
         return -1;
     }
     

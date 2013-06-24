@@ -15,6 +15,7 @@
 
 #include "hfs.h"
 #include "stringtools.h"
+#include "format_sniffers.h"
 
 #pragma mark - Function Declarations
 
@@ -46,10 +47,15 @@ const char*     BTreeOptionExtents          = "extents";
 const char*     BTreeOptionAttributes       = "attributes";
 const char*     BTreeOptionHotfile          = "hotfile";
 
+typedef enum BTreeTypes {
+    BTreeTypeCatalog = 0,
+    BTreeTypeExtents,
+    BTreeTypeAttributes,
+    BTreeTypeHotfile
+} BTreeTypes;
+
 enum HIModes {
-    HIModeShowHelp = 0,
-    HIModeShowVersion,
-    HIModeShowVolumeInfo,
+    HIModeShowVolumeInfo = 0,
     HIModeShowJournalInfo,
     HIModeShowSummary,
     HIModeShowBTreeInfo,
@@ -79,10 +85,9 @@ static struct HIOptions {
     HFSFork             extract_HFSFork;
     
     HFSVolume   hfs;
-    const char* tree_type;
+    BTreeTypes  tree_type;
     HFSBTree    tree;
     hfs_node_id node_id;
-    
 } HIOptions;
 
 #pragma mark - Function Definitions
@@ -101,7 +106,6 @@ void usage(int status)
      -f,        --fragmentation display all fragmented files on the volume
      -H,        --hotfiles      display the hottest files on the volume; requires
                                     the -t (--top=TOP) option for the number to list
-     -J,        --journalbuffer display detailed information about the journal
      -l TYPE,   --list=TYPE     specify an HFS+ B-Tree's leaf nodes' type, where
                                      TYPE is one of "file", "folder", "filethread", or
                                      "folderthread" for the Catalog B-Tree; one of
@@ -143,6 +147,7 @@ INFO: \n\
     -n,         --node ID       Dump an HFS+ B-Tree node by ID (must specify tree with -b). \n\
     -v,         --volumeheader  Dump the volume header. \n\
     -j,         --journalinfo   Dump the volume's journal info block structure. \n\
+    -J,         --journal       Dump information about the journal file. \n\
     -c CNID,    --cnid CNID     Lookup and display a record by its catalog node ID. \n\
     -l,         --list          If the specified FSOB is a folder, list the contents. \n\
 \n\
@@ -598,6 +603,42 @@ bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
     return true;
 }
 
+void loadBTree()
+{
+    // Load the tree
+    if (HIOptions.tree_type == BTreeTypeCatalog)
+        HIOptions.tree = hfs_get_catalog_btree(&HIOptions.hfs);
+    
+    else if (HIOptions.tree_type == BTreeTypeExtents)
+        HIOptions.tree = hfs_get_extents_btree(&HIOptions.hfs);
+    
+    else if (HIOptions.tree_type == BTreeTypeAttributes)
+        HIOptions.tree = hfs_get_attribute_btree(&HIOptions.hfs);
+    
+    else if (HIOptions.tree_type == BTreeTypeHotfile) {
+        HFSBTreeNode node;
+        hfs_record_id recordID;
+        hfs_node_id parentfolder = kHFSRootFolderID;
+        HFSUniStr255 name = wcstohfsuc(L".hotfiles.btree");
+        int found = hfs_catalog_find_record(&node, &recordID, &HIOptions.hfs, parentfolder, name);
+        if (found != 1) {
+            error("Hotfiles btree not found. Target must be a hard drive with a copy of Mac OS X that has successfully booted to create this file (it will not be present on SSDs).");
+            exit(1);
+        }
+        HFSPlusCatalogRecord* record = (HFSPlusCatalogRecord*)node.records[recordID].value;
+        HFSFork fork = hfsfork_make(&HIOptions.hfs, record->catalogFile.dataFork, 0x00, record->catalogFile.fileID);
+        
+        int result = hfs_btree_init(&HIOptions.tree, &fork);
+        if (result < 1) {
+            error("Error initializing hotfiles btree.");
+            exit(1);
+        }
+        
+    } else {
+        critical("Unsupported tree: %s", HIOptions.tree_type);
+    }
+}
+
 int main (int argc, char* const *argv)
 {
     
@@ -623,11 +664,12 @@ int main (int argc, char* const *argv)
         { "cnid",           required_argument,      NULL,                   'c' },
         { "list",           no_argument,            NULL,                   'l' },
         { "journalinfo",    no_argument,            NULL,                   'j' },
+        { "journal",        no_argument,            NULL,                   'J' },
         { NULL,             0,                      NULL,                   0   }
     };
     
     /* short options */
-    char* shortopts = "hd:vjn:b:o:sp:P:F:V:c:l";
+    char* shortopts = "hvjJlsd:n:b:p:P:F:V:c:o:";
     
     char opt;
     while ((opt = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -643,9 +685,9 @@ int main (int argc, char* const *argv)
                 
             case 'l': set_mode(HIModeListFolder); break;
                 
-            case 'Z': set_mode(HIModeShowVersion); break;
+            case 'Z': show_version(basename(argv[0])); break;       // Exits
                 
-            case 'h': set_mode(HIModeShowHelp); break;
+            case 'h': usage(0); break;                              // Exits
                 
             case 'j': set_mode(HIModeShowJournalInfo); break;
                 
@@ -654,7 +696,7 @@ int main (int argc, char* const *argv)
                 
             case 'V':
                 HIOptions.device_path = deviceAtPath(optarg);
-                if (HIOptions.device_path == NULL) fatal("Unable to determine device. Does the path exist?");
+                if (HIOptions.device_path == NULL) fatal("Unable to determine device. Does the path exist?\n");
                 break;
                 
             case 'v': set_mode(HIModeShowVolumeInfo); break;
@@ -666,23 +708,23 @@ int main (int argc, char* const *argv)
                 INIT_STRING(HIOptions.file_path,   PATH_MAX);
                 
                 bool success = resolveDeviceAndPath(optarg, HIOptions.device_path, HIOptions.file_path);
-                if ( !success || !strlen(HIOptions.device_path ) ) fatal("Device could not be determined. Specify manually with -d/--device.");
-                if ( !strlen(HIOptions.file_path) ) fatal("Path must be an absolute path from the root of the target filesystem.");
+                if ( !success || !strlen(HIOptions.device_path ) ) fatal("Device could not be determined. Specify manually with -d/--device.\n");
+                if ( !strlen(HIOptions.file_path) ) fatal("Path must be an absolute path from the root of the target filesystem.\n");
                 
                 break;
                 
             case 'P':
                 set_mode(HIModeShowPathInfo);
                 HIOptions.file_path = strdup(optarg);
-                if (HIOptions.file_path[0] != '/') fatal("Path given to -P/--path_abs must be an absolute path from the root of the target filesystem.");
+                if (HIOptions.file_path[0] != '/') fatal("Path given to -P/--path_abs must be an absolute path from the root of the target filesystem.\n");
                 break;
                 
             case 'b':
                 set_mode(HIModeShowBTreeInfo);
-                if (strcmp(optarg, BTreeOptionAttributes) == 0) HIOptions.tree_type = BTreeOptionAttributes;
-                else if (strcmp(optarg, BTreeOptionCatalog) == 0) HIOptions.tree_type = BTreeOptionCatalog;
-                else if (strcmp(optarg, BTreeOptionExtents) == 0) HIOptions.tree_type = BTreeOptionExtents;
-                else if (strcmp(optarg, BTreeOptionHotfile) == 0) HIOptions.tree_type = BTreeOptionHotfile;
+                if (strcmp(optarg, BTreeOptionAttributes) == 0) HIOptions.tree_type = BTreeTypeAttributes;
+                else if (strcmp(optarg, BTreeOptionCatalog) == 0) HIOptions.tree_type = BTreeTypeCatalog;
+                else if (strcmp(optarg, BTreeOptionExtents) == 0) HIOptions.tree_type = BTreeTypeExtents;
+                else if (strcmp(optarg, BTreeOptionHotfile) == 0) HIOptions.tree_type = BTreeTypeHotfile;
                 else fatal("option -b/--btree must be one of: attributes, catalog, extents, or hotfile (not %s).", optarg);
                 break;
                 
@@ -701,7 +743,7 @@ int main (int argc, char* const *argv)
                 
                 FREE_BUFFER(option);
                 
-                if (HIOptions.record_filename == NULL || HIOptions.record_parent == 0) fatal("option -F/--fsspec requires a parent ID and file (eg. 2:.journal)");
+                if (HIOptions.record_filename == NULL || HIOptions.record_parent == 0) fatal("option -F/--fsspec requires a parent ID and file (eg. 2:.journal)\n");
                 
                 break;
                 
@@ -714,7 +756,7 @@ int main (int argc, char* const *argv)
                 set_mode(HIModeShowBTreeNode);
                 
                 int count = sscanf(optarg, "%d", &HIOptions.node_id);
-                if (count == 0) fatal("option -n/--node requires a numeric argument");
+                if (count == 0) fatal("option -n/--node requires a numeric argument\n");
                 
                 break;
                 
@@ -723,7 +765,7 @@ int main (int argc, char* const *argv)
                 set_mode(HIModeShowCNID);
                 
                 int count = sscanf(optarg, "%d", &HIOptions.cnid);
-                if (count == 0) fatal("option -c/--cnid requires a numeric argument");
+                if (count == 0) fatal("option -c/--cnid requires a numeric argument\n");
                 
                 break;
             }
@@ -733,16 +775,6 @@ int main (int argc, char* const *argv)
             default: debug("Unhandled argument '%c' (default case).", opt); usage(1); break;
         };
     };
-    
-    // Quick Exits
-    // These are run first because they don't need us to go through the
-    // whole disk loading nonsense and should just print and exit.
-    
-    // Show Help - exits
-    if (check_mode(HIModeShowHelp)) usage(0);
-    
-    // Show Version - exits
-    if (check_mode(HIModeShowVersion)) show_version(basename(argv[0]));
     
 #pragma mark Prepare Input and Outputs
     
@@ -814,53 +846,21 @@ OPEN:
         info("Was running as root.  Now running as %u/%u.", getuid(), getgid());
     }
     
-#pragma mark Load Initial Data
+#pragma mark Load Volume Data
     
     if (hfs_load(&HIOptions.hfs) == -1) {
-        perror("hfs_load");
+        if (errno != 0) perror("hfs_load");
         exit(errno);
     }
     
     set_hfs_volume(&HIOptions.hfs); // Set the context for certain hfs_pstruct.h calls.
-    
-    // Load the tree
-    if (HIOptions.tree_type != NULL) {
-        if (HIOptions.tree_type == BTreeOptionCatalog) // Yes, comparing pointers. That's why it's a constant.
-            HIOptions.tree = hfs_get_catalog_btree(&HIOptions.hfs);
-        else if (HIOptions.tree_type == BTreeOptionExtents)
-            HIOptions.tree = hfs_get_extents_btree(&HIOptions.hfs);
-        else if (HIOptions.tree_type == BTreeOptionAttributes)
-            HIOptions.tree = hfs_get_attribute_btree(&HIOptions.hfs);
-        else if (HIOptions.tree_type == BTreeOptionHotfile) {
-            HFSBTreeNode node;
-            hfs_record_id recordID;
-            hfs_node_id parentfolder = kHFSRootFolderID;
-            HFSUniStr255 name = wcstohfsuc(L".hotfiles.btree");
-            int found = hfs_catalog_find_record(&node, &recordID, &HIOptions.hfs, parentfolder, name);
-            if (found != 1) {
-                error("Hotfiles btree not found. Target must be a hard drive with a copy of Mac OS X that has successfully booted to create this file (it will not be present on SSDs).");
-                exit(1);
-            }
-            HFSPlusCatalogRecord* record = (HFSPlusCatalogRecord*)node.records[recordID].value;
-            HFSFork fork = hfsfork_make(&HIOptions.hfs, record->catalogFile.dataFork, 0x00, record->catalogFile.fileID);
-            
-            int result = hfs_btree_init(&HIOptions.tree, &fork);
-            if (result < 1) {
-                error("Error initializing hotfiles btree.");
-                exit(1);
-            }
-            
-        } else
-            critical("Unsupported tree: %s", HIOptions.tree_type);
         
-    } else {
-        // Default to catalog lookups.
-        HIOptions.tree = hfs_get_catalog_btree(&HIOptions.hfs);
-    }
-    
-#pragma mark Process Requests
+#pragma mark Volume Requests
     
     // Always detail what volume we're working on at the very least
+    if (cs_sniff(&HIOptions.hfs)) {
+        print_cs(&HIOptions.hfs);
+    }
     PrintVolumeInfo(&HIOptions.hfs);
     
     // Default to volume info if there are no other specifiers.
@@ -893,48 +893,12 @@ OPEN:
         }
     }
     
+#pragma mark Catalog Requests
+
     // Show a path's series of records
     if (check_mode(HIModeShowPathInfo)) {
         debug("Show path info.");
         showPathInfo();
-    }
-    
-    // Show B-Tree info
-    if (check_mode(HIModeShowBTreeInfo)) {
-        debug("Printing tree info.");
-        if (HIOptions.tree.fork.cnid == kHFSCatalogFileID) {
-            PrintHeaderString("Catalog B-Tree Header");
-        } else if (HIOptions.tree.fork.cnid == kHFSExtentsFileID) {
-            PrintHeaderString("Extents B-Tree Header");
-        } else if (HIOptions.tree.fork.cnid == kHFSAttributesFileID) {
-            PrintHeaderString("Attributes B-Tree Header");
-        } else if (HIOptions.tree_type == BTreeOptionHotfile) {
-            PrintHeaderString("Hotfile B-Tree Header");
-        } else {
-            critical("Unknown tree type: %s", HIOptions.tree_type);
-            return 1;
-        }
-        
-        PrintTreeNode(&HIOptions.tree, 0);
-    }
-    
-    // Show a B-Tree node by ID
-    if (check_mode(HIModeShowBTreeNode)) {
-        debug("Printing tree node.");
-        if (HIOptions.tree_type == BTreeOptionCatalog) {
-            PrintHeaderString("Catalog B-Tree Node %d", HIOptions.node_id);
-        } else if (HIOptions.tree_type == BTreeOptionExtents) {
-            PrintHeaderString("Extents B-Tree Node %d", HIOptions.node_id);
-        } else if (HIOptions.tree_type == BTreeOptionAttributes) {
-            PrintHeaderString("Attributes B-Tree Node %d", HIOptions.node_id);
-        } else if (HIOptions.tree_type == BTreeOptionHotfile) {
-            PrintHeaderString("Hotfile B-Tree Node %d", HIOptions.node_id);
-        } else {
-            critical("Unknown tree type: %s", HIOptions.tree_type);
-            return 1;
-        }
-        
-        PrintTreeNode(&HIOptions.tree, HIOptions.node_id);
     }
     
     // Show a catalog record by FSSpec
@@ -951,6 +915,62 @@ OPEN:
         showCatalogRecord(HIOptions.cnid, emptyKey, true);
     }
     
+#pragma mark BTree Requests
+
+    // Show B-Tree info
+    if (check_mode(HIModeShowBTreeInfo)) {
+        debug("Printing tree info.");
+        
+        loadBTree();
+        
+        if (HIOptions.tree.fork.cnid == kHFSCatalogFileID) {
+            PrintHeaderString("Catalog B-Tree Header");
+            
+        } else if (HIOptions.tree.fork.cnid == kHFSExtentsFileID) {
+            PrintHeaderString("Extents B-Tree Header");
+            
+        } else if (HIOptions.tree.fork.cnid == kHFSAttributesFileID) {
+            PrintHeaderString("Attributes B-Tree Header");
+            
+        } else if (HIOptions.tree_type == BTreeTypeHotfile) {
+            PrintHeaderString("Hotfile B-Tree Header");
+            
+        } else {
+            critical("Unknown tree type: %d", HIOptions.tree_type);
+            return 1;
+        }
+        
+        PrintTreeNode(&HIOptions.tree, 0);
+    }
+    
+    // Show a B-Tree node by ID
+    if (check_mode(HIModeShowBTreeNode)) {
+        debug("Printing tree node.");
+        
+        loadBTree();
+        
+        if (HIOptions.tree_type == BTreeTypeCatalog) {
+            PrintHeaderString("Catalog B-Tree Node %d", HIOptions.node_id);
+            
+        } else if (HIOptions.tree_type == BTreeTypeExtents) {
+            PrintHeaderString("Extents B-Tree Node %d", HIOptions.node_id);
+            
+        } else if (HIOptions.tree_type == BTreeTypeAttributes) {
+            PrintHeaderString("Attributes B-Tree Node %d", HIOptions.node_id);
+            
+        } else if (HIOptions.tree_type == BTreeTypeHotfile) {
+            PrintHeaderString("Hotfile B-Tree Node %d", HIOptions.node_id);
+            
+        } else {
+            critical("Unknown tree type: %s", HIOptions.tree_type);
+            return 1;
+        }
+        
+        PrintTreeNode(&HIOptions.tree, HIOptions.node_id);
+    }
+    
+#pragma mark Extract File Requests
+
     // Extract any found files (not complete; FIXME: dropping perms breaks right now)
     if (check_mode(HIModeExtractFile)) {
         if (HIOptions.extract_HFSFork.cnid == 0 && HIOptions.tree.fork.cnid != 0) {
@@ -971,7 +991,7 @@ OPEN:
     // Clean up
     hfs_close(&HIOptions.hfs);
     
-    debug("Done.");
+    debug("Clean exit.");
     
     return 0;
 }
