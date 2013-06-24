@@ -16,6 +16,7 @@ void    hfsfork_free            (HFSFork *fork);
 
 ssize_t hfs_read_raw            (void* buffer, const HFSVolume *hfs, size_t size, size_t offset);
 ssize_t hfs_read_blocks         (void* buffer, const HFSVolume *hfs, size_t block_count, size_t start_block);
+ssize_t hfs_read_range          (void* buffer, const HFSVolume *hfs, size_t size, size_t offset);
 
 ssize_t hfs_read_fork           (void* buffer, const HFSFork *fork, size_t block_count, size_t start_block);
 ssize_t hfs_read_fork_range     (Buffer *buffer, const HFSFork *fork, size_t size, size_t offset);

@@ -80,6 +80,60 @@ ssize_t hfs_read_blocks(void* buffer, const HFSVolume *hfs, size_t block_count, 
     return (bytes_read / hfs->vh.blockSize); // This layer thinks in blocks. Blocks in, blocks out.
 }
 
+ssize_t hfs_read_range(void* buffer, const HFSVolume *hfs, size_t size, size_t offset)
+{
+    debug("Reading from volume at (%d, %d)", offset, size);
+    
+    // We use this a lot.
+    size_t block_size = hfs->vh.blockSize;
+//    if (block_size == 0) block_size = hfs->stat.st_blksize;
+//    if (block_size == 0) critical("Unknown block size for volume.");
+    
+    // Range check.
+    if (hfs->length && offset > hfs->length) {
+        error("Request for logical offset larger than the size of the volume (%d, %d)", offset, hfs->length);
+        errno = ESPIPE; // Illegal seek
+        return -1;
+    }
+    
+    if ( hfs->length && (offset + size) > hfs->length ) {
+        size = hfs->length - offset;
+        debug("Adjusted read to (%d, %d)", offset, size);
+    }
+    
+    if (size < 1) {
+        error("Zero-size request.");
+        errno = EINVAL;
+        return -1;
+    }
+    
+    // The range starts somewhere in this block.
+    size_t start_block = (size_t)(offset / (size_t)block_size);
+    
+    // Offset of the request within the start block.
+    size_t byte_offset = (offset % block_size);
+    
+    // Add a block to the read if the offset is not block-aligned.
+    size_t block_count = (size / (size_t)block_size) + ( ((offset + size) % block_size) ? 1 : 0);
+    
+    // Use the calculated size instead of the passed size to account for block alignment.
+    char* read_buffer; INIT_BUFFER(read_buffer, block_count * block_size);
+    
+    // Fetch the data into a read buffer (it may fail).
+    ssize_t read_blocks = hfs_read_blocks(read_buffer, hfs, block_count, start_block);
+    
+    // On success, copy the output.
+    if (read_blocks) memcpy(buffer, read_buffer + byte_offset, size);
+    
+    // Clean up.
+    FREE_BUFFER(read_buffer);
+    
+    // The amount we added to the buffer.
+    return size;
+}
+
+#pragma mark - Fork I/O
+
 ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, size_t start_block)
 {
     int loopCounter = 0; // Fail-safe.
