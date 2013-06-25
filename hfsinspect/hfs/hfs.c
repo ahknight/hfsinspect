@@ -39,14 +39,29 @@ int hfs_open(HFSVolume *hfs, const char *path) {
 int hfs_load(HFSVolume *hfs) {
     debug("Loading volume header for descriptor %u", hfs->fd);
 
-    bool success = hfs_get_HFSPlusVolumeHeader(&hfs->vh, hfs);
-    if (!success) critical("Could not read volume header!");
+    bool success;
     
-    if (hfs->vh.signature == kHFSSigWord) {
-        error("This tool does not suport HFS Standard volumes.");
-        errno = EFTYPE;
-        return -1;
+    HFSMasterDirectoryBlock mdb;
+    HFSMasterDirectoryBlock* vcb = &mdb;
+    
+    success = hfs_get_HFSMasterDirectoryBlock(&mdb, hfs);
+    if (!success) critical("Could not read volume header!");
+
+    if (vcb->drSigWord == kHFSSigWord) {
+        PrintHFSMasterDirectoryBlock(vcb);
+        if (vcb->drEmbedSigWord == kHFSPlusSigWord) {
+            hfs->offset = (vcb->drAlBlSt * 512) + (vcb->drEmbedExtent.startBlock * vcb->drAlBlkSiz);
+            debug("Found a wrapped volume at offset %llu", hfs->offset);
+            
+        } else {
+            error("This tool does not currently support standalone HFS Standard volumes (%#04x).", vcb->drEmbedSigWord);
+            errno = EFTYPE;
+            return -1;
+        }
     }
+    
+    success = hfs_get_HFSPlusVolumeHeader(&hfs->vh, hfs);
+    if (!success) critical("Could not read volume header!");
     
     if (hfs->vh.signature != kHFSPlusSigWord && hfs->vh.signature != kHFSXSigWord) {
         debug("Not HFS+ or HFSX. Detecting format...");
