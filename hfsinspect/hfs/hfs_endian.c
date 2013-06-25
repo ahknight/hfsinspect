@@ -136,15 +136,12 @@ void swap_HFSPlusForkData(HFSPlusForkData *record)
     Convert64(record->logicalSize);
     Convert32(record->totalBlocks);
     Convert32(record->clumpSize);
-    swap_HFSPlusExtentRecord(record->extents);
+    swap_HFSPlusExtentRecord(&record->extents);
 }
 
-void swap_HFSPlusExtentRecord(HFSPlusExtentDescriptor record[8])
+void swap_HFSPlusExtentRecord(HFSPlusExtentRecord* record)
 {
-    for (int i = 0; i < kHFSPlusExtentDensity; i++) {
-        HFSPlusExtentDescriptor *descriptor = &record[i];
-        swap_HFSPlusExtentDescriptor(descriptor);
-    }
+    FOR_UNTIL(i, kHFSPlusExtentDensity) swap_HFSPlusExtentDescriptor(record[i]);
 }
 
 void swap_HFSPlusExtentDescriptor(HFSPlusExtentDescriptor *record)
@@ -323,7 +320,7 @@ void swap_HFSPlusAttrExtents(HFSPlusAttrExtents* record)
 {
     Convert32(record->recordType);
 //    Convert32(record->reserved);
-    swap_HFSPlusExtentRecord(record->extents);
+    swap_HFSPlusExtentRecord(&record->extents);
 }
 
 void swap_HFSPlusAttrRecord(HFSPlusAttrRecord* record)
@@ -521,7 +518,7 @@ int swap_BTreeNode(HFSBTreeNode *node)
                         
                     case kHFSExtentsFileID:
                     {
-                        swap_HFSPlusExtentRecord(*(HFSPlusExtentRecord*)meta->value);
+                        swap_HFSPlusExtentRecord((HFSPlusExtentRecord*)meta->value);
                         break;
                     }
                     
