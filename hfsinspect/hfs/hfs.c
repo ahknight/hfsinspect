@@ -19,6 +19,20 @@ int hfs_open(HFSVolume *hfs, const char *path) {
 	hfs->fd = fileno(hfs->fp); //open(path, O_RDONLY);
 	if (hfs->fd == -1)      return -1;
     
+    strncpy(hfs->device, path, strlen(path));
+    
+    int result = fstatfs(hfs->fd, &hfs->stat_fs);
+    if (result < 0) {
+        perror("fstatfs");
+        return NULL;
+    }
+    
+    result = fstat(hfs->fd, &hfs->stat);
+    if (result < 0) {
+        perror("fstat");
+        return NULL;
+    }
+    
     return hfs->fd;
 }
 

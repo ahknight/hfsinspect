@@ -6,7 +6,10 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include <sys/param.h>
 #include <hfs/hfs_format.h>
+#include <sys/mount.h>
+#include <sys/stat.h>
 #include "buffer.h"
 #include "hfs_extentlist.h"
 
@@ -32,8 +35,8 @@ struct HFSVolume {
     int                 fd;                 // File descriptor
     FILE                *fp;                // File pointer
     char                device[PATH_MAX];   // Device path
-//    struct statfs       stat_fs;            // statfs record for the device path
-//    struct stat         stat;               // stat record for the device path
+    struct statfs       stat_fs;            // statfs record for the device path
+    struct stat         stat;               // stat record for the device path
     HFSPlusVolumeHeader vh;                 // Volume header
     off_t               offset;             // Partition offset, if known/needed
     size_t              length;             // Partition length, if known/needed
