@@ -136,12 +136,12 @@ void swap_HFSPlusForkData(HFSPlusForkData *record)
     Convert64(record->logicalSize);
     Convert32(record->totalBlocks);
     Convert32(record->clumpSize);
-    swap_HFSPlusExtentRecord(&record->extents);
+    swap_HFSPlusExtentRecord(record->extents);
 }
 
-void swap_HFSPlusExtentRecord(HFSPlusExtentRecord* record)
+void swap_HFSPlusExtentRecord(HFSPlusExtentDescriptor record[])
 {
-    FOR_UNTIL(i, kHFSPlusExtentDensity) swap_HFSPlusExtentDescriptor(record[i]);
+    FOR_UNTIL(i, kHFSPlusExtentDensity) swap_HFSPlusExtentDescriptor(&record[i]);
 }
 
 void swap_HFSPlusExtentDescriptor(HFSPlusExtentDescriptor *record)
@@ -320,7 +320,7 @@ void swap_HFSPlusAttrExtents(HFSPlusAttrExtents* record)
 {
     Convert32(record->recordType);
 //    Convert32(record->reserved);
-    swap_HFSPlusExtentRecord(&record->extents);
+    swap_HFSPlusExtentRecord(record->extents);
 }
 
 void swap_HFSPlusAttrRecord(HFSPlusAttrRecord* record)
@@ -499,26 +499,28 @@ int swap_BTreeNode(HFSBTreeNode *node)
                     {
                         u_int16_t recordKind = *(u_int16_t*)meta->value;
                         recordKind = S16(recordKind);
+                        HFSPlusCatalogRecord* catalogRecord = (HFSPlusCatalogRecord*)meta->value;
                         
-                        if (recordKind == kHFSPlusFolderRecord) {
-                            swap_HFSPlusCatalogFolder((HFSPlusCatalogFolder*)meta->value);
+                        switch (recordKind) {
+                            case kHFSPlusFolderRecord:
+                                swap_HFSPlusCatalogFolder(&catalogRecord->catalogFolder); break;
+                                
+                            case kHFSPlusFileRecord:
+                                swap_HFSPlusCatalogFile(&catalogRecord->catalogFile); break;
                             
-                        } else if (recordKind == kHFSPlusFileRecord) {
-                            swap_HFSPlusCatalogFile((HFSPlusCatalogFile*)meta->value);
-                            
-                        } else if (recordKind == kHFSPlusFolderThreadRecord) {
-                            swap_HFSPlusCatalogThread((HFSPlusCatalogThread*)meta->value);
-                            
-                        } else if (recordKind == kHFSPlusFileThreadRecord) {
-                            swap_HFSPlusCatalogThread((HFSPlusCatalogThread*)meta->value);
-                            
+                            case kHFSPlusFolderThreadRecord:
+                            case kHFSPlusFileThreadRecord:
+                                swap_HFSPlusCatalogThread(&catalogRecord->catalogThread); break;
+                                
+                            default:
+                                break;
                         }
                         break;
                     }
                         
                     case kHFSExtentsFileID:
                     {
-                        swap_HFSPlusExtentRecord((HFSPlusExtentRecord*)meta->value);
+                        swap_HFSPlusExtentRecord((HFSPlusExtentDescriptor*)meta->value);
                         break;
                     }
                     

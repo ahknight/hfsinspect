@@ -305,8 +305,9 @@ wchar_t* hfs_catalog_get_cnid_name(const HFSVolume *hfs, hfs_node_id cnid)
     HFSBTree tree = hfs_get_catalog_btree(hfs);
     
     int found = hfs_btree_search_tree(&node, &recordID, &tree, &key);
-    if (found != 1) {
+    if (found != 1 || node.buffer.size == 0) {
         error("No thread record for %d found.");
+        return NULL;
     }
     
     debug("Found thread record %d:%d", node.nodeNumber, recordID);

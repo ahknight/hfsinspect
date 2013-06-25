@@ -484,7 +484,7 @@ ssize_t extractFork(const HFSFork* fork, const char* extractPath)
     }
     
     off_t offset        = 0;
-    size_t chunkSize    = fork->hfs.vh.blockSize*1024;
+    size_t chunkSize    = fork->hfs.block_size*1024;
     Buffer chunk        = buffer_alloc(chunkSize);
     
     while ( offset < fork->logicalSize ) {

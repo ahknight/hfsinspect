@@ -38,8 +38,10 @@ struct HFSVolume {
     struct statfs       stat_fs;            // statfs record for the device path
     struct stat         stat;               // stat record for the device path
     HFSPlusVolumeHeader vh;                 // Volume header
-    off_t               offset;             // Partition offset, if known/needed
-    size_t              length;             // Partition length, if known/needed
+    off_t               offset;             // Partition offset, if known/needed (bytes)
+    size_t              length;             // Partition length, if known/needed (bytes)
+    size_t              block_size;         // Allocation block size. (bytes)
+    size_t              block_count;        // Number of blocks. (blocks of block_size size)
 };
 
 struct HFSFork {
@@ -140,5 +142,14 @@ union HFSPlusVolumeFinderInfo {
     };
 };
 typedef union HFSPlusVolumeFinderInfo HFSPlusVolumeFinderInfo;
+
+// Makes catalog records a bit easier.
+union HFSPlusCatalogRecord {
+    int16_t                 record_type;
+    HFSPlusCatalogFile      catalogFile;
+    HFSPlusCatalogFolder    catalogFolder;
+    HFSPlusCatalogThread    catalogThread;
+};
+typedef union HFSPlusCatalogRecord HFSPlusCatalogRecord;
 
 #endif

@@ -33,6 +33,10 @@ int hfs_open(HFSVolume *hfs, const char *path) {
         return NULL;
     }
     
+    hfs->block_size     = hfs->stat.st_blksize;
+    hfs->block_count    = hfs->stat.st_blocks;
+    hfs->length         = hfs->block_count * hfs->block_size;
+
     return hfs->fd;
 }
 
@@ -74,6 +78,10 @@ int hfs_load(HFSVolume *hfs) {
         return -1;
     }
     
+    hfs->block_size     = hfs->vh.blockSize;
+    hfs->block_count    = hfs->vh.totalBlocks;
+    hfs->length         = hfs->block_count * hfs->block_size;
+    
     return 0;
 }
 
@@ -93,9 +101,7 @@ bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFSVolum
         char* buffer;
         INIT_BUFFER(buffer, 2048)
         
-        ssize_t size;
-//        size = hfs_read_raw(buffer, hfs, 2048, 0); // Breaks on raw devices.
-        size = fread(buffer, sizeof(char), 2048, hfs->fp);
+        ssize_t size = hfs_read_raw(buffer, hfs, 2048, hfs->offset);
         
         if (size < 1) {
             perror("read");
@@ -121,9 +127,7 @@ bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFSVolume* hfs)
         char* buffer;
         INIT_BUFFER(buffer, 2048)
         
-        ssize_t size;
-//        size = hfs_read_raw(buffer, hfs, 2048, 0); // Breaks on raw devices.
-        size = fread(buffer, sizeof(char), 2048, hfs->fp);
+        ssize_t size = hfs_read_raw(buffer, hfs, 2048, hfs->offset);
         
         if (size < 1) {
             perror("read");
@@ -147,7 +151,7 @@ bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFSVolume* hfs)
 {
     if (hfs->vh.journalInfoBlock) {
         char* buffer;
-        INIT_BUFFER(buffer, hfs->vh.blockSize);
+        INIT_BUFFER(buffer, hfs->block_size);
         
         ssize_t read = hfs_read_blocks(buffer, hfs, 1, hfs->vh.journalInfoBlock);
         if (read < 0) {

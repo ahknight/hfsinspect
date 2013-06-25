@@ -43,13 +43,21 @@ void hfsfork_free(HFSFork *fork)
 
 ssize_t hfs_read_raw(void* buffer, const HFSVolume *hfs, size_t size, size_t offset)
 {
-//    info("Reading %zu bytes at offset %zd.", size, offset);
-    ssize_t result = pread(hfs->fd, buffer, size, offset);
+    info("Reading %zu bytes at offset %zd.", size, offset);
+    
+    ssize_t result;
+    result = fseeko(hfs->fp, offset, SEEK_SET);
     if (result < 0) {
-        perror("read raw");
+        perror("fseek");
         critical("read error");
     }
-//    debug("read %zd bytes", result);
+    
+    result = fread(buffer, sizeof(char), size, hfs->fp);
+    if (result < 0) {
+        perror("fread");
+        critical("read error");
+    }
+    
     return result;
 }
 
@@ -57,19 +65,19 @@ ssize_t hfs_read_raw(void* buffer, const HFSVolume *hfs, size_t size, size_t off
 ssize_t hfs_read_blocks(void* buffer, const HFSVolume *hfs, size_t block_count, size_t start_block)
 {
 //    debug("Reading %u blocks starting at block %u", block_count, start_block);
-    if (start_block > hfs->vh.totalBlocks) {
-        error("Request for a block past the end of the volume (%d, %d)", start_block, hfs->vh.totalBlocks);
+    if (hfs->block_count && start_block > hfs->block_count) {
+        error("Request for a block past the end of the volume (%d, %d)", start_block, hfs->block_count);
         errno = ESPIPE; // Illegal seek
         return -1;
     }
     
     // Trim to fit.
-    if (hfs->vh.totalBlocks < (start_block + block_count)) {
-        block_count = hfs->vh.totalBlocks - start_block;
+    if (hfs->block_count && hfs->block_count < (start_block + block_count)) {
+        block_count = hfs->block_count - start_block;
     }
     
-    size_t  offset  = start_block * hfs->vh.blockSize;
-    size_t  size    = block_count * hfs->vh.blockSize;
+    size_t  offset  = start_block * hfs->block_size;
+    size_t  size    = block_count * hfs->block_size;
     
 //    debug("Reading %zd bytes at volume offset %zd.", size, offset);
     ssize_t bytes_read = hfs_read_raw(buffer, hfs, size, offset);
@@ -79,17 +87,18 @@ ssize_t hfs_read_blocks(void* buffer, const HFSVolume *hfs, size_t block_count, 
         return bytes_read;
     }
 //    debug("read %zd bytes", bytes_read);
-    return (bytes_read / hfs->vh.blockSize); // This layer thinks in blocks. Blocks in, blocks out.
+    
+    // This layer thinks in blocks. Blocks in, blocks out.
+    int blocks_read = 0;
+    if (bytes_read > 0) {
+        blocks_read = MAX(bytes_read / hfs->block_size, 1);
+    }
+    return blocks_read;
 }
 
 ssize_t hfs_read_range(void* buffer, const HFSVolume *hfs, size_t size, size_t offset)
 {
     debug("Reading from volume at (%d, %d)", offset, size);
-    
-    // We use this a lot.
-    size_t block_size = hfs->vh.blockSize;
-//    if (block_size == 0) block_size = hfs->stat.st_blksize;
-//    if (block_size == 0) critical("Unknown block size for volume.");
     
     // Range check.
     if (hfs->length && offset > hfs->length) {
@@ -110,16 +119,16 @@ ssize_t hfs_read_range(void* buffer, const HFSVolume *hfs, size_t size, size_t o
     }
     
     // The range starts somewhere in this block.
-    size_t start_block = (size_t)(offset / (size_t)block_size);
+    size_t start_block = (size_t)(offset / hfs->block_size);
     
     // Offset of the request within the start block.
-    size_t byte_offset = (offset % block_size);
+    size_t byte_offset = (offset % hfs->block_size);
     
     // Add a block to the read if the offset is not block-aligned.
-    size_t block_count = (size / (size_t)block_size) + ( ((offset + size) % block_size) ? 1 : 0);
+    size_t block_count = (size / hfs->block_size) + ( ((offset + size) % hfs->block_size) ? 1 : 0);
     
     // Use the calculated size instead of the passed size to account for block alignment.
-    char* read_buffer; INIT_BUFFER(read_buffer, block_count * block_size);
+    char* read_buffer; INIT_BUFFER(read_buffer, block_count * hfs->block_size);
     
     // Fetch the data into a read buffer (it may fail).
     ssize_t read_blocks = hfs_read_blocks(read_buffer, hfs, block_count, start_block);
@@ -163,7 +172,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
     }
     
     char* read_buffer;
-    INIT_BUFFER(read_buffer, block_count * fork->hfs.vh.blockSize);
+    INIT_BUFFER(read_buffer, block_count * fork->hfs.block_size);
     ExtentList *extentList = fork->extents;;
     
     // Keep track of what's left to get
@@ -210,7 +219,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
         if (remaining.count == 0) break;
     }
 //    debug("Appending bytes");
-    memcpy(buffer, read_buffer, MIN(block_count, request.count) * fork->hfs.vh.blockSize);
+    memcpy(buffer, read_buffer, MIN(block_count, request.count) * fork->hfs.block_size);
     FREE_BUFFER(read_buffer);
     
 //    debug("returning %zd", request.count);
@@ -221,9 +230,6 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
 ssize_t hfs_read_fork_range(Buffer *buffer, const HFSFork *fork, size_t size, size_t offset)
 {
     debug("Reading from fork at (%d, %d)", offset, size);
-    
-    // We use this a lot.
-    size_t block_size = fork->hfs.vh.blockSize;
     
     // Range check.
     if (offset > fork->logicalSize) {
@@ -245,16 +251,16 @@ ssize_t hfs_read_fork_range(Buffer *buffer, const HFSFork *fork, size_t size, si
     }
     
     // The range starts somewhere in this block.
-    size_t start_block = (size_t)(offset / (size_t)block_size);
+    size_t start_block = (size_t)(offset / fork->hfs.block_size);
     
     // Offset of the request within the start block.
-    size_t byte_offset = (offset % block_size);
+    size_t byte_offset = (offset % fork->hfs.block_size);
     
     // Add a block to the read if the offset is not block-aligned.
-    size_t block_count = (size / (size_t)block_size) + ( ((offset + size) % block_size) ? 1 : 0);
+    size_t block_count = (size / fork->hfs.block_size) + ( ((offset + size) % fork->hfs.block_size) ? 1 : 0);
     
     // Use the calculated size instead of the passed size to account for block alignment.
-    char* read_buffer; INIT_BUFFER(read_buffer, block_count * block_size);
+    char* read_buffer; INIT_BUFFER(read_buffer, block_count * fork->hfs.block_size);
     
     // Fetch the data into a read buffer (it may fail).
     ssize_t read_blocks = hfs_read_fork(read_buffer, fork, block_count, start_block);

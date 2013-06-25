@@ -18,15 +18,6 @@ extern const u_int32_t kFolderAliasType;
 extern wchar_t* HFSPlusMetadataFolder;
 extern wchar_t* HFSPlusDirMetadataFolder;
 
-union HFSPlusCatalogRecord {
-    int16_t                 record_type;
-    HFSPlusCatalogFile      catalogFile;
-    HFSPlusCatalogFolder    catalogFolder;
-    HFSPlusCatalogThread    catalogThread;
-};
-typedef union HFSPlusCatalogRecord HFSPlusCatalogRecord;
-
-
 HFSBTree            hfs_get_catalog_btree                   (const HFSVolume *hfs);
 u_int16_t           hfs_get_catalog_record_type             (const HFSBTreeNodeRecord* catalogRecord);
 int                 hfs_get_catalog_leaf_record             (HFSPlusCatalogKey* const record_key, HFSPlusCatalogRecord* const record_value, const HFSBTreeNode* node, hfs_record_id recordID);

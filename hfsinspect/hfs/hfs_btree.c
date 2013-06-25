@@ -65,19 +65,17 @@ int8_t hfs_btree_get_node (HFSBTreeNode *out_node, const HFSBTree *tree, hfs_nod
         return -1;
     }
     
-    size_t node_size = (tree->headerRecord.nodeSize / tree->fork.hfs.vh.blockSize); // In blocks
-    size_t start_block = nodeNumber * node_size;
-    
     HFSBTreeNode node;
     node.nodeSize       = tree->headerRecord.nodeSize;
-    node.nodeOffset     = start_block;
     node.nodeNumber     = nodeNumber;
+    node.nodeOffset     = node.nodeNumber * node.nodeSize;;
     node.bTree          = *tree;
     node.buffer         = buffer_alloc(node.nodeSize);
     
-//    debug("Reading %zu bytes at logical offset %u", node->nodeSize, node->nodeOffset);
+    debug("Reading %zu bytes at logical offset %u", node.nodeSize, node.nodeOffset);
+    
     ssize_t result = 0;
-    result = hfs_read_fork(node.buffer.data, &tree->fork, node_size, start_block);
+    result = hfs_read_fork_range(&node.buffer, &node.bTree.fork, node.nodeSize, node.nodeOffset);
     
     if (result < 0) {
         error("Error reading from fork.");

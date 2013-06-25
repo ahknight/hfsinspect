@@ -90,7 +90,7 @@ void _PrintCatalogName(char* label, hfs_node_id cnid)
 
 void _PrintHFSBlocks(const char *label, u_int64_t blocks)
 {
-    size_t displaySize = blocks * volume.vh.blockSize;
+    size_t displaySize = blocks * volume.block_size;
     char* sizeLabel = sizeString(displaySize, false);
     PrintAttributeString(label, "%s (%d blocks)", sizeLabel, blocks);
     FREE_BUFFER(sizeLabel);
