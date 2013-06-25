@@ -101,7 +101,7 @@ bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFSVolum
         char* buffer;
         INIT_BUFFER(buffer, 2048)
         
-        ssize_t size = hfs_read_raw(buffer, hfs, 2048, hfs->offset);
+        ssize_t size = hfs_read_raw(buffer, hfs, 2048, 0);
         
         if (size < 1) {
             perror("read");
@@ -127,7 +127,7 @@ bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFSVolume* hfs)
         char* buffer;
         INIT_BUFFER(buffer, 2048)
         
-        ssize_t size = hfs_read_raw(buffer, hfs, 2048, hfs->offset);
+        ssize_t size = hfs_read_raw(buffer, hfs, 2048, 0);
         
         if (size < 1) {
             perror("read");

@@ -45,15 +45,24 @@ typedef struct GPTPartitionEntry {
 struct GPTPartitionName { uuid_string_t uuid; char name[100]; };
 typedef struct GPTPartitionName GPTPartitionName;
 
-#define GPTPartitionTypesCount 6
+#define GPTPartitionTypesCount 14
 static GPTPartitionName types[GPTPartitionTypesCount] __attribute__((unused)) = {
-    {"C12A7328-F81F-11D2-BA4B-00A0C93EC93B", "EFI System Partition"},
-    {"48465300-0000-11AA-AA11-00306543ECAC", "Mac OS HFS+"},
-    {"53746F72-6167-11AA-AA11-00306543ECAC", "Core Storage Volume"},
-    {"426F6F74-0000-11AA-AA11-00306543ECAC", "OS X Recovery Partition"},
-    {"426F6F74-0000-11AA-AA11-00306543ECAC", "Apple Boot"},
+    {"00000000-0000-0000-0000-000000000000", "Unused"},
     
-    {"00000000-0000-0000-0000-000000000000", "Unused"}
+    {"024DEE41-33E7-11D3-9D69-0008C781F39F", "MBR Partition Scheme"},
+    {"C12A7328-F81F-11D2-BA4B-00A0C93EC93B", "EFI System Partition"},
+    {"21686148-6449-6E6F-744E-656564454649", "BIOS Boot Partition"},
+    {"D3BFE2DE-3DAF-11DF-BA40-E3A556D89593", "Intel Fast Flash"},
+    
+    {"48465300-0000-11AA-AA11-00306543ECAC", "Mac OS Extended (HFS+)"},
+    {"55465300-0000-11AA-AA11-00306543ECAC", "Apple UFS"},
+    {"6A898CC3-1DD2-11B2-99A6-080020736631", "Apple ZFS"},
+    {"52414944-0000-11AA-AA11-00306543ECAC", "Apple RAID Partition"},
+    {"52414944-5F4F-11AA-AA11-00306543ECAC", "Apple RAID Partition (offline)"},
+    {"426F6F74-0000-11AA-AA11-00306543ECAC", "OS X Recovery Partition"},
+    {"4C616265-6C00-11AA-AA11-00306543ECAC", "Apple Label"},
+    {"5265636F-7665-11AA-AA11-00306543ECAC", "Apple TV Recovery Partition"},
+    {"53746F72-6167-11AA-AA11-00306543ECAC", "Core Storage Volume"},
 };
 
 #pragma mark Core Storage
