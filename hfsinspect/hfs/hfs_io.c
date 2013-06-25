@@ -227,6 +227,7 @@ ssize_t hfs_read_fork_range(Buffer *buffer, const HFSFork *fork, size_t size, si
     
     // Range check.
     if (offset > fork->logicalSize) {
+        PrintHFSPlusForkData(&fork->forkData, fork->cnid, fork->forkType);
         error("Request for logical offset larger than the size of the fork (%d, %d)", offset, fork->logicalSize);
         errno = ESPIPE; // Illegal seek
         return -1;

@@ -79,8 +79,8 @@ bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFSVolum
         INIT_BUFFER(buffer, 2048)
         
         ssize_t size;
-//        size = fread(buffer, sizeof(char), 2048, hfs->fp);
-        size = hfs_read_raw(buffer, hfs, 2048, 0); // Breaks on raw devices.
+//        size = hfs_read_raw(buffer, hfs, 2048, 0); // Breaks on raw devices.
+        size = fread(buffer, sizeof(char), 2048, hfs->fp);
         
         if (size < 1) {
             perror("read");
@@ -107,8 +107,8 @@ bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFSVolume* hfs)
         INIT_BUFFER(buffer, 2048)
         
         ssize_t size;
-//        size = hfs_read_raw(&buffer, hfs, 2048, 0); // Breaks on raw devices.
-        size = fread(buffer, 2048, 1, hfs->fp);
+//        size = hfs_read_raw(buffer, hfs, 2048, 0); // Breaks on raw devices.
+        size = fread(buffer, sizeof(char), 2048, hfs->fp);
         
         if (size < 1) {
             perror("read");

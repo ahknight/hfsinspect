@@ -202,15 +202,13 @@ void swap_HFSPlusAttrKey(HFSPlusAttrKey *record)
     Convert32(record->fileID);
     Convert32(record->startBlock);
     Convert16(record->attrNameLen);
-    for (int i = 0; i < record->attrNameLen; i++)
-        Convert16(record->attrName[i]);
+    FOR_UNTIL(i, record->attrNameLen) Convert16(record->attrName[i]);
 }
 
 void swap_HFSUniStr255(HFSUniStr255 *unistr)
 {
     Convert16(unistr->length);
-    for (int i = 0; i < unistr->length; i++)
-        Convert16(unistr->unicode[i]);
+    FOR_UNTIL(i, unistr->length) Convert16(unistr->unicode[i]);
 }
 
 void swap_HFSPlusCatalogFolder(HFSPlusCatalogFolder *record)
@@ -379,10 +377,8 @@ int swap_BTreeNode(HFSBTreeNode *node)
     // Swap record offsets
     u_int16_t numRecords = node->nodeDescriptor.numRecords + 1;  // "+1" gets the free space record.
     u_int16_t *offsets = (u_int16_t*)(node->buffer.data + node->bTree.headerRecord.nodeSize - (sizeof(u_int16_t) * numRecords));
-    for (int i = 0; i < numRecords; i++) {
-        u_int16_t *offset = &offsets[i];
-        *offset = S16(*offset);
-    }
+    
+    FOR_UNTIL(i, numRecords) offsets[i] = S16(offsets[i]);
     
     // Record offsets
     // 0 1 2 3 4 5 | -- offset ID
