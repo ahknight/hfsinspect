@@ -11,6 +11,7 @@
 
 #include <libkern/OSByteOrder.h>
 #include "hfs_structs.h"
+#include "partition_support.h"
 
 // Define macros to convert big endian ints to host order.
 // (Defined as simple casts on little endian systems.)
@@ -28,11 +29,15 @@
 
 #endif
 
+#pragma mark Apple Partition Map
+
+void swap_APMHeader                 (APMHeader* record);
+
 #pragma mark HFS
 
-void swap_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* record);
-void swap_HFSExtentRecord(HFSExtentRecord* record);
-void swap_HFSExtentDescriptor(HFSExtentDescriptor* record);
+void swap_HFSMasterDirectoryBlock   (HFSMasterDirectoryBlock* record);
+void swap_HFSExtentRecord           (HFSExtentRecord* record);
+void swap_HFSExtentDescriptor       (HFSExtentDescriptor* record);
 
 #pragma mark HFS Plus
 

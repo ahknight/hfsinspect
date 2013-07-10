@@ -16,10 +16,31 @@
 #include "hfs_endian.h"
 #include "hfs_pstruct.h"
 
-
 #define Convert16(x)    x = OSSwapBigToHostInt16(x)
 #define Convert32(x)    x = OSSwapBigToHostInt32(x)
 #define Convert64(x)    x = OSSwapBigToHostInt64(x)
+
+void swap_APMHeader(APMHeader* record)
+{
+    Convert16(record->signature);
+    Convert16(record->reserved1);
+	Convert32(record->partition_count);
+	Convert32(record->partition_start);
+	Convert32(record->partition_length);
+//    char            name[32];
+//    char            type[32];
+	Convert32(record->data_start);
+	Convert32(record->data_length);
+	Convert32(record->status);
+	Convert32(record->boot_code_start);
+	Convert32(record->boot_code_length);
+	Convert32(record->bootloader_address);
+	Convert32(record->reserved2);
+	Convert32(record->boot_code_entry);
+	Convert32(record->reserved3);
+	Convert32(record->boot_code_checksum);
+//    char            processor_type[16];
+}
 
 void swap_HFSExtentDescriptor(HFSExtentDescriptor* record)
 {

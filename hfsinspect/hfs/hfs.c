@@ -7,7 +7,7 @@
 //
 
 #include "hfs.h"
-#include "format_sniffers.h"
+#include "partition_support.h"
 
 #pragma mark Volume Abstractions
 
@@ -36,11 +36,46 @@ int hfs_open(HFSVolume *hfs, const char *path) {
     hfs->block_size     = hfs->stat.st_blksize;
     hfs->block_count    = hfs->stat.st_blocks;
     hfs->length         = hfs->block_count * hfs->block_size;
-
+    
     return hfs->fd;
 }
 
 int hfs_load(HFSVolume *hfs) {
+    /*
+     Figure out what we're dealing with here.
+     
+     First scan for a volume with fs_sniff.
+     Failing that, scan for partition maps with partition_sniff. Use partition hints to dispatch a partition range either to partition_sniff or fs_sniff.
+     
+     Whoever comes back True first ends the search (and we presume the volume's offset/length have been updated).
+     */
+    
+    if (gpt_sniff(hfs)) {
+        //        print_gpt(hfs);
+        
+        bool success;
+        Partition partitions[128];
+        unsigned count;
+        
+        success = gpt_partitions(hfs, partitions, &count);
+        
+        FOR_UNTIL(i, count) {
+            Partition p = partitions[i];
+            if (p.hints & kHintFilesystem) {
+                PrintHeaderString("Partition %d", i+1);
+                hfs->offset = p.offset;
+                hfs->length = p.length;
+                break;
+            }
+            if (p.hints & kHintPartitionMap) {
+                //                warning("Partition map hint for partition %d", i+1);
+            }
+            if (p.hints & kHintIgnore) {
+                //                warning("Ignore hint for partition %d", i+1);
+            }
+        }
+    };
+    
     debug("Loading volume header for descriptor %u", hfs->fd);
 
     bool success;
@@ -70,9 +105,12 @@ int hfs_load(HFSVolume *hfs) {
     if (hfs->vh.signature != kHFSPlusSigWord && hfs->vh.signature != kHFSXSigWord) {
         debug("Not HFS+ or HFSX. Detecting format...");
         if (! sniff_and_print(hfs)) {
+            char* buffer; INIT_BUFFER(buffer, 1024);
+            hfs_read_raw(buffer, hfs, 1024, 0);
             error("not an HFS+ or HFSX volume signature: 0x%x", hfs->vh.signature);
-            VisualizeData((void*)&hfs->vh, sizeof(HFSPlusVolumeHeader));
+            VisualizeData(buffer, 1024);
             errno = EFTYPE;
+            free(buffer);
         }
         errno = 0;
         return -1;

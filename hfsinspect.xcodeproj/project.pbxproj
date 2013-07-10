@@ -10,7 +10,7 @@
 		9B066F1A17622BCD00D84F55 /* stringtools.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B066F1917622BCD00D84F55 /* stringtools.c */; };
 		9B112988176E1D74009BC4D4 /* hfs_attribute_ops.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B112987176E1D74009BC4D4 /* hfs_attribute_ops.c */; };
 		9B2EE368174D1BD6008A0C54 /* debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B2EE367174D1BD6008A0C54 /* debug.c */; };
-		9B52B5B91774E6890084A735 /* format_sniffers.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B52B5B81774E6890084A735 /* format_sniffers.c */; };
+		9B52B5B91774E6890084A735 /* partition_support.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B52B5B81774E6890084A735 /* partition_support.c */; };
 		9B63C6C117614F92005E1411 /* hfs_extentlist.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B63C6C017614F92005E1411 /* hfs_extentlist.c */; };
 		9B7637F4175785E5000620CE /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637F3175785E5000620CE /* logging.c */; };
 		9B7637F7175E3BEF000620CE /* hfs_btree.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637F6175E3BEF000620CE /* hfs_btree.c */; };
@@ -48,8 +48,8 @@
 		9B112987176E1D74009BC4D4 /* hfs_attribute_ops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_attribute_ops.c; sourceTree = "<group>"; };
 		9B2EE367174D1BD6008A0C54 /* debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = debug.c; sourceTree = "<group>"; };
 		9B2EE369174D1BDB008A0C54 /* debug.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = debug.h; sourceTree = "<group>"; };
-		9B52B5B81774E6890084A735 /* format_sniffers.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = format_sniffers.c; sourceTree = "<group>"; };
-		9B52B5BA1774E68E0084A735 /* format_sniffers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = format_sniffers.h; sourceTree = "<group>"; };
+		9B52B5B81774E6890084A735 /* partition_support.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = partition_support.c; sourceTree = "<group>"; };
+		9B52B5BA1774E68E0084A735 /* partition_support.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = partition_support.h; sourceTree = "<group>"; };
 		9B63C6BF17614F89005E1411 /* hfs_extentlist.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_extentlist.h; sourceTree = "<group>"; };
 		9B63C6C017614F92005E1411 /* hfs_extentlist.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_extentlist.c; sourceTree = "<group>"; };
 		9B7637F2175785E0000620CE /* logging.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = logging.h; sourceTree = "<group>"; };
@@ -171,8 +171,8 @@
 			isa = PBXGroup;
 			children = (
 				9BBA85091735AFD400273AE9 /* main.c */,
-				9B52B5BA1774E68E0084A735 /* format_sniffers.h */,
-				9B52B5B81774E6890084A735 /* format_sniffers.c */,
+				9B52B5BA1774E68E0084A735 /* partition_support.h */,
+				9B52B5B81774E6890084A735 /* partition_support.c */,
 				9BBA850D1735AFD400273AE9 /* hfsinspect.1 */,
 				9BDF32631736D34500F60671 /* hfs */,
 				9BDF3267173759B900F60671 /* Apple */,
@@ -298,7 +298,7 @@
 				9BB1A65E17628DD900202643 /* range.c in Sources */,
 				9BB1A68617682DA400202643 /* buffer.c in Sources */,
 				9B112988176E1D74009BC4D4 /* hfs_attribute_ops.c in Sources */,
-				9B52B5B91774E6890084A735 /* format_sniffers.c in Sources */,
+				9B52B5B91774E6890084A735 /* partition_support.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

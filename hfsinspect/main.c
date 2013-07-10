@@ -15,7 +15,7 @@
 
 #include "hfs.h"
 #include "stringtools.h"
-#include "format_sniffers.h"
+#include "partition_support.h"
 
 #pragma mark - Function Declarations
 
@@ -65,6 +65,7 @@ enum HIModes {
     HIModeShowPathInfo,
     HIModeExtractFile,
     HIModeListFolder,
+    HIModeShowDiskInfo,
 };
 
 // Configuration context
@@ -150,6 +151,7 @@ INFO: \n\
     -J,         --journal       Dump information about the journal file. \n\
     -c CNID,    --cnid CNID     Lookup and display a record by its catalog node ID. \n\
     -l,         --list          If the specified FSOB is a folder, list the contents. \n\
+    -D,         --disk-info     Show any available information about the disk, including partitions and volume headers.\n\
 \n\
 OUTPUT: \n\
     You can optionally have hfsinspect dump any fork it finds as the result of an operation. This includes B-Trees or file forks.\n\
@@ -665,11 +667,12 @@ int main (int argc, char* const *argv)
         { "list",           no_argument,            NULL,                   'l' },
         { "journalinfo",    no_argument,            NULL,                   'j' },
         { "journal",        no_argument,            NULL,                   'J' },
+        { "disk-info",      no_argument,            NULL,                   'D' },
         { NULL,             0,                      NULL,                   0   }
     };
     
     /* short options */
-    char* shortopts = "hvjJlsd:n:b:p:P:F:V:c:o:";
+    char* shortopts = "hvjJlsDd:n:b:p:P:F:V:c:o:";
     
     char opt;
     while ((opt = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -690,6 +693,8 @@ int main (int argc, char* const *argv)
             case 'h': usage(0); break;                              // Exits
                 
             case 'j': set_mode(HIModeShowJournalInfo); break;
+                
+            case 'D': set_mode(HIModeShowDiskInfo); break;
                 
                 // Set device with path to file or device
             case 'd': HIOptions.device_path = strdup(optarg); break;
@@ -846,6 +851,13 @@ OPEN:
         info("Was running as root.  Now running as %u/%u.", getuid(), getgid());
     }
     
+#pragma mark Disk Summary
+    
+    // Note: This should go before hfs_load so we don't have to save the offset, etc.
+    if (check_mode(HIModeShowDiskInfo)) {
+        sniff_and_print(&HIOptions.hfs);
+    }
+    
 #pragma mark Load Volume Data
     
     if (hfs_load(&HIOptions.hfs) == -1) {
@@ -858,9 +870,6 @@ OPEN:
 #pragma mark Volume Requests
     
     // Always detail what volume we're working on at the very least
-    if (cs_sniff(&HIOptions.hfs)) {
-        print_cs(&HIOptions.hfs);
-    }
     PrintVolumeInfo(&HIOptions.hfs);
     
     // Default to volume info if there are no other specifiers.
