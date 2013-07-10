@@ -1,3 +1,4 @@
+[![Stories in Ready](http://badge.waffle.io/ahknight/hfsinspect.png)](http://waffle.io/ahknight/hfsinspect)  
 # hfsinspect
 ## An open-source HFS+ filesystem explorer and debugger (in the spirit of hfsdebug)
 
