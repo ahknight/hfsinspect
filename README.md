@@ -1,4 +1,4 @@
-# hfsinspect [![CI Status](http://travis-ci.org/ahknight/hfsinspect.png)](https://travis-ci.org/ahknight/hfsinspect) [![Stories in Ready](http://badge.waffle.io/ahknight/hfsinspect.png)](http://waffle.io/ahknight/hfsinspect)
+# hfsinspect [![Build Status](https://travis-ci.org/ahknight/hfsinspect.png?branch=master)](https://travis-ci.org/ahknight/hfsinspect) [![Stories in Ready](http://badge.waffle.io/ahknight/hfsinspect.png)](http://waffle.io/ahknight/hfsinspect)
 
 ## An open-source HFS+ filesystem explorer and debugger (in the spirit of hfsdebug)
 
