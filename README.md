@@ -1,10 +1,10 @@
-[![Stories in Ready](http://badge.waffle.io/ahknight/hfsinspect.png)](http://waffle.io/ahknight/hfsinspect)  
-# hfsinspect
+# hfsinspect [![CI Status](http://travis-ci.org/ahknight/hfsinspect.png)](https://travis-ci.org/ahknight/hfsinspect) [![Stories in Ready](http://badge.waffle.io/ahknight/hfsinspect.png)](http://waffle.io/ahknight/hfsinspect)
+
 ## An open-source HFS+ filesystem explorer and debugger (in the spirit of hfsdebug)
 
 This program is a work-in-progress and is quite buggy in its current state.  That said, it's read-only and can display some really interesting information already so have a run with it, help where you can, and file some suggestions on the site.
 
-https://github.com/ahknight/hfsinspect
+    https://github.com/ahknight/hfsinspect
 
 # Quick Guide
 
