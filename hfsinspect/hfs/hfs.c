@@ -8,6 +8,7 @@
 
 #include "hfs.h"
 #include "partition_support.h"
+#include <sys/disk.h>
 
 #pragma mark Volume Abstractions
 
@@ -33,7 +34,14 @@ int hfs_open(HFSVolume *hfs, const char *path) {
         return NULL;
     }
     
-    hfs->block_size     = hfs->stat.st_blksize;
+    long bs;
+    result = ioctl(hfs->fd, DKIOCGETBLOCKSIZE, &bs);
+    if (result < 0) {
+        hfs->block_size     = hfs->stat.st_blksize;
+    } else {
+        hfs->block_size     = bs;
+    }
+    
     hfs->block_count    = hfs->stat.st_blocks;
     hfs->length         = hfs->block_count * hfs->block_size;
     

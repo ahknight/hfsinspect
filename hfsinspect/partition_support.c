@@ -12,7 +12,7 @@
 #include "hfs_endian.h"
 
 // Someday this will need to know if it's 512b or 4k, but for now, this works >99% of the time.
-#define lba_size 512
+#define lba_size hfs->block_size
 
 bool sniff_and_print(HFSVolume* hfs)
 {
@@ -75,20 +75,17 @@ const char* partition_type_str(uuid_t uuid, PartitionHint* hint)
 
 int get_gpt_header(HFSVolume* hfs, GPTHeader* header, MBR* mbr)
 {
-    if (hfs == NULL || header == NULL) return false;
+    if (hfs == NULL || header == NULL) { return EINVAL; }
     
     size_t read_size = lba_size*2;
-    char* buf = valloc(read_size);
-    if ( buf == NULL ) {
-        perror("valloc");
-        return -1;
-    }
-    
+    char* buf = NULL;
+    INIT_BUFFER(buf, read_size);
+        
     ssize_t bytes;
     bytes = hfs_read_range(buf, hfs, read_size, 0);
     if (bytes < 0) {
         perror("read");
-        return -1;
+        return errno;
     }
     
     bool has_protective_mbr = false;
@@ -96,29 +93,31 @@ int get_gpt_header(HFSVolume* hfs, GPTHeader* header, MBR* mbr)
     char sig[2] = { 0x55, 0xaa };
     if (memcmp(&sig, &tmp.signature, 2) == 0) {
         // Valid MBR.
+        info("MBR found.");
         
         if (mbr != NULL) *mbr = tmp;
         
-        if (tmp.partitions[0].type != kMBRTypeGPTProtective) {
+        if (tmp.partitions[0].type == kMBRTypeGPTProtective) {
+            has_protective_mbr = true;
+            info("Protective MBR found");
+        } else {
             // Invalid GPT protective MBR
-            free(buf);
             warning("Invalid protective MBR.");
-            return false;
         }
-        
-        has_protective_mbr = true;
         
     } else {
         info("No protective MBR found.");
     }
     
     off_t offset = lba_size;
+    debug("default offset: %lf", offset);
     if (has_protective_mbr) {
         offset = lba_size * tmp.partitions[0].first_sector_lba;
+        debug("updated offset to %f", offset);
     }
     *header = *(GPTHeader*)(buf+offset);
     
-    free(buf);
+    FREE_BUFFER(buf);
     
     return 0;
 }
@@ -127,7 +126,7 @@ bool gpt_sniff(HFSVolume* hfs)
 {
     GPTHeader header;
     int result = get_gpt_header(hfs, &header, NULL);
-    if (result == -1) { perror("get gpt header"); return false; }
+    if (result < 0) { perror("get gpt header"); return false; }
     
     result = memcmp(&header.signature, "EFI PART", 8);
     
