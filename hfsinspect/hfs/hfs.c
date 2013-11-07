@@ -34,7 +34,7 @@ int hfs_open(HFSVolume *hfs, const char *path) {
         return NULL;
     }
     
-    long bs;
+    long bs = 0;
     result = ioctl(hfs->fd, DKIOCGETBLOCKSIZE, &bs);
     if (result < 0) {
         hfs->block_size     = hfs->stat.st_blksize;
