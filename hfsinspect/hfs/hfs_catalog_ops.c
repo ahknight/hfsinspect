@@ -53,14 +53,33 @@ HFSBTree hfs_get_catalog_btree(const HFSVolume *hfs)
 // Return is the record type (eg. kHFSPlusFolderRecord) and references to the key and value structs.
 int hfs_get_catalog_leaf_record(HFSPlusCatalogKey* const record_key, HFSPlusCatalogRecord* const record_value, const HFSBTreeNode* node, hfs_record_id recordID)
 {
+    if (recordID >= node->recordCount) {
+        error("Requested record %d, which is beyond the range of node %d (%d)", recordID, node->recordCount, node->nodeNumber);
+        return -1;
+    }
+    
     debug("Getting catalog leaf record %d of node %d", recordID, node->nodeNumber);
     
     if (node->nodeDescriptor.kind != kBTLeafNode) return 0;
     
     const HFSBTreeNodeRecord *record    = &node->records[recordID];
+    uint16_t max_key_length = sizeof(HFSPlusCatalogKey);
+    uint16_t max_value_length = sizeof(HFSPlusCatalogRecord) + sizeof(uint16_t);
     
-    if (record->key != NULL) *record_key        = *( (HFSPlusCatalogKey*) record->key );
-    if (record->value != NULL) *record_value    = *( (HFSPlusCatalogRecord*) record->value);
+    u_int16_t key_length = record->keyLength;
+    u_int16_t value_length = record->valueLength;
+    
+    if (key_length > max_key_length) {
+        warning("Key length of record %d in node %d is invalid (%d; maximum is %d)", recordID, node->nodeNumber, key_length, max_key_length);
+        key_length = max_key_length;
+    }
+    if (value_length > max_value_length) {
+        warning("Value length of record %d in node %d is invalid (%d; maximum is %d)", recordID, node->nodeNumber, value_length, max_value_length);
+        value_length = max_value_length;
+    }
+    
+    if (record->key != NULL) memcpy(record_key, record->key, key_length);
+    if (record->value != NULL) memcpy(record_value, record->value, value_length);
     
     return record_value->record_type;
 }
@@ -203,18 +222,28 @@ u_int16_t hfs_get_catalog_record_type (const HFSBTreeNodeRecord* catalogRecord)
 
 #pragma mark Fetch and List
 
-bool hfs_catalog_record_is_hard_link(HFSPlusCatalogRecord* record)
+bool hfs_catalog_record_is_file_hard_link(const HFSPlusCatalogRecord* record)
 {
     return (
             (record->record_type == kHFSPlusFileRecord) &&
-            (
-             (record->catalogFile.userInfo.fdCreator == kHFSPlusCreator && record->catalogFile.userInfo.fdType == kHardLinkFileType) || // File link
-             ( (record->catalogFile.flags & kHFSHasLinkChainMask) && hfs_catalog_record_is_alias(record) )                              // Folder link
-             )
+            (record->catalogFile.userInfo.fdCreator == kHFSPlusCreator && record->catalogFile.userInfo.fdType == kHardLinkFileType)
             );
 }
 
-bool hfs_catalog_record_is_symbolic_link(HFSPlusCatalogRecord* record)
+bool hfs_catalog_record_is_directory_hard_link(const HFSPlusCatalogRecord* record)
+{
+    return (
+            (record->record_type == kHFSPlusFileRecord) &&
+            ( (record->catalogFile.flags & kHFSHasLinkChainMask) && hfs_catalog_record_is_directory_alias(record) )
+            );
+}
+
+bool hfs_catalog_record_is_hard_link(const HFSPlusCatalogRecord* record)
+{
+    return ( hfs_catalog_record_is_file_hard_link(record) || hfs_catalog_record_is_directory_hard_link(record) );
+}
+
+bool hfs_catalog_record_is_symbolic_link(const HFSPlusCatalogRecord* record)
 {
     return (
             (record->record_type == kHFSPlusFileRecord) &&
@@ -223,14 +252,29 @@ bool hfs_catalog_record_is_symbolic_link(HFSPlusCatalogRecord* record)
             );
 }
 
-bool hfs_catalog_record_is_alias(HFSPlusCatalogRecord* record)
+bool hfs_catalog_record_is_file_alias(const HFSPlusCatalogRecord* record)
 {
     return (
             (record->record_type == kHFSPlusFileRecord) &&
-            (record->catalogFile.userInfo.fdFlags & kIsAlias) &&
+//            (record->catalogFile.userInfo.fdFlags & kIsAlias) &&
             (record->catalogFile.userInfo.fdCreator == kAliasCreator) &&
-            (record->catalogFile.userInfo.fdType == kFileAliasType || record->catalogFile.userInfo.fdType == kFolderAliasType)
+            (record->catalogFile.userInfo.fdType == kFileAliasType)
             );
+}
+
+bool hfs_catalog_record_is_directory_alias(const HFSPlusCatalogRecord* record)
+{
+    return (
+            (record->record_type == kHFSPlusFileRecord) &&
+//            (record->catalogFile.userInfo.fdFlags & kIsAlias) &&
+            (record->catalogFile.userInfo.fdCreator == kAliasCreator) &&
+            (record->catalogFile.userInfo.fdType == kFolderAliasType)
+            );
+}
+
+bool hfs_catalog_record_is_alias(const HFSPlusCatalogRecord* record)
+{
+    return ( hfs_catalog_record_is_file_alias(record) || hfs_catalog_record_is_directory_alias(record) );
 }
 
 HFSBTreeNodeRecord* hfs_catalog_target_of_catalog_record (const HFSBTreeNodeRecord* nodeRecord)

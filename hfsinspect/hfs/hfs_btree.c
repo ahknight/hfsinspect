@@ -293,3 +293,45 @@ bool hfs_btree_search_node(hfs_record_id *index, const HFSBTreeNode *node, const
     *index = recNum;
     return found;
 }
+
+unsigned hfs_btree_iterate_tree_leaves (void* context, HFSBTree *tree, bool(*process)(void* context, HFSBTreeNode* node))
+{
+    
+}
+
+unsigned hfs_btree_iterate_node_records (void* context, HFSBTreeNode* node, bool(*process)(void* context, HFSBTreeNodeRecord* record))
+{
+    hfs_node_id processed = 0;
+    for (unsigned recNum = 0; recNum < node->nodeDescriptor.numRecords; recNum++) {
+        if (! process(context, &node->records[recNum]) ) break;
+        processed++;
+    }
+    return processed;
+}
+
+// Wait until we process the node allocation bitmap...
+unsigned hfs_btree_iterate_all_nodes (void* context, HFSBTree *tree, bool(*process)(void* context, HFSBTreeNode* node))
+{
+    return 0;
+}
+
+unsigned hfs_btree_iterate_all_records (void* context, HFSBTree *tree, bool(*process)(void* context, HFSBTreeNodeRecord* record))
+{
+    hfs_node_id cnid = tree->headerRecord.firstLeafNode;
+    hfs_node_id processed = 0;
+    
+    while (1) {
+        HFSBTreeNode node;
+        int8_t result = hfs_btree_get_node(&node, tree, cnid);
+        if (result < 0) {
+            perror("get node");
+            critical("There was an error fetching node %d", cnid);
+        }
+        
+        // Process node
+        for (unsigned recNum = 0; recNum < node.nodeDescriptor.numRecords; recNum++) {
+            if (! process(context, &node.records[recNum]) ) return processed;
+            processed++;
+        }
+    }
+}

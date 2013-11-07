@@ -26,9 +26,13 @@ int8_t              hfs_catalog_find_record                 (HFSBTreeNode *node,
 int                 hfs_catalog_compare_keys_cf             (const HFSPlusCatalogKey *key1, const HFSPlusCatalogKey *key2);
 int                 hfs_catalog_compare_keys_bc             (const HFSPlusCatalogKey *key1, const HFSPlusCatalogKey *key2);
 
-bool                hfs_catalog_record_is_hard_link         (HFSPlusCatalogRecord* record);
-bool                hfs_catalog_record_is_symbolic_link     (HFSPlusCatalogRecord* record);
-bool                hfs_catalog_record_is_alias             (HFSPlusCatalogRecord* record);
+bool                hfs_catalog_record_is_file_hard_link    (const HFSPlusCatalogRecord* record);
+bool                hfs_catalog_record_is_directory_hard_link(const HFSPlusCatalogRecord* record);
+bool                hfs_catalog_record_is_hard_link         (const HFSPlusCatalogRecord* record);
+bool                hfs_catalog_record_is_symbolic_link     (const HFSPlusCatalogRecord* record);
+bool                hfs_catalog_record_is_file_alias        (const HFSPlusCatalogRecord* record);
+bool                hfs_catalog_record_is_directory_alias   (const HFSPlusCatalogRecord* record);
+bool                hfs_catalog_record_is_alias             (const HFSPlusCatalogRecord* record);
 
 HFSBTreeNodeRecord* hfs_catalog_target_of_catalog_record    (const HFSBTreeNodeRecord* catalogRecord);
 HFSBTreeNodeRecord* hfs_catalog_next_in_folder              (const HFSBTreeNodeRecord* catalogRecord);

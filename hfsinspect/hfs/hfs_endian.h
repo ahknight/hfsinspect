@@ -11,7 +11,7 @@
 
 #include <libkern/OSByteOrder.h>
 #include "hfs_structs.h"
-#include "partition_support.h"
+#include "partitions.h"
 
 // Define macros to convert big endian ints to host order.
 // (Defined as simple casts on little endian systems.)

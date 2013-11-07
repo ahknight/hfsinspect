@@ -22,6 +22,12 @@
 		9BBA85071735AFD400273AE9 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9BBA85061735AFD400273AE9 /* Foundation.framework */; };
 		9BBA850A1735AFD400273AE9 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BBA85091735AFD400273AE9 /* main.c */; };
 		9BBA850E1735AFD400273AE9 /* hfsinspect.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9BBA850D1735AFD400273AE9 /* hfsinspect.1 */; };
+		9BC1D085182BE8D200D9B301 /* mbr.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BC1D084182BE8D200D9B301 /* mbr.c */; };
+		9BC1D087182BE8D700D9B301 /* gpt.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BC1D086182BE8D700D9B301 /* gpt.c */; };
+		9BC1D089182BE8DC00D9B301 /* apm.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BC1D088182BE8DC00D9B301 /* apm.c */; };
+		9BC1D08B182BE8E200D9B301 /* corestorage.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BC1D08A182BE8E200D9B301 /* corestorage.c */; };
+		9BC1D08E182BE94400D9B301 /* partitions.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BC1D08D182BE94400D9B301 /* partitions.c */; };
+		9BC1D091182BFF6200D9B301 /* volume.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BC1D090182BFF6200D9B301 /* volume.c */; };
 		9BCD797017457F2000CB9BC4 /* hfs_unicode.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BCD796F17457F2000CB9BC4 /* hfs_unicode.c */; };
 		9BDF325E1736D27500F60671 /* hfs_pstruct.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BDF325D1736D27500F60671 /* hfs_pstruct.c */; };
 		9BDF32621736D30E00F60671 /* hfs_endian.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BDF32611736D30E00F60671 /* hfs_endian.c */; };
@@ -73,6 +79,18 @@
 		9BBA85091735AFD400273AE9 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = main.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		9BBA850C1735AFD400273AE9 /* hfsinspect-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = "hfsinspect-Prefix.pch"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		9BBA850D1735AFD400273AE9 /* hfsinspect.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = hfsinspect.1; sourceTree = "<group>"; };
+		9BC1D080182BE8B800D9B301 /* mbr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mbr.h; sourceTree = "<group>"; };
+		9BC1D081182BE8BD00D9B301 /* gpt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gpt.h; sourceTree = "<group>"; };
+		9BC1D082182BE8C400D9B301 /* apm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = apm.h; sourceTree = "<group>"; };
+		9BC1D083182BE8C900D9B301 /* corestorage.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = corestorage.h; sourceTree = "<group>"; };
+		9BC1D084182BE8D200D9B301 /* mbr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mbr.c; sourceTree = "<group>"; };
+		9BC1D086182BE8D700D9B301 /* gpt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = gpt.c; sourceTree = "<group>"; };
+		9BC1D088182BE8DC00D9B301 /* apm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = apm.c; sourceTree = "<group>"; };
+		9BC1D08A182BE8E200D9B301 /* corestorage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = corestorage.c; sourceTree = "<group>"; };
+		9BC1D08C182BE93F00D9B301 /* partitions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = partitions.h; sourceTree = "<group>"; };
+		9BC1D08D182BE94400D9B301 /* partitions.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = partitions.c; sourceTree = "<group>"; };
+		9BC1D08F182BFF5E00D9B301 /* volume.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = volume.h; sourceTree = "<group>"; };
+		9BC1D090182BFF6200D9B301 /* volume.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = volume.c; sourceTree = "<group>"; };
 		9BCD796E17457F1800CB9BC4 /* hfs_unicode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_unicode.h; sourceTree = "<group>"; };
 		9BCD796F17457F2000CB9BC4 /* hfs_unicode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs_unicode.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BDF325D1736D27500F60671 /* hfs_pstruct.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs_pstruct.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -171,9 +189,8 @@
 			isa = PBXGroup;
 			children = (
 				9BBA85091735AFD400273AE9 /* main.c */,
-				9B52B5BA1774E68E0084A735 /* partition_support.h */,
-				9B52B5B81774E6890084A735 /* partition_support.c */,
 				9BBA850D1735AFD400273AE9 /* hfsinspect.1 */,
+				9BC1D07F182BE84900D9B301 /* partitions */,
 				9BDF32631736D34500F60671 /* hfs */,
 				9BDF3267173759B900F60671 /* Apple */,
 				9BBA850B1735AFD400273AE9 /* Supporting Files */,
@@ -194,12 +211,33 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		9BC1D07F182BE84900D9B301 /* partitions */ = {
+			isa = PBXGroup;
+			children = (
+				9BC1D08C182BE93F00D9B301 /* partitions.h */,
+				9BC1D08D182BE94400D9B301 /* partitions.c */,
+				9B52B5BA1774E68E0084A735 /* partition_support.h */,
+				9B52B5B81774E6890084A735 /* partition_support.c */,
+				9BC1D080182BE8B800D9B301 /* mbr.h */,
+				9BC1D084182BE8D200D9B301 /* mbr.c */,
+				9BC1D081182BE8BD00D9B301 /* gpt.h */,
+				9BC1D086182BE8D700D9B301 /* gpt.c */,
+				9BC1D082182BE8C400D9B301 /* apm.h */,
+				9BC1D088182BE8DC00D9B301 /* apm.c */,
+				9BC1D083182BE8C900D9B301 /* corestorage.h */,
+				9BC1D08A182BE8E200D9B301 /* corestorage.c */,
+				9BC1D08F182BFF5E00D9B301 /* volume.h */,
+				9BC1D090182BFF6200D9B301 /* volume.c */,
+			);
+			path = partitions;
+			sourceTree = "<group>";
+		};
 		9BDF32631736D34500F60671 /* hfs */ = {
 			isa = PBXGroup;
 			children = (
+				9B9686501737774B00F31063 /* hfs_structs.h */,
 				9BDF32641737307700F60671 /* hfs.h */,
 				9BDF32651737307D00F60671 /* hfs.c */,
-				9B9686501737774B00F31063 /* hfs_structs.h */,
 				9B7637F8175E3C0E000620CE /* hfs_io.h */,
 				9B7637F9175E3C13000620CE /* hfs_io.c */,
 				9B7637F5175E3BEA000620CE /* hfs_btree.h */,
@@ -257,7 +295,7 @@
 		9BBA84FB1735AFD400273AE9 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0460;
+				LastUpgradeCheck = 0500;
 				ORGANIZATIONNAME = "Adam Knight";
 			};
 			buildConfigurationList = 9BBA84FE1735AFD400273AE9 /* Build configuration list for PBXProject "hfsinspect" */;
@@ -282,23 +320,29 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9BC1D091182BFF6200D9B301 /* volume.c in Sources */,
+				9BC1D089182BE8DC00D9B301 /* apm.c in Sources */,
 				9BBA850A1735AFD400273AE9 /* main.c in Sources */,
 				9BDF325E1736D27500F60671 /* hfs_pstruct.c in Sources */,
 				9BDF32621736D30E00F60671 /* hfs_endian.c in Sources */,
 				9BDF32661737307D00F60671 /* hfs.c in Sources */,
 				9BCD797017457F2000CB9BC4 /* hfs_unicode.c in Sources */,
+				9BC1D08E182BE94400D9B301 /* partitions.c in Sources */,
 				9B2EE368174D1BD6008A0C54 /* debug.c in Sources */,
 				9B7637F4175785E5000620CE /* logging.c in Sources */,
 				9B7637F7175E3BEF000620CE /* hfs_btree.c in Sources */,
 				9B7637FA175E3C13000620CE /* hfs_io.c in Sources */,
+				9BC1D08B182BE8E200D9B301 /* corestorage.c in Sources */,
 				9B7637FD175E3D7D000620CE /* hfs_extent_ops.c in Sources */,
 				9B763800175E3ED4000620CE /* hfs_catalog_ops.c in Sources */,
 				9B63C6C117614F92005E1411 /* hfs_extentlist.c in Sources */,
 				9B066F1A17622BCD00D84F55 /* stringtools.c in Sources */,
 				9BB1A65E17628DD900202643 /* range.c in Sources */,
 				9BB1A68617682DA400202643 /* buffer.c in Sources */,
+				9BC1D085182BE8D200D9B301 /* mbr.c in Sources */,
 				9B112988176E1D74009BC4D4 /* hfs_attribute_ops.c in Sources */,
 				9B52B5B91774E6890084A735 /* partition_support.c in Sources */,
+				9BC1D087182BE8D700D9B301 /* gpt.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -308,7 +352,6 @@
 		9BBA850F1735AFD400273AE9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_LINK_OBJC_RUNTIME = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
@@ -329,7 +372,6 @@
 		9BBA85101735AFD400273AE9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_LINK_OBJC_RUNTIME = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
@@ -349,9 +391,14 @@
 				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_STRCPY = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEPLOYMENT_LOCATION = YES;
+				DSTROOT = $HOME;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "hfsinspect/hfsinspect-Prefix.pch";
+				INSTALL_PATH = /bin;
 				PRODUCT_NAME = hfsinspect;
+				STRIP_INSTALLED_PRODUCT = NO;
 				USER_HEADER_SEARCH_PATHS = hfsinspect;
 			};
 			name = Debug;
@@ -362,8 +409,12 @@
 				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_STRCPY = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEPLOYMENT_LOCATION = YES;
+				DSTROOT = $HOME;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "hfsinspect/hfsinspect-Prefix.pch";
+				INSTALL_PATH = /bin;
 				PRODUCT_NAME = hfsinspect;
 				USER_HEADER_SEARCH_PATHS = hfsinspect;
 			};

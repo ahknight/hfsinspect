@@ -17,7 +17,7 @@ int hfs_open(HFSVolume *hfs, const char *path) {
     hfs->fp = fopen(path, "r");
     if (hfs->fp == NULL)    return -1;
     
-	hfs->fd = fileno(hfs->fp); //open(path, O_RDONLY);
+	hfs->fd = fileno(hfs->fp);
 	if (hfs->fd == -1)      return -1;
     
     strncpy(hfs->device, path, strlen(path));
@@ -59,7 +59,7 @@ int hfs_load(HFSVolume *hfs) {
      */
     
     if (gpt_sniff(hfs)) {
-        //        print_gpt(hfs);
+//        print_gpt(hfs);
         
         bool success;
         Partition partitions[128];
@@ -76,10 +76,10 @@ int hfs_load(HFSVolume *hfs) {
                 break;
             }
             if (p.hints & kHintPartitionMap) {
-                //                warning("Partition map hint for partition %d", i+1);
+//                warning("Partition map hint for partition %d", i+1);
             }
             if (p.hints & kHintIgnore) {
-                //                warning("Ignore hint for partition %d", i+1);
+//                warning("Ignore hint for partition %d", i+1);
             }
         }
     };

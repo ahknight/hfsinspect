@@ -1,0 +1,62 @@
+Determine source file.
+Open source file.
+Detect type:
+    Read first 4k into a Buffer.
+    Pass buffer to a list of detectors, partition detectors first.
+    Partition detectors may recursively check each partition for a readable filesystem and update the offset as needed.
+    Filesystem detectors may update the offset (say, HFS-wrapped HFS+).
+Using the first valid volume, branch on FS type (HFS or HFS+).
+Load FS metadata, init b-trees, etc.
+
+Add FS type to HFSVolume.
+Attach metadata file forks to HFSVolume.
+Allow for multiply-nested HFSVolumes (wrapped filesystems) to expose all layers for inspection.
+
+Device struct
+    char* source[PATH_MAX];
+    int fd;
+    FILE fp;
+    stat stat_struct;
+    fsstat fsstat_struct;
+    ...?
+
+Source struct
+    Device device;
+    size_t size;
+    size_t block_size; //bytes
+    ExtentList extents; //all measures in blocks of block_size
+
+device_read_raw(void*, Device, size_t, off_t) //bytes
+device_read_blocks(void*, Device, size_t, off_t) //blocks
+device_read(void*, Device, size_t, off_t) //bytes
+
+source_read_blocks(void*, Source, size_t, off_t) //source blocks
+source_read(void*, Source, size_t, off_t) //bytes
+
+PartitionMap struct
+    u_int16_t type; //enum
+    u_int16_t partition_count;
+    SourceList partitions;
+
+---
+Output
+
+OutputGroup
+    char* title[50]
+    AttributeList attributes
+    OutputGroupList groups
+
+Attribute
+    char* name[100]
+    u_int16_t input_type
+    u_int16_t output_type
+    size_t size
+    void* data
+
+From there, make JSON or nested ASCII.
+
+Types (all with formats):
+Header
+Subheader w/level
+attribute
+subattribute

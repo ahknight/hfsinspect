@@ -935,7 +935,8 @@ void PrintVolumeSummary(const VolumeSummary *summary)
 void PrintForkSummary(const ForkSummary *summary)
 {
     PrintUI             (summary, count);
-    PrintUI             (summary, fragmentedCount);
+    PrintAttributeString("fragmentedCount", "%llu (%0.2f)", summary->fragmentedCount, (float)summary->fragmentedCount/(float)summary->count);
+//    PrintUI             (summary, fragmentedCount);
     PrintHFSBlocks      (summary, blockCount);
     PrintDataLength     (summary, logicalSpace);
     PrintUI             (summary, extentRecords);

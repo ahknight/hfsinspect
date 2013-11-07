@@ -22,4 +22,13 @@ void    hfs_btree_free_node     (HFSBTreeNode *node);
 bool    hfs_btree_search_tree   (HFSBTreeNode *node, hfs_record_id *index, const HFSBTree *tree, const void *searchKey);
 bool    hfs_btree_search_node   (hfs_record_id *index, const HFSBTreeNode *node, const void *searchKey);
 
+
+// Linear processing of a B-Tree.  Useful for statistics and other whole-tree operations.
+// Each returns the number of processed things. Return false on your processor to halt and return immediately.
+unsigned    hfs_btree_iterate_tree_leaves       (void* context, HFSBTree *tree,     bool(*)(void* context, HFSBTreeNode* node));
+unsigned    hfs_btree_iterate_node_records      (void* context, HFSBTreeNode* node, bool(*)(void* context, HFSBTreeNodeRecord* record));
+
+unsigned    hfs_btree_iterate_all_nodes         (void* context, HFSBTree *tree,     bool(*)(void* context, HFSBTreeNode* node));
+unsigned    hfs_btree_iterate_all_records       (void* context, HFSBTree *tree,     bool(*)(void* context, HFSBTreeNodeRecord* record));
+
 #endif

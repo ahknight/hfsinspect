@@ -15,7 +15,7 @@
 
 #include "hfs.h"
 #include "stringtools.h"
-#include "partition_support.h"
+#include "partitions.h"
 
 #pragma mark - Function Declarations
 
@@ -26,12 +26,12 @@ bool            check_mode                  (int mode);
 void            usage                       (int status);
 void            show_version                (char* name);
 
-void            showPathInfo                ();
+void            showPathInfo                (void);
 void            showCatalogRecord           (hfs_node_id parent, HFSUniStr255 filename, bool follow);
 
 int             compare_ranked_files        (const Rank * a, const Rank * b);
 VolumeSummary   generateVolumeSummary       (HFSVolume* hfs);
-void            generateForkSummary         (ForkSummary* forkSummary, const HFSPlusCatalogFile* file, const HFSPlusForkData* fork);
+void            generateForkSummary         (ForkSummary* forkSummary, const HFSPlusCatalogFile* file, const HFSPlusForkData* fork, hfs_fork_type type);
 
 ssize_t         extractFork                 (const HFSFork* fork, const char* extractPath);
 void            extractHFSPlusCatalogFile   (const HFSVolume *hfs, const HFSPlusCatalogFile* file, const char* extractPath);
@@ -175,7 +175,7 @@ void show_version(char* name)
     exit(0);
 }
 
-void showPathInfo()
+void showPathInfo(void)
 {
     debug("Finding records for path: %s", HIOptions.file_path);
     
@@ -356,47 +356,50 @@ VolumeSummary generateVolumeSummary(HFSVolume* hfs)
         // Process node
         debug("Processing node %d", cnid); summary.nodeCount++;
         for (unsigned recNum = 0; recNum < node.nodeDescriptor.numRecords; recNum++) {
-            const HFSBTreeNodeRecord *record = &node.records[recNum]; summary.recordCount++;
+            HFSPlusCatalogRecord record = {0};
+            HFSPlusCatalogKey key = {0};
             
             // fileCount, folderCount
-            u_int8_t type = hfs_get_catalog_record_type(record);
+            u_int8_t type = hfs_get_catalog_leaf_record(&key, &record, &node, recNum);
+            if (type < 0) {
+                critical("Error fetching record %u of node %u", recNum, node.nodeNumber);
+                exit(1);
+            }
+            
+            summary.recordCount++;
+            
             switch (type) {
                 case kHFSPlusFileRecord:
                 {
                     summary.fileCount++;
                     
-                    HFSPlusCatalogFile *file = ((HFSPlusCatalogFile*)record->value);
+                    HFSPlusCatalogFile *file = &record.catalogFile;
                     
-                    // hard link
-                    if (file->userInfo.fdType == kHardLinkFileType && file->userInfo.fdCreator == kHFSPlusCreator) { summary.hardLinkFileCount++; }
+                    // hard links
+                    if (hfs_catalog_record_is_file_hard_link(&record)) { summary.hardLinkFileCount++; continue; }
+                    if (hfs_catalog_record_is_directory_hard_link(&record)) { summary.hardLinkFolderCount++; continue; }
                     
                     // symlink
-                    if (file->userInfo.fdType == kSymLinkFileType && file->userInfo.fdCreator == kSymLinkCreator) { summary.symbolicLinkCount++; }
+                    if (hfs_catalog_record_is_symbolic_link(&record)) { summary.symbolicLinkCount++; continue; }
                     
-                    {
-                        // file alias
-                        if (file->userInfo.fdType == 'alis' && file->userInfo.fdCreator == 'MACS') { summary.aliasCount++; }
-                        
-                        // folder alias
-                        else if (file->userInfo.fdType == 'fdrp' && file->userInfo.fdCreator == 'MACS') { summary.aliasCount++; }
-                        
-                        // catch-all alias
-                        else if (file->userInfo.fdFlags & kIsAlias) { summary.aliasCount++; }
-                    }
+                    // alias
+                    if (hfs_catalog_record_is_alias(&record)) { summary.aliasCount++; continue; }
                     
                     // invisible
-                    if (file->userInfo.fdFlags & kIsInvisible) { summary.invisibleFileCount++; }
+                    if (file->userInfo.fdFlags & kIsInvisible) { summary.invisibleFileCount++; continue; }
                     
+                    // file sizes
                     if (file->dataFork.logicalSize == 0 && file->resourceFork.logicalSize == 0) {
                         summary.emptyFileCount++;
+                        continue;
                         
                     } else {
                         if (file->dataFork.logicalSize) {
-                            generateForkSummary(&summary.dataFork, file, &file->dataFork);
+                            generateForkSummary(&summary.dataFork, file, &file->dataFork, HFSDataForkType);
                         }
                         
                         if (file->resourceFork.logicalSize) {
-                            generateForkSummary(&summary.resourceFork, file, &file->resourceFork);
+                            generateForkSummary(&summary.resourceFork, file, &file->resourceFork, HFSResourceForkType);
                         }
                         
                         size_t fileSize = file->dataFork.logicalSize + file->resourceFork.logicalSize;
@@ -412,17 +415,22 @@ VolumeSummary generateVolumeSummary(HFSVolume* hfs)
                     
                 case kHFSPlusFolderRecord:
                     {
+                        HFSPlusCatalogFolder *folder = &record.catalogFolder;
+                        
+                        if (folder->valence == 0) {
+                            summary.emptyDirectoryCount++;
+                        }
+                        
+                        // folder
                         summary.folderCount++;
-                        
-                        HFSPlusCatalogFolder *folder = ((HFSPlusCatalogFolder*)record->value);
-                        
-                        // hard link
-                        if (folder->flags & kHFSHasLinkChainMask) summary.hardLinkFolderCount++;
-                        
+
                         break;
                     }
                     
                 default:
+                    if (type < 1 || type > 4) {
+                        warning("Unknown record type: %d", type);
+                    }
                     break;
                 }
                     
@@ -435,10 +443,16 @@ VolumeSummary generateVolumeSummary(HFSVolume* hfs)
         if (cnid == 0) { break; } // End Of Line
         
         static int count = 0;
+        static unsigned iter_size = 0;
+        if (iter_size == 0) {
+            iter_size = (catalog.headerRecord.leafRecords/100000);
+            if (iter_size == 0) iter_size = 100;
+        }
+
         count += node.nodeDescriptor.numRecords;
-//        if (count >= 10000) break;
+//        if (count >= 1000000) break;
         
-        if ((count % (catalog.headerRecord.leafRecords/10000)) == 0) {
+        if ((count % iter_size) == 0) {
             // Update
             size_t space = summary.dataFork.logicalSpace + summary.resourceFork.logicalSpace;
             char* size = sizeString(space, false);
@@ -458,7 +472,7 @@ VolumeSummary generateVolumeSummary(HFSVolume* hfs)
     return summary;
 }
 
-void generateForkSummary(ForkSummary* forkSummary, const HFSPlusCatalogFile* file, const HFSPlusForkData* fork)
+void generateForkSummary(ForkSummary* forkSummary, const HFSPlusCatalogFile* file, const HFSPlusForkData* fork, hfs_fork_type type)
 {
     forkSummary->count++;
     
@@ -472,6 +486,24 @@ void generateForkSummary(ForkSummary* forkSummary, const HFSPlusCatalogFile* fil
     for (int i = 0; i < kHFSPlusExtentDensity; i++) {
         if (fork->extents[i].blockCount > 0) forkSummary->extentDescriptors++; else break;
     }
+    
+    HFSFork hfsfork = hfsfork_make(&HIOptions.hfs, *fork, type, file->fileID);
+    ExtentList *extents = hfsfork.extents;
+    
+    unsigned counter = 1;
+    
+    Extent *e = NULL;
+    TAILQ_FOREACH(e, extents, extents) {
+        forkSummary->overflowExtentDescriptors++;
+        if (counter && (counter == kHFSPlusExtentDensity) ) {
+            forkSummary->overflowExtentRecords++;
+            counter = 1;
+        } else {
+            counter++;
+        }
+    }
+    
+    hfsfork_free(&hfsfork);
 }
 
 ssize_t extractFork(const HFSFork* fork, const char* extractPath)
