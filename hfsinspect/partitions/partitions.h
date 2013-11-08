@@ -6,13 +6,13 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include "hfs_structs.h"
+
 #ifndef hfsinspect_partitions_h
 #define hfsinspect_partitions_h
 
 #pragma mark - Structures
 
-#include "partitions.h"
-#include "hfs_pstruct.h"
 #include "mbr.h"
 #include "gpt.h"
 #include "apm.h"

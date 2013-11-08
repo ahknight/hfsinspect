@@ -6,10 +6,10 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include "hfs_structs.h"
+
 #ifndef hfsinspect_corestorage_h
 #define hfsinspect_corestorage_h
-
-#include "hfs_structs.h"
 
 #pragma mark - Structures
 

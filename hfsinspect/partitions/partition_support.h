@@ -9,8 +9,6 @@
 #ifndef hfsinspect_partition_support_h
 #define hfsinspect_partition_support_h
 
-#include "hfs_structs.h"
-
 #pragma mark - Structures
 
 typedef enum PartitionHint {

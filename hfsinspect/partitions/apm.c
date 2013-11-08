@@ -62,7 +62,7 @@ void apm_print(HFSVolume* hfs)
     
     while (1) {
         int result = apm_get_header(hfs, header, partitionID);
-        if (result == -1) { perror("get APM header"); return; }
+        if (result == -1) { free(header); perror("get APM header"); return; }
         
         char str[33]; memset(str, '\0', 33);
         

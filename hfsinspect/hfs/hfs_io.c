@@ -43,17 +43,17 @@ void hfsfork_free(HFSFork *fork)
 
 ssize_t hfs_read_raw(void* buffer, const HFSVolume *hfs, size_t size, size_t offset)
 {
-    offset += hfs->offset;
+    offset += hfs->vol->offset;
     info("Reading %zu bytes at offset %zd.", size, offset);
     
     ssize_t result;
-    result = fseeko(hfs->fp, offset, SEEK_SET);
+    result = fseeko(hfs->vol->fp, offset, SEEK_SET);
     if (result < 0) {
         perror("fseek");
         critical("read error");
     }
     
-    result = fread(buffer, sizeof(char), size, hfs->fp);
+    result = fread(buffer, sizeof(char), size, hfs->vol->fp);
     if (result < 0) {
         perror("fread");
         critical("read error");
@@ -65,7 +65,11 @@ ssize_t hfs_read_raw(void* buffer, const HFSVolume *hfs, size_t size, size_t off
 // Block arguments are relative to the volume.
 ssize_t hfs_read_blocks(void* buffer, const HFSVolume *hfs, size_t block_count, size_t start_block)
 {
-//    debug("Reading %u blocks starting at block %u", block_count, start_block);
+    debug("Reading %u blocks starting at block %u", block_count, start_block);
+    debug("volume block size: %lu ; disk block size: %lu", hfs->block_size, hfs->vol->block_size);
+    unsigned ratio = hfs->block_size / hfs->vol->block_size;
+    return vol_read_blocks(hfs->vol, buffer, block_count*ratio, start_block*ratio);
+    
     if (hfs->block_count && start_block > hfs->block_count) {
         error("Request for a block past the end of the volume (%d, %d)", start_block, hfs->block_count);
         errno = ESPIPE; // Illegal seek
@@ -100,6 +104,8 @@ ssize_t hfs_read_blocks(void* buffer, const HFSVolume *hfs, size_t block_count, 
 ssize_t hfs_read_range(void* buffer, const HFSVolume *hfs, size_t size, size_t offset)
 {
     debug("Reading from volume at (%d, %d)", offset, size);
+    
+    return vol_read(hfs->vol, buffer, size, offset);
     
     // Range check.
     if (hfs->length && offset > hfs->length) {

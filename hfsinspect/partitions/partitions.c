@@ -8,11 +8,17 @@
 
 #include "partitions.h"
 #include "range.h"
+#include "hfs_pstruct.h"
 
 bool sniff_and_print(HFSVolume* hfs)
 {
-    if (gpt_sniff(hfs)) {
-        gpt_print(hfs);
+    if (gpt_test(hfs->vol)) {
+        gpt_load(hfs->vol);
+        gpt_dump(hfs->vol);
+        
+    } else if (mbr_test(hfs->vol)) {
+        mbr_load(hfs->vol);
+        mbr_dump(hfs->vol);
         
     } else if (cs_sniff(hfs)) {
         cs_print(hfs);
@@ -24,6 +30,9 @@ bool sniff_and_print(HFSVolume* hfs)
         warning("Unknown disk or partition type.");
         return false;
     }
+    
+    PrintHeaderString("Parsed Volume");
+    vol_dump(hfs->vol);
     return true;
 }
 

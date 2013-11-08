@@ -16,6 +16,7 @@
 #include "hfs.h"
 #include "stringtools.h"
 #include "partitions.h"
+#include "volume.h"
 
 #pragma mark - Function Declarations
 
@@ -72,19 +73,20 @@ enum HIModes {
 static struct HIOptions {
     u_int32_t   mode;
     
-    char*       device_path;
-    char*       file_path;
+    char        device_path[PATH_MAX];
+    char        file_path[PATH_MAX];
     
     hfs_node_id record_parent;
-    char*       record_filename;
+    char        record_filename[PATH_MAX];
     
     hfs_node_id cnid;
     
-    char*               extract_path;
+    char                extract_path[PATH_MAX];
     FILE*               extract_fp;
     HFSPlusCatalogFile  extract_HFSPlusCatalogFile;
     HFSFork             extract_HFSFork;
     
+    Volume      *volume;
     HFSVolume   hfs;
     BTreeTypes  tree_type;
     HFSBTree    tree;
@@ -190,7 +192,7 @@ void showPathInfo(void)
     
     HFSPlusCatalogFile *fileRecord = NULL;
     u_int32_t parentID = kHFSRootFolderID, last_parentID = 0;
-    HFSUniStr255 hfs_str;
+//    HFSUniStr255 hfs_str;
     
     while ( (segment = strsep(&file_path, "/")) != NULL ) {
         debug("Segment: %d:%s", parentID, segment);
@@ -209,7 +211,7 @@ void showPathInfo(void)
         
         if (result) {
             debug("Record found:");
-            hfs_str = strtohfsuc(segment);
+//            hfs_str = strtohfsuc(segment);
             
             debug("%s: parent: %d (node %d; record %d)", segment, parentID, node.nodeNumber, recordID);
             if (strlen(segment) == 0) continue;
@@ -626,8 +628,8 @@ bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
         path[1] = '\0';
     }
     
-    strlcpy(path_out, path, PATH_MAX);
-    strlcpy(device_out, device, PATH_MAX);
+    strlcpy(*path_out, path, PATH_MAX);
+    strlcpy(*device_out, device, PATH_MAX);
     
     
     debug("Path in: %s", path_in);
@@ -729,22 +731,27 @@ int main (int argc, char* const *argv)
             case 'D': set_mode(HIModeShowDiskInfo); break;
                 
                 // Set device with path to file or device
-            case 'd': HIOptions.device_path = strdup(optarg); break;
+            case 'd': strlcpy(HIOptions.device_path, optarg, PATH_MAX); break;
                 
             case 'V':
-                HIOptions.device_path = deviceAtPath(optarg);
+            {
+                char* str = deviceAtPath(optarg);
+                strlcpy(HIOptions.device_path, str, PATH_MAX);
                 if (HIOptions.device_path == NULL) fatal("Unable to determine device. Does the path exist?\n");
+            }
                 break;
                 
             case 'v': set_mode(HIModeShowVolumeInfo); break;
                 
             case 'p':
                 set_mode(HIModeShowPathInfo);
+                char *device = NULL, *file = NULL;
                 
-                INIT_STRING(HIOptions.device_path, PATH_MAX);
-                INIT_STRING(HIOptions.file_path,   PATH_MAX);
+                bool success = resolveDeviceAndPath(optarg, device, file);
                 
-                bool success = resolveDeviceAndPath(optarg, HIOptions.device_path, HIOptions.file_path);
+                if (device != NULL) strlcpy(HIOptions.device_path, device, PATH_MAX);
+                if (file != NULL)   strlcpy(HIOptions.file_path, file, PATH_MAX);
+                
                 if ( !success || !strlen(HIOptions.device_path ) ) fatal("Device could not be determined. Specify manually with -d/--device.\n");
                 if ( !strlen(HIOptions.file_path) ) fatal("Path must be an absolute path from the root of the target filesystem.\n");
                 
@@ -752,7 +759,7 @@ int main (int argc, char* const *argv)
                 
             case 'P':
                 set_mode(HIModeShowPathInfo);
-                HIOptions.file_path = strdup(optarg);
+                strlcpy(HIOptions.file_path, optarg, PATH_MAX);
                 if (HIOptions.file_path[0] != '/') fatal("Path given to -P/--path_abs must be an absolute path from the root of the target filesystem.\n");
                 break;
                 
@@ -768,7 +775,7 @@ int main (int argc, char* const *argv)
             case 'F':
                 set_mode(HIModeShowCatalogRecord);
                 
-                HIOptions.record_filename = NULL;
+                ZERO_STRUCT(HIOptions.record_filename);
                 HIOptions.record_parent = 0;
                 
                 char* option    = strdup(optarg);
@@ -776,7 +783,7 @@ int main (int argc, char* const *argv)
                 char* filename  = strsep(&option, ":");
                 
                 if (parent && strlen(parent)) sscanf(parent, "%u", &HIOptions.record_parent);
-                if (filename) HIOptions.record_filename = strdup(filename);
+                if (filename) strlcpy(HIOptions.record_filename, filename, PATH_MAX);
                 
                 FREE_BUFFER(option);
                 
@@ -786,7 +793,7 @@ int main (int argc, char* const *argv)
                 
             case 'o':
                 set_mode(HIModeExtractFile);
-                HIOptions.extract_path = strdup(optarg);
+                strlcpy(HIOptions.extract_path, optarg, PATH_MAX);
                 break;
                 
             case 'n':
@@ -818,7 +825,12 @@ int main (int argc, char* const *argv)
     // If no device path was given, use the volume of the CWD.
     if ( EMPTY_STRING(HIOptions.device_path) ) {
         info("No device specified. Trying to use the root device.");
-        HIOptions.device_path = deviceAtPath(".");
+        
+        char* device = NULL;
+        device = deviceAtPath(".");
+        if (device != NULL)
+            strlcpy(HIOptions.device_path, device, PATH_MAX);
+        
         if ( EMPTY_STRING(HIOptions.device_path) ) {
             error("Device could not be determined. Specify manually with -d/--device.");
             exit(1);
@@ -827,9 +839,10 @@ int main (int argc, char* const *argv)
     }
     
     // Load the device
+    Volume *vol = NULL;
 OPEN:
-    if (hfs_open(&HIOptions.hfs, HIOptions.device_path) == -1) {
-        
+    vol = vol_qopen(HIOptions.device_path);
+    if (vol == NULL) {
         if (errno == EBUSY) {
             // If the device is busy, see if we can use the raw disk instead (and aren't already).
             if (strstr(HIOptions.device_path, "/dev/disk") != NULL) {
@@ -838,17 +851,34 @@ OPEN:
                 strlcat(newDevicePath, "/dev/rdisk", PATH_MAX);
                 strlcat(newDevicePath, &HIOptions.device_path[9], PATH_MAX);
                 info("Device %s busy. Trying the raw disk instead: %s", HIOptions.device_path, newDevicePath);
-                FREE_BUFFER(HIOptions.device_path);
-                HIOptions.device_path = newDevicePath;
+                strlcpy(HIOptions.device_path, newDevicePath, PATH_MAX);
                 goto OPEN;
             }
-            exit(1);
+            perror("vol_qopen");
+            exit(errno);
             
         } else {
             error("could not open %s", HIOptions.device_path);
-            perror("hfs_open");
+            perror("vol_qopen");
             exit(errno);
         }
+    }
+    HIOptions.volume = vol;
+    
+    // Device loaded. Find the first HFS+ filesystem.
+    
+    /*
+     Figure out what we're dealing with here.
+     
+     First scan for a volume with fs_sniff.
+     Failing that, scan for partition maps with partition_sniff. Use partition hints to dispatch a partition range either to partition_sniff or fs_sniff.
+     
+     Whoever comes back True first ends the search (and we presume the volume's offset/length have been updated).
+     */
+
+    if (hfs_attach(&HIOptions.hfs, HIOptions.volume) < 0) {
+        perror("hfs_attach");
+        exit(1);
     }
     
     uid_t uid = 99;
@@ -892,10 +922,10 @@ OPEN:
     
 #pragma mark Load Volume Data
     
-    if (hfs_load(&HIOptions.hfs) == -1) {
-        if (errno != 0) perror("hfs_load");
-        exit(errno);
-    }
+//    if (hfs_load(&HIOptions.hfs) == -1) {
+//        if (errno != 0) perror("hfs_load");
+//        exit(errno);
+//    }
     
     set_hfs_volume(&HIOptions.hfs); // Set the context for certain hfs_pstruct.h calls.
         

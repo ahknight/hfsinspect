@@ -69,6 +69,9 @@
 		9B7637FE175E3ECE000620CE /* hfs_catalog_ops.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_catalog_ops.h; sourceTree = "<group>"; };
 		9B7637FF175E3ED4000620CE /* hfs_catalog_ops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_catalog_ops.c; sourceTree = "<group>"; };
 		9B9686501737774B00F31063 /* hfs_structs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = hfs_structs.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		9BAC71EF182D48F80001A1A3 /* doxygen.config */ = {isa = PBXFileReference; lastKnownFileType = text; path = doxygen.config; sourceTree = SOURCE_ROOT; };
+		9BAC71F0182D48F80001A1A3 /* NOTES.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = NOTES.txt; sourceTree = SOURCE_ROOT; };
+		9BAC71F1182D48F80001A1A3 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = SOURCE_ROOT; };
 		9BB1A65B17625DC800202643 /* vfs_journal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vfs_journal.h; sourceTree = "<group>"; };
 		9BB1A65C17628DD500202643 /* range.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = range.h; sourceTree = "<group>"; };
 		9BB1A65D17628DD900202643 /* range.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = range.c; sourceTree = "<group>"; };
@@ -163,6 +166,9 @@
 		9BBA84FA1735AFD400273AE9 = {
 			isa = PBXGroup;
 			children = (
+				9BAC71F1182D48F80001A1A3 /* README.md */,
+				9BAC71F0182D48F80001A1A3 /* NOTES.txt */,
+				9BAC71EF182D48F80001A1A3 /* doxygen.config */,
 				9BBA85081735AFD400273AE9 /* hfsinspect */,
 				9BBA85051735AFD400273AE9 /* Frameworks */,
 				9BBA85041735AFD400273AE9 /* Products */,
@@ -214,6 +220,8 @@
 		9BC1D07F182BE84900D9B301 /* partitions */ = {
 			isa = PBXGroup;
 			children = (
+				9BC1D08F182BFF5E00D9B301 /* volume.h */,
+				9BC1D090182BFF6200D9B301 /* volume.c */,
 				9BC1D08C182BE93F00D9B301 /* partitions.h */,
 				9BC1D08D182BE94400D9B301 /* partitions.c */,
 				9B52B5BA1774E68E0084A735 /* partition_support.h */,
@@ -226,8 +234,6 @@
 				9BC1D088182BE8DC00D9B301 /* apm.c */,
 				9BC1D083182BE8C900D9B301 /* corestorage.h */,
 				9BC1D08A182BE8E200D9B301 /* corestorage.c */,
-				9BC1D08F182BFF5E00D9B301 /* volume.h */,
-				9BC1D090182BFF6200D9B301 /* volume.c */,
 			);
 			path = partitions;
 			sourceTree = "<group>";
@@ -355,7 +361,7 @@
 				CLANG_LINK_OBJC_RUNTIME = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_C_LANGUAGE_STANDARD = c11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
@@ -375,7 +381,7 @@
 				CLANG_LINK_OBJC_RUNTIME = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_C_LANGUAGE_STANDARD = c11;
 				GCC_WARN_PEDANTIC = YES;
 				LLVM_LTO = NO;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;

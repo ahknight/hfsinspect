@@ -18,10 +18,13 @@
 #include "hfs_attribute_ops.h"
 #include "hfs_extentlist.h"
 #include "hfs_pstruct.h"
+#include "volume.h"
 
 #pragma mark Struct Conveniences
 
-int hfs_open    (HFSVolume *hfs, const char *path);
+int hfs_attach  (HFSVolume* hfs, Volume *vol);
+int hfs_test    (Volume *vol);
+
 int hfs_load    (HFSVolume *hfs);
 int hfs_close   (HFSVolume *hfs);
 

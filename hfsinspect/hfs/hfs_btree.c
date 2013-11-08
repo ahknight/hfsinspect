@@ -296,7 +296,7 @@ bool hfs_btree_search_node(hfs_record_id *index, const HFSBTreeNode *node, const
 
 unsigned hfs_btree_iterate_tree_leaves (void* context, HFSBTree *tree, bool(*process)(void* context, HFSBTreeNode* node))
 {
-    
+    return 0;
 }
 
 unsigned hfs_btree_iterate_node_records (void* context, HFSBTreeNode* node, bool(*process)(void* context, HFSBTreeNodeRecord* record))

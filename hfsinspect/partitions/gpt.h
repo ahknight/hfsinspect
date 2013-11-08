@@ -6,12 +6,12 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include "volume.h"
+#include "partition_support.h"
+#include "mbr.h"
+
 #ifndef hfsinspect_gpt_h
 #define hfsinspect_gpt_h
-
-#include <stdint.h>
-#include "mbr.h"
-#include "partition_support.h"
 
 #pragma mark - Structures
 
@@ -22,9 +22,6 @@
  Backup header is at the next-to-last LBA of the disk. The partition array usually precedes this.
  
  There may be up to 128 partition records in the array (16KiB).
- 
- We presume 512-byte blocks, but shouldn't.  Unsure at this point how to get the "real" LBA size of
- a device but 512 works at the moment (stat block size?).
  */
 
 // 92 bytes
@@ -55,8 +52,13 @@ typedef struct GPTPartitionEntry {
     u_int16_t   name[36];
 } GPTPartitionEntry;
 
-struct GPTPartitionName { uuid_string_t uuid; char name[100]; PartitionHint hints; };
-typedef struct GPTPartitionName GPTPartitionName;
+typedef GPTPartitionEntry GPTPartitionRecord[128];
+
+typedef struct GPTPartitionName {
+    uuid_string_t   uuid;
+    char            name[100];
+    PartitionHint   hints;
+} GPTPartitionName;
 
 static GPTPartitionName gpt_partition_types[] __attribute__((unused)) = {
     {"00000000-0000-0000-0000-000000000000", "Unused",                          kHintIgnore},
@@ -81,10 +83,25 @@ static GPTPartitionName gpt_partition_types[] __attribute__((unused)) = {
 
 uuid_t*     gpt_swap_uuid           (uuid_t* uuid);
 const char* gpt_partition_type_str  (uuid_t uuid, PartitionHint* hint);
-int         gpt_get_header          (HFSVolume* hfs, GPTHeader* header, MBR* mbr);
-bool        gpt_sniff               (HFSVolume* hfs);
-void        gpt_print               (HFSVolume* hfs);
-bool        gpt_partitions          (HFSVolume* hfs, Partition partitions[128], unsigned* count);
 
+/**
+ Tests a volume to see if it contains a GPT partition map.
+ @return Returns -1 on error (check errno), 0 for NO, 1 for YES.
+ */
+int gpt_test(Volume *vol);
+
+int gpt_load_header(Volume *vol, GPTHeader *gpt, GPTPartitionRecord *entries);
+
+/**
+ Updates a volume with sub-volumes for any defined partitions.
+ @return Returns -1 on error (check errno), 0 for success.
+ */
+int gpt_load(Volume *vol);
+
+/**
+ Prints a description of the GPT structure and partition information to stdout.
+ @return Returns -1 on error (check errno), 0 for success.
+ */
+int gpt_dump(Volume *vol);
 
 #endif

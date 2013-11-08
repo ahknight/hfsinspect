@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include "buffer.h"
 #include "hfs_extentlist.h"
+#include "volume.h"
 
 #ifndef hfsinspect_hfs_structs_h
 #define hfsinspect_hfs_structs_h
@@ -32,11 +33,7 @@ typedef struct HFSBTreeNode         HFSBTreeNode;
 typedef struct HFSBTreeNodeRecord   HFSBTreeNodeRecord;
 
 struct HFSVolume {
-    int                 fd;                 // File descriptor
-    FILE                *fp;                // File pointer
-    char                device[PATH_MAX];   // Device path
-    struct statfs       stat_fs;            // statfs record for the device path
-    struct stat         stat;               // stat record for the device path
+    Volume*             vol;                // Volume containing the filesystem
     HFSPlusVolumeHeader vh;                 // Volume header
     off_t               offset;             // Partition offset, if known/needed (bytes)
     size_t              length;             // Partition length, if known/needed (bytes)

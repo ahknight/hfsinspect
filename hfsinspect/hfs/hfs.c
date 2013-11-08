@@ -6,85 +6,113 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "hfs.h"
-#include "partition_support.h"
 #include <sys/disk.h>
+#include <fcntl.h>
+#include "hfs.h"
 
 #pragma mark Volume Abstractions
 
-int hfs_open(HFSVolume *hfs, const char *path) {
-    debug("Opening path %s", path);
-    hfs->fp = fopen(path, "r");
-    if (hfs->fp == NULL)    return -1;
+int hfs_load_mbd(Volume *vol, HFSMasterDirectoryBlock *mdb)
+{
+    if ( vol_read(vol, mdb, sizeof(HFSMasterDirectoryBlock), 1024) < 0)
+        return -1;
     
-	hfs->fd = fileno(hfs->fp);
-	if (hfs->fd == -1)      return -1;
+    swap_HFSMasterDirectoryBlock(mdb);
     
-    strncpy(hfs->device, path, strlen(path));
+    return 0;
+}
+
+int hfs_load_header(Volume *vol, HFSPlusVolumeHeader *vh)
+{
+    if ( vol_read(vol, vh, sizeof(HFSPlusVolumeHeader), 1024) < 0)
+        return -1;
     
-    int result = fstatfs(hfs->fd, &hfs->stat_fs);
-    if (result < 0) {
-        perror("fstatfs");
-        return NULL;
+    swap_HFSPlusVolumeHeader(vh);
+    
+    return 0;
+}
+
+int hfs_attach(HFSVolume* hfs, Volume *vol)
+{
+    if (hfs == NULL || vol == NULL) { errno = EINVAL; return -1; }
+    
+    int type;
+    int result;
+    
+    // Test to see if we support the volume.
+    result = hfs_test(vol);
+    if (result < 0) return -1;
+    
+    type = (unsigned)result;
+    
+    if (type == kVolumeSubtypeUnknown || type == kFilesystemTypeHFS) {
+        errno = EINVAL;
+        return -1;
     }
     
-    result = fstat(hfs->fd, &hfs->stat);
-    if (result < 0) {
-        perror("fstat");
-        return NULL;
+    // Clear the HFSVolume struct (hope you didn't need that)
+    ZERO_STRUCT(*hfs);
+    
+    // Handle wrapped volumes.
+    if (type == kFilesystemTypeWrappedHFSPlus) {
+        HFSMasterDirectoryBlock mdb; ZERO_STRUCT(mdb);
+        if ( hfs_load_mbd(vol, &mdb) < 0) return -1;
+        
+        hfs->offset = (mdb.drAlBlSt * 512) + (mdb.drEmbedExtent.startBlock * mdb.drAlBlkSiz);
     }
     
-    long bs = 0;
-    result = ioctl(hfs->fd, DKIOCGETBLOCKSIZE, &bs);
-    if (result < 0) {
-        hfs->block_size     = hfs->stat.st_blksize;
-    } else {
-        hfs->block_size     = bs;
+    // Load the volume header.
+    if ( hfs_load_header(vol, &hfs->vh) < 0 )
+        return -1;
+    
+    // Update the HFSVolume struct.
+    hfs->vol = vol;
+    hfs->block_size = hfs->vh.blockSize;
+    hfs->block_count = hfs->vh.totalBlocks;
+    
+    hfs->offset += vol->offset;
+    hfs->length = (vol->length ? vol->length : hfs->block_size * hfs->block_count);
+    
+    return 0;
+}
+
+/**
+ Tests to see if a volume is HFS or not.
+ @return Returns -1 on failure or a VolumeSubtype constant representing the detected filesystem.
+ */
+int hfs_test(Volume *vol)
+{
+    // First, test for HFS or wrapped HFS+ volumes.
+    HFSMasterDirectoryBlock mdb;
+    
+    if ( hfs_load_mbd(vol, &mdb) < 0)
+        return -1;
+    
+    if (mdb.drSigWord == kHFSSigWord && mdb.drEmbedSigWord == kHFSPlusSigWord) {
+        info("Found a wrapped HFS+ volume");
+        return kFilesystemTypeWrappedHFSPlus;
+    } else if (mdb.drSigWord == kHFSSigWord) {
+        info("Found an HFS volume");
+        return kFilesystemTypeHFS;
     }
     
-    hfs->block_count    = hfs->stat.st_blocks;
-    hfs->length         = hfs->block_count * hfs->block_size;
+    // Now test for a modern HFS+ volume.
+    HFSPlusVolumeHeader vh;
     
-    return hfs->fd;
+    if ( hfs_load_header(vol, &vh) < 0 )
+        return -1;
+    
+    if (vh.signature == kHFSPlusSigWord || vh.signature == kHFSXSigWord) {
+        info("Found an HFS+ volume");
+        return kFilesystemTypeHFSPlus;
+    }
+    
+    info("Unknown volume type");
+    return kVolumeSubtypeUnknown;
 }
 
 int hfs_load(HFSVolume *hfs) {
-    /*
-     Figure out what we're dealing with here.
-     
-     First scan for a volume with fs_sniff.
-     Failing that, scan for partition maps with partition_sniff. Use partition hints to dispatch a partition range either to partition_sniff or fs_sniff.
-     
-     Whoever comes back True first ends the search (and we presume the volume's offset/length have been updated).
-     */
-    
-    if (gpt_sniff(hfs)) {
-//        print_gpt(hfs);
-        
-        bool success;
-        Partition partitions[128];
-        unsigned count;
-        
-        success = gpt_partitions(hfs, partitions, &count);
-        
-        FOR_UNTIL(i, count) {
-            Partition p = partitions[i];
-            if (p.hints & kHintFilesystem) {
-                PrintHeaderString("Partition %d", i+1);
-                hfs->offset = p.offset;
-                hfs->length = p.length;
-                break;
-            }
-            if (p.hints & kHintPartitionMap) {
-//                warning("Partition map hint for partition %d", i+1);
-            }
-            if (p.hints & kHintIgnore) {
-//                warning("Ignore hint for partition %d", i+1);
-            }
-        }
-    };
-    
-    debug("Loading volume header for descriptor %u", hfs->fd);
+    debug("Loading volume header for descriptor %u", hfs->vol->fd);
 
     bool success;
     
@@ -97,7 +125,7 @@ int hfs_load(HFSVolume *hfs) {
     if (vcb->drSigWord == kHFSSigWord) {
         PrintHFSMasterDirectoryBlock(vcb);
         if (vcb->drEmbedSigWord == kHFSPlusSigWord) {
-            hfs->offset = (vcb->drAlBlSt * 512) + (vcb->drEmbedExtent.startBlock * vcb->drAlBlkSiz);
+            hfs->offset += (vcb->drAlBlSt * 512) + (vcb->drEmbedExtent.startBlock * vcb->drAlBlkSiz);
             debug("Found a wrapped volume at offset %llu", hfs->offset);
             
         } else {
@@ -133,9 +161,7 @@ int hfs_load(HFSVolume *hfs) {
 
 int hfs_close(HFSVolume *hfs) {
     debug("Closing volume.");
-    int result = close(hfs->fd);
-    hfs->fd = 0;
-    hfs->fp = NULL;
+    int result = vol_close(hfs->vol);
     return result;
 }
 
@@ -143,7 +169,7 @@ int hfs_close(HFSVolume *hfs) {
 
 bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFSVolume* hfs)
 {
-    if (hfs->fd) {
+    if (hfs->vol) {
         char* buffer;
         INIT_BUFFER(buffer, 2048)
         
@@ -169,7 +195,7 @@ bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFSVolum
 
 bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFSVolume* hfs)
 {
-    if (hfs->fd) {
+    if (hfs->vol) {
         char* buffer;
         INIT_BUFFER(buffer, 2048)
         
