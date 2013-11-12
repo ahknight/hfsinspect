@@ -8,9 +8,10 @@
 
 // http://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Backtraces.html
 
+#include "debug.h"
+#include <stdarg.h>
 #include <execinfo.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <unistd.h>
 
 /* Obtain a backtrace and print it to stdout. */
 void print_trace (char* comment, ...)

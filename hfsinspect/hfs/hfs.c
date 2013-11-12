@@ -6,8 +6,6 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <sys/disk.h>
-#include <fcntl.h>
 #include "hfs.h"
 
 #pragma mark Volume Abstractions
@@ -111,52 +109,22 @@ int hfs_test(Volume *vol)
     return kVolumeSubtypeUnknown;
 }
 
-int hfs_load(HFSVolume *hfs) {
-    debug("Loading volume header for descriptor %u", hfs->vol->fd);
-
-    bool success;
+/** returns the first HFS+ volume in a tree of volumes */
+Volume* hfs_find(Volume* vol)
+{
+    Volume *result = NULL;
     
-    HFSMasterDirectoryBlock mdb;
-    HFSMasterDirectoryBlock* vcb = &mdb;
-    
-    success = hfs_get_HFSMasterDirectoryBlock(&mdb, hfs);
-    if (!success) critical("Could not read volume header!");
-
-    if (vcb->drSigWord == kHFSSigWord) {
-        PrintHFSMasterDirectoryBlock(vcb);
-        if (vcb->drEmbedSigWord == kHFSPlusSigWord) {
-            hfs->offset += (vcb->drAlBlSt * 512) + (vcb->drEmbedExtent.startBlock * vcb->drAlBlkSiz);
-            debug("Found a wrapped volume at offset %llu", hfs->offset);
-            
-        } else {
-            error("This tool does not currently support standalone HFS Standard volumes (%#04x).", vcb->drEmbedSigWord);
-            errno = EFTYPE;
-            return -1;
+    if (hfs_test(vol) & (kFilesystemTypeHFSPlus | kFilesystemTypeWrappedHFSPlus)) {
+        result = vol;
+    } else if (vol->partition_count) {
+        FOR_UNTIL(i, vol->partition_count) {
+            result = hfs_find(vol->partitions[i]);
+            if (result != NULL)
+                break;
         }
     }
     
-    success = hfs_get_HFSPlusVolumeHeader(&hfs->vh, hfs);
-    if (!success) critical("Could not read volume header!");
-    
-    if (hfs->vh.signature != kHFSPlusSigWord && hfs->vh.signature != kHFSXSigWord) {
-        debug("Not HFS+ or HFSX. Detecting format...");
-        if (! sniff_and_print(hfs)) {
-            char* buffer; INIT_BUFFER(buffer, 1024);
-            hfs_read_raw(buffer, hfs, 1024, 0);
-            error("not an HFS+ or HFSX volume signature: 0x%x", hfs->vh.signature);
-            VisualizeData(buffer, 1024);
-            errno = EFTYPE;
-            free(buffer);
-        }
-        errno = 0;
-        return -1;
-    }
-    
-    hfs->block_size     = hfs->vh.blockSize;
-    hfs->block_count    = hfs->vh.totalBlocks;
-    hfs->length         = hfs->block_count * hfs->block_size;
-    
-    return 0;
+    return result;
 }
 
 int hfs_close(HFSVolume *hfs) {

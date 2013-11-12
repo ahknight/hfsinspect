@@ -9,29 +9,7 @@
 #ifndef hfsinspect_hfs_endian_h
 #define hfsinspect_hfs_endian_h
 
-#include <libkern/OSByteOrder.h>
 #include "hfs_structs.h"
-#include "partitions.h"
-
-// Define macros to convert big endian ints to host order.
-// (Defined as simple casts on little endian systems.)
-#if defined(__LITTLE_ENDIAN__)
-
-#define S16(__a) 		OSSwapBigToHostInt16 (__a)
-#define S32(__a) 		OSSwapBigToHostInt32 (__a)
-#define S64(__a) 		OSSwapBigToHostInt64 (__a)
-
-#elif defined(__BIG_ENDIAN__)
-
-#define S16(__a) 		((u_int16_t)(__a))
-#define S32(__a) 		((u_int32_t)(__a))
-#define S64(__a) 		((u_int64_t)(__a))
-
-#endif
-
-#pragma mark Apple Partition Map
-
-void swap_APMHeader                 (APMHeader* record);
 
 #pragma mark HFS
 

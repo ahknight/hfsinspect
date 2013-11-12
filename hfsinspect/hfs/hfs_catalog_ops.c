@@ -9,12 +9,13 @@
 #include "hfs_catalog_ops.h"
 #include "hfs_btree.h"
 #include "hfs_io.h"
-#include "hfs_pstruct.h"
+#include "output_hfs.h"
 #include "hfs_unicode.h" // Apple's FastUnicodeCompare and conversion table.
+#include <wchar.h>
 
-const u_int32_t kAliasCreator       = 'MACS';
-const u_int32_t kFileAliasType      = 'alis';
-const u_int32_t kFolderAliasType    = 'fdrp';
+const uint32_t kAliasCreator       = 'MACS';
+const uint32_t kFileAliasType      = 'alis';
+const uint32_t kFolderAliasType    = 'fdrp';
 
 wchar_t* HFSPlusMetadataFolder = L"\0\0\0\0HFS+ Private Data";
 wchar_t* HFSPlusDirMetadataFolder = L".HFS+ Private Directory Data\xd";
@@ -27,7 +28,7 @@ HFSBTree hfs_get_catalog_btree(const HFSVolume *hfs)
     if (tree.fork.cnid == 0) {
         debug("Creating catalog B-Tree");
         
-        HFSFork fork = hfsfork_make(hfs, hfs->vh.catalogFile, HFSDataForkType, kHFSCatalogFileID);
+        HFSFork fork = hfsfork_get_special(hfs, kHFSCatalogFileID);
         
         hfs_btree_init(&tree, &fork);
         
@@ -66,8 +67,8 @@ int hfs_get_catalog_leaf_record(HFSPlusCatalogKey* const record_key, HFSPlusCata
     uint16_t max_key_length = sizeof(HFSPlusCatalogKey);
     uint16_t max_value_length = sizeof(HFSPlusCatalogRecord) + sizeof(uint16_t);
     
-    u_int16_t key_length = record->keyLength;
-    u_int16_t value_length = record->valueLength;
+    uint16_t key_length = record->keyLength;
+    uint16_t value_length = record->valueLength;
     
     if (key_length > max_key_length) {
         warning("Key length of record %d in node %d is invalid (%d; maximum is %d)", recordID, node->nodeNumber, key_length, max_key_length);
@@ -155,23 +156,20 @@ wchar_t* hfsuctowcs(const HFSUniStr255* input)
     wchar_t* output;
     INIT_STRING(output, sizeof(wchar_t) * (len+1));
     
-    // Iterate over the input
-    for (int i = 0; i < len; i++) {
-        // Copy the u16 to the wchar array
-        output[i] = input->unicode[i];
-    }
+    // Copy the u16 to the wchar array
+    FOR_UNTIL(i, len) output[i] = input->unicode[i];
     
     // Terminate the output at the length
     output[len] = L'\0';
     
     // Replace the catalog version with a printable version.
-    if ( ( ! wcscmp(output, HFSPlusMetadataFolder)) ) {
+    if ( wcscmp(output, HFSPlusMetadataFolder) == 0 )
         mbstowcs(output, HFSPLUSMETADATAFOLDER, len);
-    }
     
     return output;
 }
 
+// FIXME: Eats higher-order Unicode chars. Could be fun.
 HFSUniStr255 wcstohfsuc(const wchar_t* input)
 {
     // Allocate the return value
@@ -196,7 +194,7 @@ HFSUniStr255 strtohfsuc(const char* input)
 {
     HFSUniStr255 output = {0, {'\0','\0'}};
     wchar_t* wide;
-    INIT_STRING(wide, 256);
+    INIT_STRING(wide, 256 * sizeof(wchar_t));
     
     size_t char_count = strlen(input);
     size_t wide_char_count = mbstowcs(wide, input, 255);
@@ -210,11 +208,11 @@ HFSUniStr255 strtohfsuc(const char* input)
     return output;
 }
 
-u_int16_t hfs_get_catalog_record_type (const HFSBTreeNodeRecord* catalogRecord)
+uint16_t hfs_get_catalog_record_type (const HFSBTreeNodeRecord* catalogRecord)
 {
     debug("Getting record type of %d:%d", catalogRecord->nodeID, catalogRecord->recordID);
     
-    u_int16_t type = *(u_int16_t*)catalogRecord->value;
+    uint16_t type = *(uint16_t*)catalogRecord->value;
     
     return type;
 }
@@ -281,7 +279,7 @@ HFSBTreeNodeRecord* hfs_catalog_target_of_catalog_record (const HFSBTreeNodeReco
 {
     // Follow hard and soft links.
     HFSPlusCatalogRecord* catalogRecord = (HFSPlusCatalogRecord*)nodeRecord->value;
-    u_int16_t kind = catalogRecord->record_type;
+    uint16_t kind = catalogRecord->record_type;
     
     if (kind == kHFSFileRecord) {
         // Hard link

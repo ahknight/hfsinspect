@@ -6,7 +6,6 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <stdlib.h>
 #include "hfs_unicode.h"
 
 /*
@@ -82,7 +81,7 @@
  *
  * Note: 0x0000 now maps to 0 so that it will be ignored
  */
-u_int16_t gLatinCaseFold[] = {
+uint16_t gLatinCaseFold[] = {
 	/* 0 */	0xFFFF, 0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0007, 0x0008, 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E, 0x000F,
 	/* 1 */	0x0010, 0x0011, 0x0012, 0x0013, 0x0014, 0x0015, 0x0016, 0x0017, 0x0018, 0x0019, 0x001A, 0x001B, 0x001C, 0x001D, 0x001E, 0x001F,
 	/* 2 */	0x0020, 0x0021, 0x0022, 0x0023, 0x0024, 0x0025, 0x0026, 0x0027, 0x0028, 0x0029, 0x002A, 0x002B, 0x002C, 0x002D, 0x002E, 0x002F,
@@ -107,7 +106,7 @@ u_int16_t gLatinCaseFold[] = {
  ignored characters in that block. Ignored characters are mapped to zero.
  */
 
-u_int16_t gLowerCaseTable[] = {
+uint16_t gLowerCaseTable[] = {
     
 	/* High-byte indices ( == 0 iff no case mapping and no ignorables ) */
     
@@ -399,11 +398,11 @@ unsigned short gCompareTable[] = {
 int32_t FastUnicodeCompare ( register ConstUniCharArrayPtr str1, register ItemCount length1,
 							register ConstUniCharArrayPtr str2, register ItemCount length2)
 {
-	register u_int16_t		c1,c2;
-	register u_int16_t		temp;
-	register u_int16_t*	lowerCaseTable;
+	register uint16_t		c1,c2;
+	register uint16_t		temp;
+	register uint16_t*	lowerCaseTable;
     
-	lowerCaseTable = (u_int16_t*) gLowerCaseTable;
+	lowerCaseTable = (uint16_t*) gLowerCaseTable;
     
 	while (1) {
 		/* Set default values for c1, c2 in case there are no more valid chars */

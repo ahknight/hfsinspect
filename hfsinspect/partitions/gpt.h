@@ -6,12 +6,13 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#ifndef hfsinspect_gpt_h
+#define hfsinspect_gpt_h
+
 #include "volume.h"
 #include "partition_support.h"
 #include "mbr.h"
-
-#ifndef hfsinspect_gpt_h
-#define hfsinspect_gpt_h
+#include <uuid/uuid.h>
 
 #pragma mark - Structures
 
@@ -26,30 +27,30 @@
 
 // 92 bytes
 typedef struct GPTHeader {
-    u_int64_t     signature;
-    u_int32_t     revision;
-    u_int32_t     header_size;
-    u_int32_t     header_crc32;
-    u_int32_t     reserved;
-    u_int64_t     current_lba;
-    u_int64_t     backup_lba;
-    u_int64_t     first_lba;
-    u_int64_t     last_lba;
+    uint64_t     signature;
+    uint32_t     revision;
+    uint32_t     header_size;
+    uint32_t     header_crc32;
+    uint32_t     reserved;
+    uint64_t     current_lba;
+    uint64_t     backup_lba;
+    uint64_t     first_lba;
+    uint64_t     last_lba;
     uuid_t        uuid;
-    u_int64_t     partition_start_lba;
-    u_int32_t     partition_entry_count;
-    u_int32_t     partition_entry_size;
-    u_int32_t     partition_crc32;
+    uint64_t     partition_start_lba;
+    uint32_t     partition_entry_count;
+    uint32_t     partition_entry_size;
+    uint32_t     partition_crc32;
 } GPTHeader;
 
 // 128 bytes
 typedef struct GPTPartitionEntry {
     uuid_t      type_uuid;
     uuid_t      uuid;
-    u_int64_t   first_lba;
-    u_int64_t   last_lba;
-    u_int64_t   attributes;
-    u_int16_t   name[36];
+    uint64_t   first_lba;
+    uint64_t   last_lba;
+    uint64_t   attributes;
+    uint16_t   name[36];
 } GPTPartitionEntry;
 
 typedef GPTPartitionEntry GPTPartitionRecord[128];
@@ -78,6 +79,17 @@ static GPTPartitionName gpt_partition_types[] __attribute__((unused)) = {
     {"5265636F-7665-11AA-AA11-00306543ECAC", "Apple TV Recovery Partition",     kHintFilesystem},
     {"53746F72-6167-11AA-AA11-00306543ECAC", "Core Storage Volume",             kHintPartitionMap},
 };
+
+static uint64_t kGPTRequired            __attribute__((unused)) = 0x0000000000000001; //0 - "required", "system disk"
+static uint64_t kGPTNoBlockIO           __attribute__((unused)) = 0x0000000000000002; //1 - "not mapped", "no block IO"
+static uint64_t kGPTLegacyBIOSBootable  __attribute__((unused)) = 0x0000000000000004; //2
+
+// http://msdn.microsoft.com/en-us/library/windows/desktop/aa365449(v=vs.85).aspx
+static uint64_t kGPTMSReadOnly          __attribute__((unused)) = 0x1000000000000000; //60
+static uint64_t kGPTMSShadowCopy        __attribute__((unused)) = 0x2000000000000000; //61
+static uint64_t kGPTMSHidden            __attribute__((unused)) = 0x4000000000000000; //62
+static uint64_t kGPTMSNoAutomount       __attribute__((unused)) = 0x8000000000000000; //63
+
 
 #pragma mark - Functions
 

@@ -7,6 +7,7 @@
 //
 
 #include "range.h"
+#include <sys/param.h>  //MIN/MAX
 
 #pragma mark Range Helpers
 

@@ -6,11 +6,13 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include "volume.h"
+#include "output.h"
+
 #include <fcntl.h>
 #include <sys/disk.h>
 #include <sys/stat.h>
-#include "volume.h"
-#include "hfs_pstruct.h"
+#include <unistd.h>
 
 #define VALID_DESCRIPTOR(vol) { if (vol == NULL || vol->fd < 1) { errno = EINVAL; return -1; } }
 

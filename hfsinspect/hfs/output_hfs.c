@@ -1,83 +1,31 @@
 //
-//  hfs_pstruct.c
+//  output_hfs.c
 //  hfsinspect
 //
 //  Created by Adam Knight on 5/5/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include "output_hfs.h"
+
+#include "hfs_structs.h"
+#include "hfs_catalog_ops.h"
+#include "output.h"
 #include "stringtools.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <wchar.h>
-#include <time.h>
-#include <errno.h>
-#include <stdarg.h>
-#include <libkern/OSByteOrder.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <stdbool.h>
-
-#include "hfs_pstruct.h"
 #include "hfs.h"
 #include "vfs_journal.h"
+#include <sys/stat.h>
 
 static HFSVolume volume = {0};
 void set_hfs_volume(HFSVolume *v) { volume = *v; }
 
 
-#pragma mark Line Print Functions
-
-void PrintString(const char* label, const char* value_format, ...)
-{
-    va_list argp;
-    va_start(argp, value_format);
-    char* str;
-    vasprintf(&str, value_format, argp);
-    printf("  %-23s  %s\n", label, str);
-    FREE_BUFFER(str);
-    va_end(argp);
-}
-
-void PrintHeaderString(const char* value_format, ...)
-{
-    va_list argp;
-    va_start(argp, value_format);
-    char* str;
-    vasprintf(&str, value_format, argp);
-    printf("\n# %s\n", str);
-    FREE_BUFFER(str);
-    va_end(argp);
-}
-
-void PrintAttributeString(const char* label, const char* value_format, ...)
-{
-    va_list argp;
-    va_start(argp, value_format);
-    char* str;
-    vasprintf(&str, value_format, argp);
-    printf("  %-23s= %s\n", label, str);
-    FREE_BUFFER(str);
-    va_end(argp);
-}
-
-void PrintSubattributeString(const char* str, ...)
-{
-    va_list argp;
-    va_start(argp, str);
-    char* s;
-    vasprintf(&s, str, argp);
-    printf("  %-23s. %s\n", "", s);
-    FREE_BUFFER(s);
-    va_end(argp);
-}
 
 #pragma mark Value Print Functions
 
 void _PrintCatalogName(char* label, hfs_node_id cnid)
 {
-    wchar_t* name;
+    wchar_t* name = NULL;
     if (cnid != 0)
         name = hfs_catalog_get_cnid_name(&volume, cnid);
     else
@@ -88,50 +36,15 @@ void _PrintCatalogName(char* label, hfs_node_id cnid)
     FREE_BUFFER(name);
 }
 
-void _PrintHFSBlocks(const char *label, u_int64_t blocks)
+void _PrintHFSBlocks(const char *label, uint64_t blocks)
 {
-    size_t displaySize = blocks * volume.block_size;
-    char* sizeLabel = sizeString(displaySize, false);
+    size_t displaySize = (blocks * volume.block_size);
+    char sizeLabel[50];
+    (void)format_size(sizeLabel, displaySize, false, 50);
     PrintAttributeString(label, "%s (%d blocks)", sizeLabel, blocks);
-    FREE_BUFFER(sizeLabel);
 }
 
-void _PrintDataLength(const char *label, u_int64_t size)
-{
-    size_t displaySize = size;
-    char* sizeLabel;
-    char* metricLabel;
-    if (size > 1024*1024) {
-        sizeLabel = sizeString(displaySize, false);
-        metricLabel = sizeString(displaySize, true);
-        PrintAttributeString(label, "%s/%s (%lu bytes)", sizeLabel, metricLabel, size);
-        FREE_BUFFER(sizeLabel); FREE_BUFFER(metricLabel);
-    } else if (size > 1024) {
-        sizeLabel = sizeString(displaySize, false);
-        PrintAttributeString(label, "%s (%lu bytes)", sizeLabel, size);
-        FREE_BUFFER(sizeLabel);
-    } else {
-        PrintAttributeString(label, "%lu bytes", size);
-    }
-}
-
-void _PrintRawAttribute(const char* label, const void* map, size_t size, char base)
-{
-    unsigned segmentLength = 32;
-    char* str = memstr(map, size, base);
-    size_t len = strlen(str);
-    
-    for (int i = 0; i < len; i += segmentLength) {
-        char* segment = strndup(&str[i], MIN(segmentLength, len - i));
-        PrintAttributeString(label, "%s%s", (base==16?"0x":""), segment);
-        FREE_BUFFER(segment);
-        if (i == 0) label = "";
-    }
-    
-    FREE_BUFFER(str);
-}
-
-void _PrintHFSTimestamp(const char* label, u_int32_t timestamp)
+void _PrintHFSTimestamp(const char* label, uint32_t timestamp)
 {
     if (timestamp > MAC_GMT_FACTOR) {
         timestamp -= MAC_GMT_FACTOR;
@@ -162,7 +75,15 @@ void _PrintHFSChar(const char* label, const void* i, size_t nbytes)
     str[nbytes] = '\0';
     
     // Grab the hex representation of the input.
-    char* hex = memstr(i, nbytes, 16);
+    ssize_t msize = memstr(NULL, 16, i, nbytes);
+    if (msize < 0) {
+        perror("memstr");
+        return;
+    }
+    
+    char* hex = malloc(msize);
+    memstr(hex, 16, i, nbytes);
+
     
     PrintAttributeString(label, "0x%s (%s)", hex, str);
     
@@ -257,6 +178,7 @@ void PrintVolumeHeader(const HFSPlusVolumeHeader *vh)
 {
     PrintHeaderString("HFS Plus Volume Header");
     PrintHFSChar    (vh,    signature);
+    PrintAttributeString( MEMBER(vh, version) );
     PrintUI         (vh,    version);
 
 	PrintBinaryDump         (vh,                attributes);
@@ -328,8 +250,8 @@ void PrintVolumeHeader(const HFSPlusVolumeHeader *vh)
     PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacCroatian);
     PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacIcelandic);
     PrintUIFlagIfSet        (vh->encodingsBitmap,   kTextEncodingMacRomanian);
-    if (vh->encodingsBitmap & ((u_int64_t)1 << 49)) PrintSubattributeString("%s (%u)", "kTextEncodingMacFarsi", 49);
-    if (vh->encodingsBitmap & ((u_int64_t)1 << 48)) PrintSubattributeString("%s (%u)", "kTextEncodingMacUkrainian", 48);
+    if (vh->encodingsBitmap & ((uint64_t)1 << 49)) PrintSubattributeString("%s (%u)", "kTextEncodingMacFarsi", 49);
+    if (vh->encodingsBitmap & ((uint64_t)1 << 48)) PrintSubattributeString("%s (%u)", "kTextEncodingMacUkrainian", 48);
 
     PrintHeaderString("Finder Info");
     
@@ -359,7 +281,7 @@ void PrintVolumeHeader(const HFSPlusVolumeHeader *vh)
     PrintHFSPlusForkData(&vh->startupFile, kHFSStartupFileID, HFSDataForkType);
 }
 
-void PrintExtentList(const ExtentList* list, u_int32_t totalBlocks)
+void PrintExtentList(const ExtentList* list, uint32_t totalBlocks)
 {
     PrintAttributeString("extents", "%12s %12s %12s", "startBlock", "blockCount", "% of file");
     int usedExtents = 0;
@@ -402,7 +324,7 @@ void PrintForkExtentsSummary(const HFSFork* fork)
     PrintExtentList(fork->extents, fork->totalBlocks);
 }
 
-void PrintHFSPlusForkData(const HFSPlusForkData *fork, u_int32_t cnid, u_int8_t forktype)
+void PrintHFSPlusForkData(const HFSPlusForkData *fork, uint32_t cnid, uint8_t forktype)
 {
     if (forktype == HFSDataForkType) {
         PrintAttributeString("fork", "data");
@@ -431,7 +353,7 @@ void PrintBTNodeDescriptor(const BTNodeDescriptor *node)
     PrintUI(node, fLink);
     PrintUI(node, bLink);
     {
-        u_int64_t attributes = node->kind;
+        uint64_t attributes = node->kind;
         int att_values[4] = {
             kBTLeafNode,
             kBTIndexNode,
@@ -469,7 +391,7 @@ void PrintBTHeaderRecord(const BTHeaderRec *hr)
 	PrintUI         (hr, reserved1);
 	PrintDataLength (hr, clumpSize);
     {
-        u_int64_t attributes = hr->btreeType;
+        uint64_t attributes = hr->btreeType;
         int att_values[3] = {
             0,
             128,
@@ -489,7 +411,7 @@ void PrintBTHeaderRecord(const BTHeaderRec *hr)
 	PrintBinaryDump     (hr,    attributes);
     
     {
-        u_int64_t attributes = hr->attributes;
+        uint64_t attributes = hr->attributes;
         int att_values[3] = {
             kBTBadCloseMask,
             kBTBigKeysMask,
@@ -509,7 +431,7 @@ void PrintBTHeaderRecord(const BTHeaderRec *hr)
     //	printf("Reserved3:        %u\n",    hr->reserved3[16]);
 }
 
-char* _genModeString(u_int16_t mode)
+char* _genModeString(uint16_t mode)
 {
     char modeString[11] = "";
     
@@ -615,7 +537,7 @@ void PrintHFSPlusBSDInfo(const HFSPlusBSDInfo *record)
     PrintUIOct(record, adminFlags);
     
     for (int i = 0; i < 10; i++) {
-        u_int8_t flag = record->adminFlags;
+        uint8_t flag = record->adminFlags;
         if (flag & flagMasks[i]) {
             PrintSubattributeString("%05o %s", flagMasks[i], flagNames[i]);
         }
@@ -624,13 +546,13 @@ void PrintHFSPlusBSDInfo(const HFSPlusBSDInfo *record)
     PrintUIOct(record, ownerFlags);
     
     for (int i = 0; i < 10; i++) {
-        u_int8_t flag = record->ownerFlags;
+        uint8_t flag = record->ownerFlags;
         if (flag & flagMasks[i]) {
             PrintSubattributeString("%05o %s", flagMasks[i], flagNames[i]);
         }
     }
         
-    u_int16_t mode = record->fileMode;
+    uint16_t mode = record->fileMode;
     
     char* modeString = _genModeString(mode);
     PrintAttributeString("fileMode", modeString);
@@ -686,20 +608,20 @@ void PrintFndrDirInfo(const FndrDirInfo *record)
     PrintUI             (record, opaque);
 }
 
-void PrintFinderFlags(u_int16_t record)
+void PrintFinderFlags(uint16_t record)
 {
-    u_int16_t kIsOnDesk             = 0x0001;     /* Files and folders (System 6) */
-    u_int16_t kRequireSwitchLaunch  = 0x0020;     /* Old */
-    u_int16_t kColor                = 0x000E;     /* Files and folders */
-    u_int16_t kIsShared             = 0x0040;     /* Files only (Applications only) If */
-    u_int16_t kHasNoINITs           = 0x0080;     /* Files only (Extensions/Control */
-    u_int16_t kHasBeenInited        = 0x0100;     /* Files only.  Clear if the file */
-    u_int16_t kHasCustomIcon        = 0x0400;     /* Files and folders */
-    u_int16_t kIsStationery         = 0x0800;     /* Files only */
-    u_int16_t kNameLocked           = 0x1000;     /* Files and folders */
-    u_int16_t kHasBundle            = 0x2000;     /* Files only */
-    u_int16_t kIsInvisible          = 0x4000;     /* Files and folders */
-    u_int16_t kIsAlias              = 0x8000;     /* Files only */
+    uint16_t kIsOnDesk             = 0x0001;     /* Files and folders (System 6) */
+    uint16_t kRequireSwitchLaunch  = 0x0020;     /* Old */
+    uint16_t kColor                = 0x000E;     /* Files and folders */
+    uint16_t kIsShared             = 0x0040;     /* Files only (Applications only) If */
+    uint16_t kHasNoINITs           = 0x0080;     /* Files only (Extensions/Control */
+    uint16_t kHasBeenInited        = 0x0100;     /* Files only.  Clear if the file */
+    uint16_t kHasCustomIcon        = 0x0400;     /* Files and folders */
+    uint16_t kIsStationery         = 0x0800;     /* Files only */
+    uint16_t kNameLocked           = 0x1000;     /* Files and folders */
+    uint16_t kHasBundle            = 0x2000;     /* Files only */
+    uint16_t kIsInvisible          = 0x4000;     /* Files and folders */
+    uint16_t kIsAlias              = 0x8000;     /* Files only */
     
     PrintUIFlagIfMatch(record, kIsOnDesk);
     PrintUIFlagIfMatch(record, kRequireSwitchLaunch);
@@ -811,37 +733,42 @@ void PrintHFSPlusCatalogThread(const HFSPlusCatalogThread *record)
 
 void PrintHFSPlusAttrForkData(const HFSPlusAttrForkData* record)
 {
-    PrintUI                 (record, recordType);
-    PrintHFSPlusForkData    (&record->theFork, 0, 0);
+    PrintUIHex          (record, recordType);
+    PrintHFSPlusForkData(&record->theFork, 0, 0);
 }
 
 void PrintHFSPlusAttrExtents(const HFSPlusAttrExtents* record)
 {
-    PrintUI                 (record, recordType);
+    PrintUIHex          (record, recordType);
     PrintHFSPlusExtentRecord(&record->extents);
 }
 
 void PrintHFSPlusAttrData(const HFSPlusAttrData* record)
 {
-    PrintUI                 (record, recordType);
-    PrintUI                 (record, attrSize);
+    PrintUIHex          (record, recordType);
+    PrintUI             (record, attrSize);
+    
+    VisualizeData((char*)&record->attrData, record->attrSize);
 }
 
 void PrintHFSPlusAttrRecord(const HFSPlusAttrRecord* record)
 {
-    u_int32_t type = *(u_int32_t*)record;
-    switch (type) {
+    switch (record->recordType) {
         case kHFSPlusAttrInlineData:
-            PrintHFSPlusAttrData((HFSPlusAttrData*)record);
+            PrintHFSPlusAttrData(&record->attrData);
             break;
+            
         case kHFSPlusAttrForkData:
-            PrintHFSPlusAttrForkData((HFSPlusAttrForkData*)record);
+            PrintHFSPlusAttrForkData(&record->forkData);
             break;
+            
         case kHFSPlusAttrExtents:
-            PrintHFSPlusAttrExtents((HFSPlusAttrExtents*)record);
+            PrintHFSPlusAttrExtents(&record->overflowExtents);
             break;
             
         default:
+            error("unknown attribute record type: %d", record->recordType);
+            VisualizeData((char*)record, sizeof(HFSPlusAttrRecord));
             break;
     }
 }
@@ -858,10 +785,10 @@ void PrintJournalInfoBlock(const JournalInfoBlock *record)
 {
     /*
      struct JournalInfoBlock {
-     u_int32_t       flags;
-     u_int32_t       device_signature[8];  // signature used to locate our device.
-     u_int64_t       offset;               // byte offset to the journal on the device
-     u_int64_t       size;                 // size in bytes of the journal
+     uint32_t       flags;
+     uint32_t       device_signature[8];  // signature used to locate our device.
+     uint64_t       offset;               // byte offset to the journal on the device
+     uint64_t       size;                 // size in bytes of the journal
      uuid_string_t   ext_jnl_uuid;
      char            machine_serial_num[48];
      char    	reserved[JIB_RESERVED_SIZE];
@@ -891,7 +818,7 @@ void PrintJournalInfoBlock(const JournalInfoBlock *record)
     PrintAttributeString("machine_serial_num", str);
     FREE_BUFFER(str);
     
-    // (u_int32_t) reserved[32]
+    // (uint32_t) reserved[32]
 }
 
 void PrintJournalHeader(const journal_header *record)
@@ -925,10 +852,11 @@ void PrintVolumeSummary(const VolumeSummary *summary)
     for (int i = 9; i > 0; i--) {
         if (summary->largestFiles[i].cnid == 0) continue;
         
-        char* size = sizeString(summary->largestFiles[i].measure, false);
+        char size[50];
+        (void)format_size(size, summary->largestFiles[i].measure, false, 50);
         wchar_t* name = hfs_catalog_get_cnid_name(&volume, summary->largestFiles[i].cnid);
         print("%d %10s %10u %ls", 10-i, size, summary->largestFiles[i].cnid, name);
-        FREE_BUFFER(size); FREE_BUFFER(name);
+        FREE_BUFFER(name);
     }
 }
 
@@ -1018,16 +946,14 @@ void VisualizeHFSPlusCatalogKey(const HFSPlusCatalogKey *record, const char* lab
 
 void VisualizeHFSPlusAttrKey(const HFSPlusAttrKey *record, const char* label, bool oneLine)
 {
-    printf("%u, %u, %u, %u, %ls\n", record->keyLength, record->fileID, record->startBlock, record->attrNameLen, (wchar_t*)record->attrName);
-    
     HFSUniStr255 hfsName;
     hfsName.length = record->attrNameLen;
     memset(&hfsName.unicode, 0, 255);
-    memcpy(&hfsName.unicode, &record->attrName, record->attrNameLen * sizeof(u_int16_t));
+    memcpy(&hfsName.unicode, &record->attrName, record->attrNameLen * sizeof(uint16_t));
     
     wchar_t* name   = hfsuctowcs(&hfsName);
     if (oneLine) {
-        printf("%s: %s:%-6u; %s:%-10u; %s:%-10u; %s:%-6u; %s:%-50ls\n",
+        printf("%s: %s = %-6u; %s = %-10u; %s = %-10u; %s = %-6u; %s = %-50ls\n",
                label,
                "length",
                record->keyLength,
@@ -1045,7 +971,7 @@ void VisualizeHFSPlusAttrKey(const HFSPlusAttrKey *record, const char* label, bo
         char* format    = " | %-6u | %-10u | %-10u | %-6u | %-50ls |\n";
         
         char* line_f    =  " +%s+\n";
-        char* dashes    = repchar('-', 100);
+        char* dashes    = repchar('-', 96);
         
         printf("\n  %s\n", label);
         printf(line_f, dashes);
@@ -1080,15 +1006,10 @@ void VisualizeHFSBTreeNodeRecord(const HFSBTreeNodeRecord* record, const char* l
     FREE_BUFFER(dashes);
 }
 
-void VisualizeData(const char* data, size_t length)
-{
-    memdump(data, length, 16, 4, 4);
-}
-
 
 #pragma mark Node Print Functions
 
-void PrintTreeNode(const HFSBTree *tree, u_int32_t nodeID)
+void PrintTreeNode(const HFSBTree *tree, uint32_t nodeID)
 {
     debug("PrintTreeNode");
     
@@ -1106,15 +1027,15 @@ void PrintNode(const HFSBTreeNode* node)
 {
     debug("PrintNode");
     
-    PrintHeaderString      ("Node %u (offset %llu; length: %zu)", node->nodeNumber, node->nodeOffset, node->buffer.size);
-    PrintBTNodeDescriptor   (&node->nodeDescriptor);
+    PrintHeaderString("Node %u (offset %llu; length: %zu)", node->nodeNumber, node->nodeOffset, node->buffer.size);
+    PrintBTNodeDescriptor(&node->nodeDescriptor);
     
     for (int recordNumber = 0; recordNumber < node->nodeDescriptor.numRecords; recordNumber++) {
-        PrintNodeRecord     (node, recordNumber);
+        PrintNodeRecord(node, recordNumber);
     }
 }
 
-void PrintFolderListing(u_int32_t folderID)
+void PrintFolderListing(uint32_t folderID)
 {
     debug("Printing listing for folder ID %d", folderID);
 
@@ -1144,7 +1065,7 @@ void PrintFolderListing(u_int32_t folderID)
     HFSPlusCatalogKey *recordKey = (HFSPlusCatalogKey*)node.records[recordID].key;
     HFSPlusCatalogThread *threadRecord = (HFSPlusCatalogThread*)node.records[recordID].value;
     wchar_t* name = hfsuctowcs(&threadRecord->nodeName);
-    u_int32_t threadID = recordKey->parentID;
+    uint32_t threadID = recordKey->parentID;
     
     struct {
         unsigned    fileCount;
@@ -1171,12 +1092,12 @@ void PrintFolderListing(u_int32_t folderID)
             HFSPlusCatalogRecord* catalogRecord = (HFSPlusCatalogRecord*)record->value;
             
             if (catalogRecord->record_type == kHFSPlusFileRecord || catalogRecord->record_type == kHFSPlusFolderRecord) {
-                u_int32_t cnid = 0;
+                uint32_t cnid = 0;
                 char* kind = NULL;
                 char* mode = NULL;
                 int user = -1, group = -1;
-                char* dataSize = NULL;
-                char* rsrcSize = NULL;
+                char dataSize[50];
+                char rsrcSize[50];
                 
                 recordKey = (HFSPlusCatalogKey*)record->key;
                 name = hfsuctowcs(&recordKey->nodeName);
@@ -1205,8 +1126,8 @@ void PrintFolderListing(u_int32_t folderID)
                 mode        = _genModeString(catalogRecord->catalogFile.bsdInfo.fileMode);
                 
                 if (catalogRecord->record_type == kHFSPlusFileRecord) {
-                    dataSize    = sizeString(catalogRecord->catalogFile.dataFork.logicalSize, false);
-                    rsrcSize    = sizeString(catalogRecord->catalogFile.resourceFork.logicalSize, false);
+                    (void)format_size(dataSize, catalogRecord->catalogFile.dataFork.logicalSize, false, 50);
+                    (void)format_size(rsrcSize, catalogRecord->catalogFile.resourceFork.logicalSize, false, 50);
                     
                     if (catalogRecord->catalogFile.dataFork.totalBlocks > 0) {
                         folderStats.dataForkCount++;
@@ -1219,16 +1140,14 @@ void PrintFolderListing(u_int32_t folderID)
                     }
 
                 } else {
-                    dataSize = strdup("-");
-                    rsrcSize = strdup("-");
+                    (void)strlcpy(dataSize, "-", 50);
+                    (void)strlcpy(rsrcSize, "-", 50);
                 }
                 
                 printf(rowFormat, cnid, kind, mode, user, group, dataSize, rsrcSize, name);
                 
                 FREE_BUFFER(name);
                 FREE_BUFFER(mode);
-                FREE_BUFFER(dataSize);
-                FREE_BUFFER(rsrcSize);
                 FREE_BUFFER(kind);
             }
             recordID = record->recordID;
@@ -1242,7 +1161,7 @@ void PrintFolderListing(u_int32_t folderID)
         }
         
         // Now we look at the next node in the chain and see if that's in it.
-        u_int32_t nextNode = node.nodeDescriptor.fLink;
+        uint32_t nextNode = node.nodeDescriptor.fLink;
         hfs_btree_free_node(&node);
         
         found = hfs_btree_get_node(&node, &tree, nextNode);
@@ -1260,8 +1179,11 @@ void PrintFolderListing(u_int32_t folderID)
         debug("Checking node %d", node.nodeNumber);
     }
     
-    char* dataTotal = sizeString(folderStats.dataForkSize, false);
-    char* rsrcTotal = sizeString(folderStats.rsrcForkCount, false);
+    char dataTotal[50];
+    char rsrcTotal[50];
+    
+    format_size(dataTotal, folderStats.dataForkSize, false, 50);
+    format_size(rsrcTotal, folderStats.rsrcForkCount, false, 50);
     
     printf("%s\n", lineStr);
     printf(headerFormat, "", "", "", "", "", dataTotal, rsrcTotal, "");
@@ -1284,8 +1206,6 @@ void PrintFolderListing(u_int32_t folderID)
            folderStats.symlinkCount
            );
     
-    FREE_BUFFER(dataTotal);
-    FREE_BUFFER(rsrcTotal);
     FREE_BUFFER(lineStr);
     hfs_btree_free_node(&node);
     
@@ -1300,7 +1220,7 @@ void PrintNodeRecord(const HFSBTreeNode* node, int recordNumber)
     
     const HFSBTreeNodeRecord *record = &node->records[recordNumber];
     
-    u_int16_t offset = record->offset;
+    uint16_t offset = record->offset;
     if (offset > node->bTree.headerRecord.nodeSize) {
         error("Invalid record offset: points beyond end of node: %u", offset);
         return;
@@ -1377,11 +1297,11 @@ void PrintNodeRecord(const HFSBTreeNode* node, int recordNumber)
                 
                 case kHFSAttributesFileID:
                 {
-                    HFSPlusAttrKey keyStruct = *( (HFSPlusAttrKey*) record->key );
-                    VisualizeHFSPlusAttrKey(&keyStruct, "Attributes Key", 0);
-                    
+                    HFSPlusAttrKey *keyStruct = (HFSPlusAttrKey*) record->key;
                     if (record->keyLength < kHFSPlusAttrKeyMinimumLength || record->keyLength > kHFSPlusAttrKeyMaximumLength)
                         goto INVALID_KEY;
+                    
+                    VisualizeHFSPlusAttrKey(keyStruct, "Attributes Key", 0);
                     
                     break;
                 }
@@ -1394,7 +1314,7 @@ void PrintNodeRecord(const HFSBTreeNode* node, int recordNumber)
             switch (node->nodeDescriptor.kind) {
                 case kBTIndexNode:
                 {
-                    u_int32_t *pointer = (u_int32_t*) record->value;
+                    uint32_t *pointer = (uint32_t*) record->value;
                     _PrintUI("nextNodeID", *pointer);
                     break;
                 }
@@ -1404,7 +1324,7 @@ void PrintNodeRecord(const HFSBTreeNode* node, int recordNumber)
                     switch (node->bTree.fork.cnid) {
                         case kHFSCatalogFileID:
                         {
-                            u_int16_t type =  hfs_get_catalog_record_type(record);
+                            uint16_t type =  hfs_get_catalog_record_type(record);
                             
                             switch (type) {
                                 case kHFSPlusFileRecord:

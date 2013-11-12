@@ -59,12 +59,12 @@ typedef char *			Ptr;
 typedef long 			Size;
 
 typedef int16_t 			OSErr;
-typedef u_int32_t 			ItemCount;
-typedef u_int32_t 			ByteCount;
-typedef u_int8_t *			BytePtr;
-typedef u_int32_t 			ByteOffset;
+typedef uint32_t 			ItemCount;
+typedef uint32_t 			ByteCount;
+typedef uint8_t *			BytePtr;
+typedef uint32_t 			ByteOffset;
 
-typedef u_int16_t 			UniChar;
+typedef uint16_t 			UniChar;
 typedef unsigned char 		Str255[256];
 typedef unsigned char 		Str31[32];
 typedef unsigned char *		StringPtr;
@@ -72,9 +72,9 @@ typedef const unsigned char *	ConstStr255Param;
 typedef const unsigned char *	ConstStr31Param;
 typedef const unsigned char *	ConstUTF8Param;
 
-typedef u_int8_t 			Byte;
+typedef uint8_t 			Byte;
 
-typedef u_int32_t 			TextEncoding;
+typedef uint32_t 			TextEncoding;
 typedef UniChar *			UniCharArrayPtr;
 typedef const UniChar *		ConstUniCharArrayPtr;
 

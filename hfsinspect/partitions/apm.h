@@ -6,35 +6,35 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "hfs_structs.h"
-
 #ifndef hfsinspect_apm_h
 #define hfsinspect_apm_h
+
+#include "hfs_structs.h"
 
 #pragma mark - Structures
 
 // 136 bytes (512 reserved on-disk)
 typedef struct APMHeader APMHeader;
 struct APMHeader {
-    u_int16_t       signature;
-    u_int16_t       reserved1;
-    u_int32_t       partition_count;
-    u_int32_t       partition_start;
-    u_int32_t       partition_length;
+    uint16_t       signature;
+    uint16_t       reserved1;
+    uint32_t       partition_count;
+    uint32_t       partition_start;
+    uint32_t       partition_length;
     char            name[32];
     char            type[32];
-    u_int32_t       data_start;
-    u_int32_t       data_length;
-    u_int32_t       status;
-    u_int32_t       boot_code_start;
-    u_int32_t       boot_code_length;
-    u_int32_t       bootloader_address;
-    u_int32_t       reserved2;
-    u_int32_t       boot_code_entry;
-    u_int32_t       reserved3;
-    u_int32_t       boot_code_checksum;
+    uint32_t       data_start;
+    uint32_t       data_length;
+    uint32_t       status;
+    uint32_t       boot_code_start;
+    uint32_t       boot_code_length;
+    uint32_t       bootloader_address;
+    uint32_t       reserved2;
+    uint32_t       boot_code_entry;
+    uint32_t       reserved3;
+    uint32_t       boot_code_checksum;
     char            processor_type[16];
-    //    char            reserved4[376];
+//    char            reserved4[376];
 };
 
 typedef struct APMPartitionIdentifer { char type[32]; char name[100]; PartitionHint hints; } APMPartitionIdentifer;
@@ -70,21 +70,23 @@ static APMPartitionIdentifer APMPartitionIdentifers[] __attribute__((unused)) = 
     {"", "", 0}
 };
 
-static u_int32_t kAPMStatusValid                __attribute__((unused)) = 0x00000001;
-static u_int32_t kAPMStatusAllocated            __attribute__((unused)) = 0x00000002;
-static u_int32_t kAPMStatusInUse                __attribute__((unused)) = 0x00000004;
-static u_int32_t kAPMStatusBootInfo             __attribute__((unused)) = 0x00000008;
-static u_int32_t kAPMStatusReadable             __attribute__((unused)) = 0x00000010;
-static u_int32_t kAPMStatusWritable             __attribute__((unused)) = 0x00000020;
-static u_int32_t kAPMStatusPositionIndependent  __attribute__((unused)) = 0x00000040;
-static u_int32_t kAPMStatusChainCompatible      __attribute__((unused)) = 0x00000100;
-static u_int32_t kAPMStatusRealDriver           __attribute__((unused)) = 0x00000200;
-static u_int32_t kAPMStatusChainDriver          __attribute__((unused)) = 0x00000400;
-static u_int32_t kAPMStatusAutoMount            __attribute__((unused)) = 0x40000000;
-static u_int32_t kAPMStatusIsStartup            __attribute__((unused)) = 0x80000000;
+static uint32_t kAPMStatusValid                __attribute__((unused)) = 0x00000001;
+static uint32_t kAPMStatusAllocated            __attribute__((unused)) = 0x00000002;
+static uint32_t kAPMStatusInUse                __attribute__((unused)) = 0x00000004;
+static uint32_t kAPMStatusBootInfo             __attribute__((unused)) = 0x00000008;
+static uint32_t kAPMStatusReadable             __attribute__((unused)) = 0x00000010;
+static uint32_t kAPMStatusWritable             __attribute__((unused)) = 0x00000020;
+static uint32_t kAPMStatusPositionIndependent  __attribute__((unused)) = 0x00000040;
+static uint32_t kAPMStatusChainCompatible      __attribute__((unused)) = 0x00000100;
+static uint32_t kAPMStatusRealDriver           __attribute__((unused)) = 0x00000200;
+static uint32_t kAPMStatusChainDriver          __attribute__((unused)) = 0x00000400;
+static uint32_t kAPMStatusAutoMount            __attribute__((unused)) = 0x40000000;
+static uint32_t kAPMStatusIsStartup            __attribute__((unused)) = 0x80000000;
 
 
 #pragma mark - Functions
+
+void        swap_APMHeader          (APMHeader* record);
 
 bool        apm_sniff               (HFSVolume* hfs);
 void        apm_print               (HFSVolume* hfs);

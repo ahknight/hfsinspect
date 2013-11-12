@@ -6,10 +6,10 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "hfs_structs.h"
-
 #ifndef hfsinspect_corestorage_h
 #define hfsinspect_corestorage_h
+
+#include "hfs_structs.h"
 
 #pragma mark - Structures
 
@@ -17,22 +17,22 @@
 typedef struct CSBlockHeader CSBlockHeader;
 struct CSBlockHeader
 {
-    u_int32_t       checksum;
-    u_int32_t       checksum_seed;
-    u_int16_t       version;
-    u_int16_t       block_type;
-    u_int16_t       block_size;
-    u_int16_t       reserved1;
+    uint32_t       checksum;
+    uint32_t       checksum_seed;
+    uint16_t       version;
+    uint16_t       block_type;
+    uint16_t       block_size;
+    uint16_t       reserved1;
     
-    u_int64_t       reserved2;
-    u_int64_t       reserved3;
+    uint64_t       reserved2;
+    uint64_t       reserved3;
     
-    u_int64_t       block_number;
-    u_int64_t       reserved4;
+    uint64_t       block_number;
+    uint64_t       reserved4;
     
-    u_int32_t       lba_size;
-    u_int32_t       flags;
-    u_int64_t       reserved5;
+    uint32_t       lba_size;
+    uint32_t       flags;
+    uint64_t       reserved5;
 } __attribute__((aligned(2), packed));
 
 // 512 bytes
@@ -41,24 +41,24 @@ struct CSVolumeHeader
 {
     CSBlockHeader   block_header;
     
-    u_int64_t       physical_size;
-    u_int64_t       reserved8;
+    uint64_t       physical_size;
+    uint64_t       reserved8;
     
-    u_int64_t       reserved9;
-    u_int16_t       signature; //"CS" offset 88
-    u_int32_t       checksum_algo;
-    u_int16_t       metadata_count;
+    uint64_t       reserved9;
+    uint16_t       signature; //"CS" offset 88
+    uint32_t       checksum_algo;
+    uint16_t       metadata_count;
     
-    u_int32_t       metadata_block_size;
-    u_int32_t       metadata_size;
-    u_int64_t       metadata_blocks[8];
+    uint32_t       metadata_block_size;
+    uint32_t       metadata_size;
+    uint64_t       metadata_blocks[8];
     
-    u_int32_t       encryption_key_size; //bytes
-    u_int32_t       encryption_key_algo;
-    u_int8_t        encryption_key_data[128];
+    uint32_t       encryption_key_size; //bytes
+    uint32_t       encryption_key_algo;
+    uint8_t        encryption_key_data[128];
     uuid_t          physical_volume_uuid;
     uuid_t          logical_volume_group_uuid;
-    u_int8_t        reserved10[176];
+    uint8_t        reserved10[176];
 } __attribute__((aligned(2), packed));
 
 // probably 512 bytes
@@ -67,26 +67,26 @@ struct CSMetadataBlockType11
 {
     CSBlockHeader   block_header;
     
-    u_int32_t       size;
-    u_int32_t       reserved1; //3
-    u_int32_t       checksum;
-    u_int32_t       checksum_seed;
+    uint32_t       size;
+    uint32_t       reserved1; //3
+    uint32_t       checksum;
+    uint32_t       checksum_seed;
     
-    u_int32_t       reserved2[35];
+    uint32_t       reserved2[35];
     
-    u_int32_t       volume_groups_descriptor_offset;
-    u_int32_t       xml_offset;
-    u_int32_t       xml_size;
-    u_int32_t       xml_size_copy;
-    u_int32_t       reserved3;
-    u_int64_t       backup_volume_header_block;
-    u_int64_t       record_count;
+    uint32_t       volume_groups_descriptor_offset;
+    uint32_t       xml_offset;
+    uint32_t       xml_size;
+    uint32_t       xml_size_copy;
+    uint32_t       reserved3;
+    uint64_t       backup_volume_header_block;
+    uint64_t       record_count;
     struct {
-        u_int64_t   index;
-        u_int64_t   start;
-        u_int64_t   end;
+        uint64_t   index;
+        uint64_t   start;
+        uint64_t   end;
     }               records[10];
-    u_int32_t       reserved4[4];
+    uint32_t       reserved4[4];
 } __attribute__((aligned(2), packed));
 
 

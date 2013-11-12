@@ -5,45 +5,16 @@
 // ANSI C
 #include <stdlib.h>
 
-// FILE/printf
-#include <stdio.h>
-
-// POSIX
-#include <unistd.h>
-
-// basename
-#include <libgen.h>
-
-// vaargs
-#include <stdarg.h>
-
-// Wide chars
-#include <wchar.h>
-
-// strcpy, memset, etc.
-#include <strings.h>
-
 // errno/perror
 #include <errno.h>
-
-// Bool
-#include <stdbool.h>
-
-// malloc functions
-#include <malloc/malloc.h>
 
 // Logging
 #include "logging.h"
 
-#include "partition_support.h"
+#include <strings.h>
+#include <malloc/malloc.h>
 
-#ifndef	MIN
-#define	MIN(a, b)	((a) < (b) ? (a) : (b))
-#endif
-
-#ifndef	MAX
-#define	MAX(a, b)	((a) > (b) ? (a) : (b))
-#endif
+#define FOR_UNTIL(var, end) for(int var = 0; var < end; var++)
 
 #ifndef ZERO_STRUCT
 #define ZERO_STRUCT(name) memset(&(name), 0, sizeof((name)))
@@ -80,4 +51,3 @@
 }
 #endif
 
-#define FOR_UNTIL(var, end) for(int var = 0; var < end; var++)

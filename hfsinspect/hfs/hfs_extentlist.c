@@ -6,8 +6,8 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "hfs_extentlist.h"
 #include "range.h"
+#include "hfs_extentlist.h"
 
 ExtentList* extentlist_alloc(void)
 {

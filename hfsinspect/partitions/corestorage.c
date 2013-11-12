@@ -6,10 +6,10 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <stdio.h>
 #include "corestorage.h"
 #include "hfs_io.h"
-#include "hfs_pstruct.h"
+#include "output.h"
+#include "output_hfs.h"
 
 int cs_get_volume_header(HFSVolume* hfs, CSVolumeHeader* header)
 {
@@ -98,7 +98,7 @@ void cs_print(HFSVolume* hfs)
     void* buf = valloc(buf_size);
     for(int i = 0; i < header->metadata_count; i++) {
         memset(buf, 0, buf_size);
-        u_int64_t block_number = header->metadata_blocks[i];
+        uint64_t block_number = header->metadata_blocks[i];
         if (block_number == 0) continue;
         size_t size = header->block_header.block_size;
         off_t offset = (header->metadata_blocks[i] * size);

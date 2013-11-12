@@ -6,10 +6,11 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <sys/syslimits.h>
-
 #ifndef hfsinspect_volume_h
 #define hfsinspect_volume_h
+
+#include "partition_support.h"
+#include <sys/param.h>          //PATH_MAX
 
 #pragma mark - Structures
 

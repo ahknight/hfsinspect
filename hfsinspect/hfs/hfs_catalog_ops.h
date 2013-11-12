@@ -11,15 +11,15 @@
 
 #include "hfs_structs.h"
 
-extern const u_int32_t kAliasCreator;
-extern const u_int32_t kFileAliasType;
-extern const u_int32_t kFolderAliasType;
+extern const uint32_t kAliasCreator;
+extern const uint32_t kFileAliasType;
+extern const uint32_t kFolderAliasType;
 
 extern wchar_t* HFSPlusMetadataFolder;
 extern wchar_t* HFSPlusDirMetadataFolder;
 
 HFSBTree            hfs_get_catalog_btree                   (const HFSVolume *hfs);
-u_int16_t           hfs_get_catalog_record_type             (const HFSBTreeNodeRecord* catalogRecord);
+uint16_t           hfs_get_catalog_record_type             (const HFSBTreeNodeRecord* catalogRecord);
 int                 hfs_get_catalog_leaf_record             (HFSPlusCatalogKey* const record_key, HFSPlusCatalogRecord* const record_value, const HFSBTreeNode* node, hfs_record_id recordID);
 
 int8_t              hfs_catalog_find_record                 (HFSBTreeNode *node, hfs_record_id *recordID, const HFSVolume *hfs, hfs_node_id parentFolder, HFSUniStr255 name);

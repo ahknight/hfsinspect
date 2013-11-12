@@ -9,6 +9,9 @@
 #ifndef hfsinspect_range_h
 #define hfsinspect_range_h
 
+#include <stdbool.h>
+#include <sys/types.h>
+
 #pragma mark Range Helpers
 
 typedef struct range {

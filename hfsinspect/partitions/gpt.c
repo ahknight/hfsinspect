@@ -6,20 +6,19 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <stdio.h>
 #include "gpt.h"
-#include "hfs_endian.h"
-#include "hfs_io.h"
-#include "hfs_pstruct.h"
+#include "_endian.h"
+#include "hfs_structs.h"
+#include "output.h"
 
 uuid_t* gpt_swap_uuid(uuid_t* uuid)
 {
     // Because these UUIDs are fucked up.
     void* uuid_buf = uuid;
-    *( (u_int32_t*) uuid + 0 ) = OSSwapInt32(*( (u_int32_t*)uuid_buf + 0 ));
-    *( (u_int16_t*) uuid + 2 ) = OSSwapInt16(*( (u_int16_t*)uuid_buf + 2 ));
-    *( (u_int16_t*) uuid + 3 ) = OSSwapInt16(*( (u_int16_t*)uuid_buf + 3 ));
-    *( (u_int64_t*) uuid + 1 ) =             *( (u_int64_t*)uuid_buf + 1 );
+    *( (uint32_t*) uuid + 0 ) = bswap32(*( (uint32_t*)uuid_buf + 0 ));
+    *( (uint16_t*) uuid + 2 ) = bswap16(*( (uint16_t*)uuid_buf + 2 ));
+    *( (uint16_t*) uuid + 3 ) = bswap16(*( (uint16_t*)uuid_buf + 3 ));
+    *( (uint64_t*) uuid + 1 ) =         *( (uint64_t*)uuid_buf + 1 );
     return uuid;
 }
 

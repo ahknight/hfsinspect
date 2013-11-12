@@ -6,13 +6,12 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "hfs_structs.h"
-
 #ifndef hfsinspect_partitions_h
 #define hfsinspect_partitions_h
 
 #pragma mark - Structures
 
+#include "volume.h"
 #include "mbr.h"
 #include "gpt.h"
 #include "apm.h"
@@ -20,6 +19,7 @@
 
 #pragma mark - Functions
 
-bool sniff_and_print(HFSVolume* hfs);
+int     partition_load  (Volume *vol);
+void    partition_dump  (Volume *vol);
 
 #endif

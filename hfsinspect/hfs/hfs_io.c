@@ -8,10 +8,50 @@
 
 #include "hfs_io.h"
 #include "hfs_extent_ops.h"
-#include "hfs_pstruct.h"
 #include "range.h"
+#include "output_hfs.h"
+#include "hfs_btree.h"
 
 #pragma mark Struct Conveniences
+
+HFSFork hfsfork_get_special(const HFSVolume *hfs, hfs_node_id cnid)
+{
+    HFSPlusForkData forkData;
+    
+//	kHFSBadBlockFileID		= 5,	/* File ID of the bad allocation block file */
+//	kHFSStartupFileID		= 7,	/* File ID of the startup file (HFS Plus only) */
+
+    switch (cnid) {
+        case kHFSExtentsFileID:
+            forkData = hfs->vh.extentsFile;
+            break;
+            
+        case kHFSCatalogFileID:
+            forkData = hfs->vh.catalogFile;
+            break;
+            
+//        case kHFSExtentsFileID:
+//            forkData = hfs->vh.;
+//            break;
+            
+        case kHFSAllocationFileID:
+            forkData = hfs->vh.allocationFile;
+            break;
+            
+        case kHFSStartupFileID:
+            forkData = hfs->vh.startupFile;
+            break;
+            
+        case kHFSAttributesFileID:
+            forkData = hfs->vh.attributesFile;
+            break;
+            
+        default:
+            break;
+    }
+    
+    return hfsfork_make(hfs, forkData, HFSDataForkType, cnid);
+}
 
 HFSFork hfsfork_make(const HFSVolume *hfs, const HFSPlusForkData forkData, hfs_fork_type forkType, hfs_node_id cnid)
 {
@@ -234,7 +274,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
 }
 
 // Grab a specific byte range of a fork.
-ssize_t hfs_read_fork_range(Buffer *buffer, const HFSFork *fork, size_t size, size_t offset)
+ssize_t hfs_read_fork_range(void* buffer, const HFSFork *fork, size_t size, size_t offset)
 {
     debug("Reading from fork at (%d, %d)", offset, size);
     
@@ -273,7 +313,9 @@ ssize_t hfs_read_fork_range(Buffer *buffer, const HFSFork *fork, size_t size, si
     ssize_t read_blocks = hfs_read_fork(read_buffer, fork, block_count, start_block);
     
     // On success, append the data to the buffer (consumers: set buffer.offset properly!).
-    if (read_blocks) buffer_append(buffer, read_buffer + byte_offset, size);
+    if (read_blocks) {
+        memcpy(buffer, (read_buffer + byte_offset), size);
+    }
     
     // Clean up.
     FREE_BUFFER(read_buffer);

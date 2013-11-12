@@ -34,8 +34,8 @@ source_read_blocks(void*, Source, size_t, off_t) //source blocks
 source_read(void*, Source, size_t, off_t) //bytes
 
 PartitionMap struct
-    u_int16_t type; //enum
-    u_int16_t partition_count;
+    uint16_t type; //enum
+    uint16_t partition_count;
     SourceList partitions;
 
 ---
@@ -48,8 +48,8 @@ OutputGroup
 
 Attribute
     char* name[100]
-    u_int16_t input_type
-    u_int16_t output_type
+    uint16_t input_type
+    uint16_t output_type
     size_t size
     void* data
 

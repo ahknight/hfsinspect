@@ -6,17 +6,18 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <getopt.h>
-#include <locale.h>
-#include <sys/param.h>
-#include <sys/mount.h>
-#include <locale.h>
-#include <sys/stat.h>
+#include <getopt.h>         //getopt_long
+#include <libgen.h>         //basename
+#include <locale.h>         //setlocale
+#include <sys/param.h>      //MIN/MAX
+#include <sys/mount.h>      //statfs
+#include <sys/stat.h>       //stat
 
 #include "hfs.h"
+#include "output.h"
+#include "output_hfs.h"
 #include "stringtools.h"
 #include "partitions.h"
-#include "volume.h"
 
 #pragma mark - Function Declarations
 
@@ -71,7 +72,7 @@ enum HIModes {
 
 // Configuration context
 static struct HIOptions {
-    u_int32_t   mode;
+    uint32_t   mode;
     
     char        device_path[PATH_MAX];
     char        file_path[PATH_MAX];
@@ -86,7 +87,6 @@ static struct HIOptions {
     HFSPlusCatalogFile  extract_HFSPlusCatalogFile;
     HFSFork             extract_HFSFork;
     
-    Volume      *volume;
     HFSVolume   hfs;
     BTreeTypes  tree_type;
     HFSBTree    tree;
@@ -191,7 +191,7 @@ void showPathInfo(void)
     char* last_segment = NULL;
     
     HFSPlusCatalogFile *fileRecord = NULL;
-    u_int32_t parentID = kHFSRootFolderID, last_parentID = 0;
+    uint32_t parentID = kHFSRootFolderID, last_parentID = 0;
 //    HFSUniStr255 hfs_str;
     
     while ( (segment = strsep(&file_path, "/")) != NULL ) {
@@ -201,7 +201,7 @@ void showPathInfo(void)
         last_parentID = parentID;
         
         HFSBTreeNode node;
-        u_int32_t recordID = 0;
+        uint32_t recordID = 0;
         
         HFSPlusCatalogKey key;
         HFSPlusCatalogRecord catalogRecord;
@@ -264,7 +264,7 @@ void showCatalogRecord(hfs_node_id parent, HFSUniStr255 filename, bool follow)
     debug("Finding catalog record for %d:%ls", parent, filename_str);
     
     HFSBTreeNode node;
-    u_int32_t recordID = 0;
+    uint32_t recordID = 0;
     
     int8_t found = hfs_catalog_find_record(&node, &recordID, &HIOptions.hfs, parent, filename);
     
@@ -345,7 +345,7 @@ VolumeSummary generateVolumeSummary(HFSVolume* hfs)
     memset(&summary, 0, sizeof(summary));
     
     HFSBTree catalog = hfs_get_catalog_btree(hfs);
-    u_int32_t cnid = catalog.headerRecord.firstLeafNode;
+    uint32_t cnid = catalog.headerRecord.firstLeafNode;
     
     while (1) {
         HFSBTreeNode node;
@@ -362,7 +362,7 @@ VolumeSummary generateVolumeSummary(HFSVolume* hfs)
             HFSPlusCatalogKey key = {0};
             
             // fileCount, folderCount
-            u_int8_t type = hfs_get_catalog_leaf_record(&key, &record, &node, recNum);
+            uint8_t type = hfs_get_catalog_leaf_record(&key, &record, &node, recNum);
             if (type < 0) {
                 critical("Error fetching record %u of node %u", recNum, node.nodeNumber);
                 exit(1);
@@ -457,7 +457,8 @@ VolumeSummary generateVolumeSummary(HFSVolume* hfs)
         if ((count % iter_size) == 0) {
             // Update
             size_t space = summary.dataFork.logicalSpace + summary.resourceFork.logicalSpace;
-            char* size = sizeString(space, false);
+            char size[128];
+            (void)format_size(size, space, false, 128);
             
             fprintf(stdout, "\x1b[G%0.2f%% (files: %llu; directories: %llu; size: %s)",
                     (float)count / (float)catalog.headerRecord.leafRecords * 100.,
@@ -466,7 +467,6 @@ VolumeSummary generateVolumeSummary(HFSVolume* hfs)
                     size
                     );
             fflush(stdout);
-            FREE_BUFFER(size);
         }
     
     }
@@ -521,26 +521,28 @@ ssize_t extractFork(const HFSFork* fork, const char* extractPath)
     
     off_t offset        = 0;
     size_t chunkSize    = fork->hfs.block_size*1024;
-    Buffer chunk        = buffer_alloc(chunkSize);
+    char* chunk         = malloc(chunkSize);
     
     while ( offset < fork->logicalSize ) {
         info("Remaining: %zu bytes", fork->logicalSize - offset);
         
-        buffer_reset(&chunk);
+        memset(chunk, 0, chunkSize);
         
-        ssize_t size = hfs_read_fork_range(&chunk, fork, chunkSize, offset);
+        ssize_t size = hfs_read_fork_range(chunk, fork, chunkSize, offset);
         if (size < 1) {
             perror("extractFork");
             critical("Read error while extracting range (%llu, %zu)", offset, chunkSize);
             return -1;
         } else {
-            fwrite(chunk.data, sizeof(char), size, f);
+            fwrite(chunk, sizeof(char), size, f);
             offset += size;
         }
     }
+    
     fflush(f);
     fclose(f);
-    buffer_free(&chunk);
+    
+    FREE_BUFFER(chunk);
     
     return offset;
 }
@@ -579,18 +581,16 @@ void extractHFSPlusCatalogFile(const HFSVolume *hfs, const HFSPlusCatalogFile* f
 
 char* deviceAtPath(char* path)
 {
-    struct statfs stats;
+    static struct statfs stats;
     int result = statfs(path, &stats);
     if (result < 0) {
         perror("statfs");
         return NULL;
     }
     
-    debug("From: %s", stats.f_mntfromname);
-    debug("To: %s", stats.f_mntonname);
+    debug("statfs: from %s to %s", stats.f_mntfromname, stats.f_mntonname);
     
-    char* devicePath = strdup(stats.f_mntfromname);
-    return devicePath;
+    return stats.f_mntfromname;
 }
 
 bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
@@ -863,20 +863,27 @@ OPEN:
             exit(errno);
         }
     }
-    HIOptions.volume = vol;
+    
+    (void)partition_load(vol);
+    
+#pragma mark Disk Summary
+    
+    if (check_mode(HIModeShowDiskInfo)) {
+        partition_dump(vol);
+    }
+
+#pragma mark Find HFS Volume
     
     // Device loaded. Find the first HFS+ filesystem.
     
-    /*
-     Figure out what we're dealing with here.
-     
-     First scan for a volume with fs_sniff.
-     Failing that, scan for partition maps with partition_sniff. Use partition hints to dispatch a partition range either to partition_sniff or fs_sniff.
-     
-     Whoever comes back True first ends the search (and we presume the volume's offset/length have been updated).
-     */
-
-    if (hfs_attach(&HIOptions.hfs, HIOptions.volume) < 0) {
+    vol = hfs_find(vol);
+    if (vol == NULL) {
+        // No HFS Plus volumes found.
+        critical("No HFS+ filesystems found.");
+        exit(1);
+    }
+    
+    if (hfs_attach(&HIOptions.hfs, vol) < 0) {
         perror("hfs_attach");
         exit(1);
     }
@@ -906,28 +913,16 @@ OPEN:
 #pragma mark Drop Permissions
     
     // If we're root, drop down.
-    if (getuid() == 0) {
+    if (geteuid() == 0) {
         debug("Dropping privs");
-        if (setgid(gid) != 0) critical("Failed to drop group privs.");
-        if (setuid(uid) != 0) critical("Failed to drop user privs.");
-        info("Was running as root.  Now running as %u/%u.", getuid(), getgid());
-    }
-    
-#pragma mark Disk Summary
-    
-    // Note: This should go before hfs_load so we don't have to save the offset, etc.
-    if (check_mode(HIModeShowDiskInfo)) {
-        sniff_and_print(&HIOptions.hfs);
+        if (setegid(gid) != 0) critical("Failed to drop group privs.");
+        if (seteuid(uid) != 0) critical("Failed to drop user privs.");
+        info("Was running as root.  Now running as %u/%u.", geteuid(), getegid());
     }
     
 #pragma mark Load Volume Data
     
-//    if (hfs_load(&HIOptions.hfs) == -1) {
-//        if (errno != 0) perror("hfs_load");
-//        exit(errno);
-//    }
-    
-    set_hfs_volume(&HIOptions.hfs); // Set the context for certain hfs_pstruct.h calls.
+    set_hfs_volume(&HIOptions.hfs); // Set the context for certain output_hfs.h calls.
         
 #pragma mark Volume Requests
     
@@ -1037,7 +1032,18 @@ OPEN:
             return 1;
         }
         
-        PrintTreeNode(&HIOptions.tree, HIOptions.node_id);
+        bool showHex = 0;
+        
+        if (showHex) {
+            size_t length = HIOptions.tree.headerRecord.nodeSize;
+            off_t offset = length * HIOptions.node_id;
+            char* buf = malloc(length);
+            hfs_read_fork_range(buf, &HIOptions.tree.fork, length, offset);
+            VisualizeData(buf, length);
+        } else {
+            PrintTreeNode(&HIOptions.tree, HIOptions.node_id);
+        }
+        
     }
     
 #pragma mark Extract File Requests

@@ -62,8 +62,8 @@ typedef struct block_info {
 } __attribute__((__packed__)) block_info;
 
 typedef struct block_list_header {
-    u_int16_t   max_blocks;          // max number of blocks in this chunk
-    u_int16_t   num_blocks;          // number of valid block numbers in block_nums
+    uint16_t   max_blocks;          // max number of blocks in this chunk
+    uint16_t   num_blocks;          // number of valid block numbers in block_nums
     int32_t     bytes_used;          // how many bytes of this tbuffer are used
     int32_t     checksum;            // on-disk: checksum of this header and binfo[0]
     int32_t     flags;               // check-checksums, initial blhdr, etc
@@ -207,7 +207,7 @@ __BEGIN_DECLS
 /*
  * Call journal_init() to initialize the journaling code (sets up lock attributes)
  */
-void      journal_init(void) __attribute__((section("__TEXT, initcode")));
+//void      journal_init(void) __attribute__((section("__TEXT, initcode")));
 
 /*
  * Call journal_create() to create a new journal.  You only

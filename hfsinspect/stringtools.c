@@ -7,8 +7,12 @@
 //
 
 #include "stringtools.h"
+#include "hfs_macos_defs.h"
 
-#include <stdio.h>
+#include <errno.h>      //errno
+#include <sys/param.h>  //MIN/MAX
+#include <hfs/hfs_format.h>
+#include <math.h>
 
 // repeat character
 char* repchar(char c, int count)
@@ -28,16 +32,15 @@ wchar_t* repwchar(wchar_t c, int count)
     return str;
 }
 
-// Generate a human-readable string representing file size
-char* sizeString(size_t size, bool metric)
+ssize_t format_size(char* out, size_t value, bool metric, size_t length)
 {
     float divisor = 1024.0;
     if (metric) divisor = 1000.0;
-
+    
     char* sizeNames[] = { "bytes", "KiB", "MiB", "GiB", "TiB", "EiB", "PiB", "ZiB", "YiB" };
     char* metricNames[] = { "bytes", "KB", "MB", "GB", "TB", "EB", "PB", "ZB", "YB" };
-
-    long double displaySize = size;
+    
+    long double displaySize = value;
     int count = 0;
     while (count < 9) {
         if (displaySize < divisor) break;
@@ -45,82 +48,160 @@ char* sizeString(size_t size, bool metric)
         count++;
     }
     char* sizeLabel;
-
+    
     if (metric) sizeLabel = metricNames[count]; else sizeLabel = sizeNames[count];
     
-    char* label = NULL;
+    snprintf(out, length, "%0.2Lf %s", displaySize, sizeLabel);
     
-    asprintf(&label, "%0.2Lf %s", displaySize, sizeLabel);
-    
-    return label;
+    return strlen(out);
 }
 
-// Generate a string representation of a buffer with adjustable number base (2-36).
-char* memstr(const char* buf, size_t length, u_int8_t base)
+/**
+ Get a string representation of a block of memory in any reasonable number base.
+ @param out A buffer with enough space to hold the output. Pass NULL to get the size to allocate.
+ @param base The base to render the text as (2-36).
+ @param buf The buffer to render.
+ @param length The size of the buffer.
+ @return The number of characters written to *out (or that would be written), or -1 on error.
+ */
+ssize_t memstr(char* restrict out, uint8_t base, const char* input, size_t length)
 {
+    /* Verify parameters */
+    
+    // Zero length buffer == zero length result.
+    if (length == 0) return 0;
+    
+    // No source buffer?
+    if (input == NULL) { errno = EINVAL; return -1; }
+    
     // Base 1 would be interesting (ie. infinite). Past base 36 and we need to start picking printable character sets.
-    if (base < 2 || base > 36) return NULL;
+    if (base < 2 || base > 36) { errno = EINVAL; return -1; }
     
     // Determine how many characters will be needed in the output for each byte of input (256 bits, 8 bits to a byte).
-    u_int8_t chars_per_byte = (256 / base / 8);
+    uint8_t chars_per_byte = (log10(256)/log10(base));
     
     // Patches bases over 32.
     if (chars_per_byte < 1) chars_per_byte = 1;
     
-    // Size of the result string.
+    // Determine the size of the result string.
     size_t rlength = (length * chars_per_byte);
-    char* result;
-    INIT_STRING(result, rlength + 1);
+    
+    // Return the size if the output buffer is empty.
+    if (out == NULL) return rlength;
+    
+    
+    /* Process the string */
     
     // Init the string's bytes to the character zero so that positions we don't write to have something printable.
-    memset(result, '0', malloc_size(result));
+    // THIS IS INTENTIONALLY NOT '\0'!!
+    memset(out, '0', rlength);
     
     // We build the result string from the tail, so here's the index in that string, starting at the end.
-    u_int8_t ridx = rlength - 1;
+    uint8_t ridx = rlength - 1;
     for (size_t byte = 0; byte < length; byte++) {
-        unsigned char c = buf[byte];    // Grab the current char from the input.
-        while (c != 0 && ridx >= 0) {   // Iterate until we're out of input or output.
-            u_int8_t idx = c % base;
-            result[ridx] = (idx < 10 ? '0' + idx : 'A' + (idx-10)); // GO ASCII! 0-9 then A-Z (up to base 36, see above).
-            c /= base;                  // Shave off the processed portion.
+        uint8_t chr = input[byte];      // Grab the current char from the input.
+        while (chr != 0 && ridx >= 0) { // Iterate until we're out of input or output.
+            uint8_t idx = chr % base;
+            out[ridx] = (idx < 10 ? '0' + idx : 'a' + (idx-10)); // GO ASCII! 0-9 then a-z (up to base 36, see above).
+            chr /= base;                // Shave off the processed portion.
             ridx--;                     // Move left in the result string.
         }
     }
     
     // Cap the string.
-    result[rlength] = '\0';
+    out[rlength] = '\0';
     
-    // Send it back.
-    return result;
+    return rlength;
 }
 
-// Print a classic memory dump with configurable base and grouping.
-void memdump(const char* data, size_t length, u_int8_t base, u_int8_t gsize, u_int8_t gcount)
+
+/**
+ Print a block of memory to stdout in a stylized fashion, ASCII to the right.
+ | 00000000 00000000 00000000 00000000 | ................ |
+ (Above: four groups with width four)
+ 
+ @param file File pointer to print to.
+ @param data A buffer of data to print.
+ @param length The number of bytes from the data pointer to print.
+ @param base The number base to use when printing (middle column).
+ @param width The number of input bytes to group together.
+ @param groups The number of groups per line.
+ @param mode An ORed value denoting what to include in each line.
+ */
+
+void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t width, uint8_t groups, unsigned mode)
 {
-    int group_size = gsize;
-    int group_count = gcount;
+    // Length of a line
+    int line_width = width * groups;
     
-    int line_width = group_size * group_count;
-    unsigned int offset = 0;
+    off_t offset = 0;
     while (length > offset) {
+        // Starting position for the line
         const char* line = &data[offset];
+        
+        // Length of this line (considering the last line may not be a full line)
         size_t lineMax = MIN((length - offset), line_width);
-        printf("  %p %06u |", &line[0], offset);
-        for (int c = 0; c < lineMax; c++) {
-            if ( (c % group_size) == 0 ) printf(" ");
-            char* str = memstr(&line[c], 1, base);
-            printf("%s ", str); FREE_BUFFER(str);
+        
+        // Line header/prefix
+        if (mode & DUMP_ADDRESS) fprintf(file, "%p", &line[0]);
+        if (mode & DUMP_OFFSET)  fprintf(file, "%8lld", offset);
+        
+        // Print numeric representation
+        if (mode & DUMP_ENCODED) {
+            fprintf(file, " ");
+            for (size_t c = 0; c < lineMax; c++) {
+                size_t size = memstr(NULL, base, &line[c], 1);
+                if (size) {
+                    if ((c % width) == 0) fprintf(file, " ");
+                    char* group = malloc(size); memset(group, '0', size);
+                    memstr(group, base, &line[c], 1);
+                    fprintf(file, "%s%s", group, ((mode & DUMP_PADDING) ? " " : ""));
+                    free(group);
+                } else {
+                    break; // for - clearly we've run out of input.
+                }
+            }
         }
-        printf("|");
-        for (int c = 0; c < lineMax; c++) {
-            if ( (c % group_size) == 0 ) printf(" ");
-            char chr = line[c] & 0xFF;
-            if (chr < 32) // ASCII unprintable
-                chr = '.';
-            printf("%c", chr);
+        
+        // Print ASCII representation
+        if (mode & DUMP_ASCII) {
+            fprintf(file, " |");
+            for (int c = 0; c < lineMax; c++) {
+                uint8_t chr = line[c] & 0xFF;
+                if (chr == 0)
+                    chr = ' ';
+                else if (chr > 127) // ASCII unprintable
+                    chr = '?';
+                else if (chr < 32) // ASCII control characters
+                    chr = '.';
+                fprintf(file, "%c", chr);
+            }
+            fprintf(file, "|");
         }
-        printf(" |\n");
+        
+        fprintf(file, "\n");
+        
         offset += line_width;
     }
+}
+
+
+const UTF16 HI_SURROGATE_START = 0xD800;
+const UTF16 LO_SURROGATE_START = 0xDC00;
+
+const UTF32 LEAD_OFFSET = HI_SURROGATE_START - (0x10000 >> 10);
+const UTF32 SURROGATE_OFFSET = 0x10000 - (HI_SURROGATE_START << 10) - LO_SURROGATE_START;
+
+UChar32 uc16touc32( UChar16 u16 )
+{
+    return ( (u16.hi << 10) + u16.lo + SURROGATE_OFFSET );
+}
+
+UChar16 uc32touc16( UChar32 codepoint )
+{
+    UChar16 u16;
+    u16.hi = LEAD_OFFSET + (codepoint >> 10);
+    u16.lo = 0xDC00 + (codepoint & 0x3FF);
+    return u16;
 }
 

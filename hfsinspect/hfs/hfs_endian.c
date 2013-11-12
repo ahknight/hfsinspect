@@ -6,41 +6,12 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <stdio.h>
-#include <errno.h>
-
-#include "hfs_structs.h"
 #include "hfs_endian.h"
-#include "hfs_pstruct.h"
 
-#define Convert16(x)    x = OSSwapBigToHostInt16(x)
-#define Convert32(x)    x = OSSwapBigToHostInt32(x)
-#define Convert64(x)    x = OSSwapBigToHostInt64(x)
-
-void swap_APMHeader(APMHeader* record)
-{
-    Convert16(record->signature);
-    Convert16(record->reserved1);
-	Convert32(record->partition_count);
-	Convert32(record->partition_start);
-	Convert32(record->partition_length);
-//    char            name[32];
-//    char            type[32];
-	Convert32(record->data_start);
-	Convert32(record->data_length);
-	Convert32(record->status);
-	Convert32(record->boot_code_start);
-	Convert32(record->boot_code_length);
-	Convert32(record->bootloader_address);
-	Convert32(record->reserved2);
-	Convert32(record->boot_code_entry);
-	Convert32(record->reserved3);
-	Convert32(record->boot_code_checksum);
-//    char            processor_type[16];
-}
+#include "_endian.h"
+#include "hfs_structs.h"
+#include "output.h"
+#include "hfs_catalog_ops.h"
 
 void swap_HFSExtentDescriptor(HFSExtentDescriptor* record)
 {
@@ -76,7 +47,7 @@ void swap_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* record)
 	Convert16(record->drNmRtDirs);	/* number of directories in root folder */
 	Convert32(record->drFilCnt);	/* number of files in volume */
 	Convert32(record->drDirCnt);	/* number of directories in volume */
-//	Convert32(record->drFndrInfo[8]);	/* information used by the Finder */
+    // noswap: Convert32(record->drFndrInfo[8]);	/* information used by the Finder */
 	Convert16(record->drEmbedSigWord);	/* embedded volume signature (formerly drVCSize) */
 	swap_HFSExtentDescriptor(&record->drEmbedExtent);	/* embedded volume location and size (formerly drVBMCSize and drCtlCSize) */
 	Convert32(record->drXTFlSize);	/* size of extents overflow file */
@@ -118,7 +89,7 @@ void swap_HFSPlusVolumeHeader(HFSPlusVolumeHeader *record)
     Convert32(finderInfo->bootParentID);
     Convert32(finderInfo->openWindowDirID);
     Convert32(finderInfo->os9DirID);
-    // reserved
+    // noswap: reserved is reserved (uint32)
     Convert32(finderInfo->osXDirID);
     Convert64(finderInfo->volID);
     
@@ -133,10 +104,10 @@ void swap_JournalInfoBlock(JournalInfoBlock* record)
 {
     /*
      struct JournalInfoBlock {
-     u_int32_t	flags;
-     u_int32_t       device_signature[8];  // signature used to locate our device.
-     u_int64_t       offset;               // byte offset to the journal on the device
-     u_int64_t       size;                 // size in bytes of the journal
+     uint32_t	flags;
+     uint32_t       device_signature[8];  // signature used to locate our device.
+     uint64_t       offset;               // byte offset to the journal on the device
+     uint64_t       size;                 // size in bytes of the journal
      uuid_string_t   ext_jnl_uuid;
      char            machine_serial_num[48];
      char    	reserved[JIB_RESERVED_SIZE];
@@ -147,9 +118,9 @@ void swap_JournalInfoBlock(JournalInfoBlock* record)
     FOR_UNTIL(i, 8) Convert32(record->device_signature[i]);
     Convert64(record->offset);
     Convert64(record->size);
-    // uuid_string_t is a series of char
-    // machine_serial_num is a series of char
-    // reserved is reserved
+    // noswap: uuid_string_t is a series of char
+    // noswap: machine_serial_num is a series of char
+    // noswap: reserved is reserved
 }
 
 void swap_HFSPlusForkData(HFSPlusForkData *record)
@@ -175,10 +146,18 @@ void swap_BTNodeDescriptor(BTNodeDescriptor *record)
 {
     Convert32(record->fLink);
     Convert32(record->bLink);
-    //    record->kind is a short
-    //    record->height is a short
+    
+    // noswap: record->kind is a short
+    if (record->kind < kBTLeafNode || record->kind > kBTMapNode)
+        warning("invalid node type: %d", record->kind);
+    
+    // noswap: record->height is a short
+    if (record->height > 16)
+        warning("invalid node height: %d", record->kind);
+    
     Convert16(record->numRecords);
-    //    record->reserved is reserved
+    
+    // noswap: record->reserved is reserved
 }
 
 void swap_BTHeaderRec(BTHeaderRec *record)
@@ -192,12 +171,12 @@ void swap_BTHeaderRec(BTHeaderRec *record)
     Convert16(record->maxKeyLength);
     Convert32(record->totalNodes);
     Convert32(record->freeNodes);
-    //    record->reserved1
+    // noswap: record->reserved1
     Convert32(record->clumpSize);
-    //    record->btreeType is a short
-    //    record->keyCompareType is a short
+    // noswap: record->btreeType is a short
+    // noswap: record->keyCompareType is a short
     Convert32(record->attributes);
-    //    header->reserved3
+    // noswap: header->reserved3
 }
 
 void swap_HFSPlusCatalogKey(HFSPlusCatalogKey *record)
@@ -217,6 +196,7 @@ void swap_HFSPlusExtentKey(HFSPlusExtentKey *record)
 void swap_HFSPlusAttrKey(HFSPlusAttrKey *record)
 {
     Convert16(record->keyLength);
+    Convert16(record->pad);
     Convert32(record->fileID);
     Convert32(record->startBlock);
     Convert16(record->attrNameLen);
@@ -251,8 +231,8 @@ void swap_HFSPlusBSDInfo(HFSPlusBSDInfo *record)
 {
     Convert32(record->ownerID);
     Convert32(record->groupID);
-    // adminFlags is a short
-    // ownerFlags is a short
+    // noswap: adminFlags is a short
+    // noswap: ownerFlags is a short
     Convert16(record->fileMode);
     Convert32(record->special.iNodeNum);
 }
@@ -263,7 +243,7 @@ void swap_FndrDirInfo(FndrDirInfo *record)
     Convert16(record->frRect.left);
     Convert16(record->frRect.bottom);
     Convert16(record->frRect.right);
-    // frFlags is a short
+    // noswap: frFlags is a short
     Convert16(record->frLocation.v);
     Convert16(record->frLocation.h);
     Convert16(record->opaque);
@@ -314,49 +294,48 @@ void swap_HFSPlusCatalogThread(HFSPlusCatalogThread *record)
     swap_HFSUniStr255(&record->nodeName);
 }
 
-void swap_HFSPlusAttrInlineData(HFSPlusAttrInlineData* record)
-{
-    // Marked as unused in headers; not found in kernel source outside of that.
-    Convert32(record->recordType);
-//    Convert32(record->reserved);
-    Convert32(record->logicalSize);
-}
-
 void swap_HFSPlusAttrData(HFSPlusAttrData* record)
 {
-    Convert32(record->recordType);
-//    Convert32(record->reserved[0]);
-//    Convert32(record->reserved[1]);
+    // noswap: Convert32(record->recordType); (previously swapped)
+    // noswap: Convert32(record->reserved[0]);
+    // noswap: Convert32(record->reserved[1]);
     Convert32(record->attrSize);
 }
 
 void swap_HFSPlusAttrForkData(HFSPlusAttrForkData* record)
 {
-    Convert32(record->recordType);
-//    Convert32(record->reserved);
+    // noswap: Convert32(record->recordType); (previously swapped)
+    // noswap: Convert32(record->reserved);
     swap_HFSPlusForkData(&record->theFork);
 }
 
 void swap_HFSPlusAttrExtents(HFSPlusAttrExtents* record)
 {
-    Convert32(record->recordType);
-//    Convert32(record->reserved);
+    // noswap: Convert32(record->recordType); (previously swapped)
+    // noswap: Convert32(record->reserved);
     swap_HFSPlusExtentRecord(record->extents);
 }
 
 void swap_HFSPlusAttrRecord(HFSPlusAttrRecord* record)
 {
-    Convert32(record->recordType);
-    if (record->recordType == kHFSPlusAttrInlineData) {
-        swap_HFSPlusAttrData((HFSPlusAttrData*)record);
-        
-    } else if (record->recordType == kHFSPlusAttrForkData) {
-        swap_HFSPlusAttrForkData((HFSPlusAttrForkData*)record);
-        
-    } else if (record->recordType == kHFSPlusAttrExtents) {
-        swap_HFSPlusAttrExtents((HFSPlusAttrExtents*)record);
-    } else {
-        critical("Unknown attribute record type: %d", record->recordType);
+    record->recordType = bswap32(record->recordType);
+    switch (record->recordType) {
+        case kHFSPlusAttrInlineData:
+            // InlineData is no more; use AttrData.
+            swap_HFSPlusAttrData(&record->attrData);
+            break;
+            
+        case kHFSPlusAttrForkData:
+            swap_HFSPlusAttrForkData(&record->forkData);
+            break;
+            
+        case kHFSPlusAttrExtents:
+            swap_HFSPlusAttrExtents(&record->overflowExtents);
+            break;
+
+        default:
+            critical("Unknown attribute record type: %d", record->recordType);
+            break;
     }
 }
 
@@ -366,37 +345,53 @@ int swap_BTreeNode(HFSBTreeNode *node)
     // Figure out what it is and swap everything that needs swapping.
     // Good luck.
     
-    // Check record offset 0 to see if we've done this before. It's a constant 14.
-    u_int16_t sentinel = *(u_int16_t*)(node->buffer.data + node->bTree.headerRecord.nodeSize - sizeof(u_int16_t));
+    // Check record offset 0 to see if we've done this before (last two bytes of the node). It's a constant 14.
+    uint16_t sentinel = *(uint16_t*)(node->buffer.data + node->bTree.headerRecord.nodeSize - sizeof(uint16_t));
     if ( sentinel == 14 ) return 1;
     
     // Verify that this is a node in the first place (swap error protection).
-    sentinel = S16(sentinel);
+    sentinel = bswap16(sentinel);
     if ( sentinel != 14 ) {
         debug("Node %u (offset %u) is not a node (sentinel: %u != 14).", node->nodeNumber, node->nodeOffset, sentinel);
         errno = EINVAL;
-        return -1 ;
+        return -1;
     }
     
     /* First, swap things universal to all nodes. */
     
     // Swap node descriptor
-    BTNodeDescriptor *nodeDescriptor = (BTNodeDescriptor*)(node->buffer.data);
-    swap_BTNodeDescriptor(nodeDescriptor);
-    node->nodeDescriptor = *nodeDescriptor;
+    node->nodeDescriptor = *(BTNodeDescriptor*)(node->buffer.data);
+    swap_BTNodeDescriptor(&node->nodeDescriptor);
     
     // Verify this is a valid node (additional protection against swap errors)
-    if (node->nodeDescriptor.kind < -1 || node->nodeDescriptor.kind > 2) {
+    if (node->nodeDescriptor.kind < kBTLeafNode || node->nodeDescriptor.kind > kBTMapNode) {
         debug("Invalid node kind: %d", node->nodeDescriptor.kind);
         errno = EINVAL;
-        return -1 ;
+        return -1;
     }
     
     // Swap record offsets
-    u_int16_t numRecords = node->nodeDescriptor.numRecords + 1;  // "+1" gets the free space record.
-    u_int16_t *offsets = (u_int16_t*)(node->buffer.data + node->bTree.headerRecord.nodeSize - (sizeof(u_int16_t) * numRecords));
+    uint16_t numRecords = node->nodeDescriptor.numRecords + 1;  // "+1" gets the free space record.
+    uint16_t *offsets = (uint16_t*)(node->buffer.data + node->bTree.headerRecord.nodeSize - (sizeof(uint16_t) * numRecords));
     
-    FOR_UNTIL(i, numRecords) offsets[i] = S16(offsets[i]);
+    FOR_UNTIL(i, numRecords) offsets[i] = bswap16(offsets[i]);
+    
+    // Validate offsets
+    off_t record_min = sizeof(BTNodeDescriptor);
+    off_t record_max = node->bTree.headerRecord.nodeSize;
+    
+    {
+        int prev = record_max;
+        FOR_UNTIL(i, numRecords) {
+            if (offsets[i] < record_min || offsets[i] > record_max) {
+                warning("record %u points outside this node: %u (%u, %u)", i, offsets[i], record_min, record_max);
+            }
+            if (i != 0 && offsets[i] > prev) {
+                warning("record %u is out of order (%u > %u)", i, offsets[i-1], offsets[i]);
+            }
+            prev = offsets[i];
+        }
+    }
     
     // Record offsets
     // 0 1 2 3 4 5 | -- offset ID
@@ -417,7 +412,7 @@ int swap_BTreeNode(HFSBTreeNode *node)
     }
     
     // Note for branching
-    u_int32_t treeID = node->bTree.fork.cnid;
+    uint32_t treeID = node->bTree.fork.cnid;
     
     for (int recordNum = 0; recordNum < node->nodeDescriptor.numRecords; recordNum++) {
         HFSBTreeNodeRecord *meta = &node->records[recordNum];
@@ -430,29 +425,26 @@ int swap_BTreeNode(HFSBTreeNode *node)
 
  http://developer.apple.com/legacy/library/technotes/tn/tn1150.html#KeyedRecords
  */
-            if (node->bTree.fork.cnid == kHFSAttributesFileID) VisualizeData(meta->record, meta->length);
             
             if( !(node->bTree.headerRecord.attributes & kBTBigKeysMask) ) {
                 critical("Only HFS Plus B-Trees are supported.");
             }
             
             bool variableKeyLength = false;
+            
             if (node->nodeDescriptor.kind == kBTLeafNode) {
                 variableKeyLength = true;
+                
             } else if (node->nodeDescriptor.kind == kBTIndexNode && node->bTree.headerRecord.attributes & kBTVariableIndexKeysMask) {
                 variableKeyLength = true;
             }
             
             if (variableKeyLength) {
-//                debug("Variable key length: %u", meta->keyLength);
-                meta->keyLength = *(u_int16_t*)meta->record;
-                meta->keyLength = S16(meta->keyLength);
-//                debug("Variable key length: %u", meta->keyLength);
+                meta->keyLength = *(uint16_t*)meta->record;
+                meta->keyLength = bswap16(meta->keyLength);
                 
             } else {
-//                debug("Max key length: %u", meta->keyLength);
                 meta->keyLength = node->bTree.headerRecord.maxKeyLength;
-//                debug("Max key length: %u", meta->keyLength);
             }
             
             meta->key = meta->record;
@@ -461,7 +453,6 @@ int swap_BTreeNode(HFSBTreeNode *node)
             switch (node->bTree.fork.cnid) {
                 case kHFSCatalogFileID:
                 {
-//                    debug("Swapping catalog key");
                     if (meta->keyLength < kHFSPlusCatalogKeyMinimumLength) {
                         meta->keyLength = kHFSPlusCatalogKeyMinimumLength;
                     } else if (meta->keyLength > kHFSPlusCatalogKeyMaximumLength) {
@@ -473,7 +464,6 @@ int swap_BTreeNode(HFSBTreeNode *node)
                     
                 case kHFSExtentsFileID:
                 {
-//                    debug("Swapping extent key");
                     if (meta->keyLength != kHFSPlusExtentKeyMaximumLength) {
                         critical("Invalid key length for extent record: %d", meta->keyLength);
                     }
@@ -483,16 +473,33 @@ int swap_BTreeNode(HFSBTreeNode *node)
                 
                 case kHFSAttributesFileID:
                 {
-                    warning("Swapping attribute key for record %u (key length %u)", recordNum, meta->keyLength);
                     if (meta->keyLength < kHFSPlusAttrKeyMinimumLength) {
                         meta->keyLength = kHFSPlusAttrKeyMinimumLength;
                     } else if (meta->keyLength > kHFSPlusAttrKeyMaximumLength) {
                         critical("Invalid key length for attribute record: %d", meta->keyLength);
                     }
+                    
+                    HFSPlusAttrKey *key = (HFSPlusAttrKey*)meta->key;
+                    
+                    // Validate the size of the record
+                    if ( (char*) &key->attrName[1] > (meta->record + meta->length) ) {
+                        error("attribute key #%d offset too big (0x%04X)", meta->recordID, offsets[recordNum]);
+                        continue;
+                    }
+                    
+                    // Validate the size of the key
+                    if ( (char*)(meta->record + sizeof(key->keyLength) + meta->keyLength) > (meta->record + meta->length)) {
+                        error("attribute key #%d extends past the end of the record (%d > %d)",
+                              ( node->nodeDescriptor.numRecords - recordNum - 1 ),
+                              ( sizeof(key->keyLength) + meta->keyLength ),
+                              meta->length
+                              );
+                        continue;
+                    }
+                    
                     swap_HFSPlusAttrKey((HFSPlusAttrKey*)meta->key);
                     break;
                 }
-                    
                    
                 default:
                     critical("Unhandled tree type: %d", node->bTree.fork.cnid);
@@ -501,15 +508,15 @@ int swap_BTreeNode(HFSBTreeNode *node)
             
             if (meta->keyLength % 2) meta->keyLength++; // Round up to an even length.
             
-            meta->value         = meta->key + sizeof(u_int16_t) + meta->keyLength;
+            meta->value         = meta->key + sizeof(uint16_t) + meta->keyLength;
             meta->valueLength   = meta->length - meta->keyLength;
         }
         
         switch (node->nodeDescriptor.kind) {
             case kBTIndexNode:
             {
-                u_int32_t *pointer = (u_int32_t*)meta->value;
-                *pointer = S32(*pointer);
+                uint32_t *pointer = (uint32_t*)meta->value;
+                *pointer = bswap32(*pointer);
                 break;
             }
                 
@@ -518,8 +525,8 @@ int swap_BTreeNode(HFSBTreeNode *node)
                 switch (node->bTree.fork.cnid) {
                     case kHFSCatalogFileID:
                     {
-                        u_int16_t recordKind = *(u_int16_t*)meta->value;
-                        recordKind = S16(recordKind);
+                        uint16_t recordKind = *(uint16_t*)meta->value;
+                        recordKind = bswap16(recordKind);
                         HFSPlusCatalogRecord* catalogRecord = (HFSPlusCatalogRecord*)meta->value;
                         
                         switch (recordKind) {
@@ -548,6 +555,7 @@ int swap_BTreeNode(HFSBTreeNode *node)
                     case kHFSAttributesFileID:
                     {
                         swap_HFSPlusAttrRecord((HFSPlusAttrRecord*)meta->value);
+                        break;
                     }
                         
                     default:

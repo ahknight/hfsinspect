@@ -6,17 +6,9 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <malloc/malloc.h>
-#include <sys/errno.h>
-#include <sys/param.h>
-#include <stdlib.h>
-#include <strings.h>
-#include <unistd.h>
-#include <stdio.h>
-
 #include "buffer.h"
-#include "debug.h"
-
+#include <unistd.h>
+#include <sys/param.h>  //MIN/MAX
 
 #pragma mark Lifetime Functions
 

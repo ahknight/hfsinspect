@@ -11,6 +11,7 @@
 
 #include "hfs_structs.h"
 
-HFSBTree hfs_get_attribute_btree(const HFSVolume *hfs);
+HFSBTree    hfs_get_attribute_btree     (const HFSVolume *hfs);
+int         hfs_attributes_compare_keys (const HFSPlusAttrKey *key1, const HFSPlusAttrKey *key2);
 
 #endif

@@ -7,10 +7,10 @@
 //
 
 #include "hfs_btree.h"
+#include "output.h"
 #include "hfs_io.h"
 #include "hfs_endian.h"
-#include "hfs_pstruct.h"
-
+#include "output_hfs.h"
 #include <search.h>
 
 hfs_fork_type HFSDataForkType = 0x00;
@@ -28,21 +28,22 @@ ssize_t hfs_btree_init(HFSBTree *tree, const HFSFork *fork)
     tree->fork = *fork;
     
     // Now load up the header node.
-    Buffer buffer = buffer_alloc(128); // Only need ~46.
+    char* buf;
+    INIT_BUFFER(buf, 512);
     
-    size1 = hfs_read_fork_range(&buffer, &tree->fork, sizeof(BTNodeDescriptor), 0);
+    size1 = hfs_read_fork_range(buf, &tree->fork, sizeof(BTNodeDescriptor), 0);
     
-    tree->nodeDescriptor = *( (BTNodeDescriptor*) buffer.data );
+    tree->nodeDescriptor = *( (BTNodeDescriptor*) buf );
     
     if (size1)
         swap_BTNodeDescriptor(&tree->nodeDescriptor);
     
     // If there's a header record, we'll likely want that as well.
     if (tree->nodeDescriptor.numRecords > 0) {
-        buffer_reset(&buffer);
+        memset(buf, 0, malloc_size(buf));
         
-        size2 = hfs_read_fork_range(&buffer, fork, sizeof(BTHeaderRec), sizeof(BTNodeDescriptor));
-        tree->headerRecord = *( (BTHeaderRec*) buffer.data);
+        size2 = hfs_read_fork_range(buf, fork, sizeof(BTHeaderRec), sizeof(BTNodeDescriptor));
+        tree->headerRecord = *( (BTHeaderRec*) buf);
         
         if (size2)
             swap_BTHeaderRec(&tree->headerRecord);
@@ -51,7 +52,7 @@ ssize_t hfs_btree_init(HFSBTree *tree, const HFSFork *fork)
         // Then the remainder of the node is allocation bitmap data for record 3.
     }
     
-    buffer_free(&buffer);
+    FREE_BUFFER(buf);
     
     return (size1 + size2);
 }
@@ -70,19 +71,25 @@ int8_t hfs_btree_get_node (HFSBTreeNode *out_node, const HFSBTree *tree, hfs_nod
     node.nodeNumber     = nodeNumber;
     node.nodeOffset     = node.nodeNumber * node.nodeSize;;
     node.bTree          = *tree;
-    node.buffer         = buffer_alloc(node.nodeSize);
     
     debug("Reading %zu bytes at logical offset %u", node.nodeSize, node.nodeOffset);
     
     ssize_t result = 0;
-    result = hfs_read_fork_range(&node.buffer, &node.bTree.fork, node.nodeSize, node.nodeOffset);
+    char* data;
+    INIT_BUFFER(data, node.nodeSize);
+    
+    result = hfs_read_fork_range(data, &node.bTree.fork, node.nodeSize, node.nodeOffset);
     
     if (result < 0) {
         error("Error reading from fork.");
-        buffer_free(&node.buffer);
+        FREE_BUFFER(data);
         return result;
         
     } else {
+        node.buffer = buffer_alloc(node.nodeSize);
+        buffer_set(&node.buffer, data, malloc_size(data));
+        FREE_BUFFER(data);
+        
         int swap_result = swap_BTreeNode(&node);
         if (swap_result == -1) {
             buffer_free(&node.buffer);

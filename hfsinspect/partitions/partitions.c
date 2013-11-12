@@ -7,41 +7,43 @@
 //
 
 #include "partitions.h"
-#include "range.h"
-#include "hfs_pstruct.h"
+#include "output.h"
 
-bool sniff_and_print(HFSVolume* hfs)
+int partition_load(Volume *vol)
 {
-    if (gpt_test(hfs->vol)) {
-        gpt_load(hfs->vol);
-        gpt_dump(hfs->vol);
+    if (gpt_test(vol)) {
+        if (gpt_load(vol) < 0) {
+            perror("gpt_load");
+            return -1;
+        }
+    
+    } else if (mbr_test(vol)) {
+        if (mbr_load(vol) < 0) {
+            perror("mbr_load");
+            return -1;
+        }
+    
+    } else {
+        return -1;
+    }
+    
+    return 0;
+}
+
+void partition_dump(Volume *vol)
+{
+    if (gpt_test(vol)) {
+        gpt_load(vol);
+        gpt_dump(vol);
         
-    } else if (mbr_test(hfs->vol)) {
-        mbr_load(hfs->vol);
-        mbr_dump(hfs->vol);
-        
-    } else if (cs_sniff(hfs)) {
-        cs_print(hfs);
-        
-    } else if (apm_sniff(hfs)) {
-        apm_print(hfs);
-        
+    } else if (mbr_test(vol)) {
+        mbr_load(vol);
+        mbr_dump(vol);
     } else {
         warning("Unknown disk or partition type.");
-        return false;
+        return;
     }
     
     PrintHeaderString("Parsed Volume");
-    vol_dump(hfs->vol);
-    return true;
-}
-
-int sniff_partitions(const HFSVolume* hfs, range_ptr partitions, int* count)
-{
-    // Check disk type
-    // Call format-specific method to get partition list
-    // Extract ranges
-    // Set reference params for the ranges array and count
-    // Return the number of partitions found.
-    return 0;
+    vol_dump(vol);
 }

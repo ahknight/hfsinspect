@@ -1,5 +1,5 @@
 //
-//  hfs_extents.c
+//  hfs_extent_ops.c
 //  hfsinspect
 //
 //  Created by Adam Knight on 6/4/13.
@@ -7,11 +7,9 @@
 //
 
 #include "hfs_extent_ops.h"
+
 #include "hfs_io.h"
 #include "hfs_btree.h"
-#include "hfs_pstruct.h"
-
-#include <stdio.h>
 
 HFSBTree hfs_get_extents_btree(const HFSVolume *hfs)
 {
@@ -20,7 +18,7 @@ HFSBTree hfs_get_extents_btree(const HFSVolume *hfs)
     static HFSBTree tree;
     if (tree.fork.cnid == 0) {
         debug("Creating extents B-Tree");
-        HFSFork fork = hfsfork_make(hfs, hfs->vh.extentsFile, HFSDataForkType, kHFSExtentsFileID);
+        HFSFork fork = hfsfork_get_special(hfs, kHFSExtentsFileID);
         
         hfs_btree_init(&tree, &fork);
         

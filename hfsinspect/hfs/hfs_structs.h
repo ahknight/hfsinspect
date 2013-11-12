@@ -6,23 +6,21 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <sys/param.h>
-#include <hfs/hfs_format.h>
-#include <sys/mount.h>
-#include <sys/stat.h>
-#include "buffer.h"
-#include "hfs_extentlist.h"
-#include "volume.h"
-
 #ifndef hfsinspect_hfs_structs_h
 #define hfsinspect_hfs_structs_h
 
-typedef u_int8_t    hfs_fork_type;
-typedef u_int32_t   hfs_block;
-typedef u_int64_t   hfs_size;
-typedef u_int32_t   hfs_node_id;
-typedef u_int32_t   hfs_record_id;
-typedef u_int16_t   hfs_record_offset;
+#include "volume.h"
+#include "buffer.h"
+#include "hfs_macos_defs.h"
+
+#include <hfs/hfs_format.h>     //duh
+
+typedef uint8_t    hfs_fork_type;
+typedef uint32_t   hfs_block;
+typedef uint64_t   hfs_size;
+typedef uint32_t   hfs_node_id;
+typedef uint32_t   hfs_record_id;
+typedef uint16_t   hfs_record_offset;
 
 typedef int(*hfs_compare_keys)(const void*, const void*);
 
@@ -86,35 +84,35 @@ struct HFSBTreeNode {
 
 // For volume statistics
 typedef struct Rank {
-    u_int64_t   measure;
+    uint64_t   measure;
     hfs_node_id cnid;
     
 } Rank;
 
 typedef struct ForkSummary {
-    u_int64_t   count;
-    u_int64_t   fragmentedCount;
-    u_int64_t   blockCount;
-    u_int64_t   logicalSpace;
-    u_int64_t   extentRecords;
-    u_int64_t   extentDescriptors;
-    u_int64_t   overflowExtentRecords;
-    u_int64_t   overflowExtentDescriptors;
+    uint64_t   count;
+    uint64_t   fragmentedCount;
+    uint64_t   blockCount;
+    uint64_t   logicalSpace;
+    uint64_t   extentRecords;
+    uint64_t   extentDescriptors;
+    uint64_t   overflowExtentRecords;
+    uint64_t   overflowExtentDescriptors;
     
 } ForkSummary;
 
 typedef struct VolumeSummary {
-    u_int64_t   nodeCount;
-    u_int64_t   recordCount;
-    u_int64_t   fileCount;
-    u_int64_t   folderCount;
-    u_int64_t   aliasCount;
-    u_int64_t   hardLinkFileCount;
-    u_int64_t   hardLinkFolderCount;
-    u_int64_t   symbolicLinkCount;
-    u_int64_t   invisibleFileCount;
-    u_int64_t   emptyFileCount;
-    u_int64_t   emptyDirectoryCount;
+    uint64_t   nodeCount;
+    uint64_t   recordCount;
+    uint64_t   fileCount;
+    uint64_t   folderCount;
+    uint64_t   aliasCount;
+    uint64_t   hardLinkFileCount;
+    uint64_t   hardLinkFolderCount;
+    uint64_t   symbolicLinkCount;
+    uint64_t   invisibleFileCount;
+    uint64_t   emptyFileCount;
+    uint64_t   emptyDirectoryCount;
     
     Rank        largestFiles[10];
     Rank        mostFragmentedFiles[10];
@@ -127,15 +125,15 @@ typedef struct VolumeSummary {
 
 //Patching up a section of the volume header
 union HFSPlusVolumeFinderInfo {
-    u_int8_t 	finderInfo[32];
+    uint8_t 	finderInfo[32];
     struct {
-        u_int32_t   bootDirID;
-        u_int32_t   bootParentID;
-        u_int32_t   openWindowDirID;
-        u_int32_t   os9DirID;
-        u_int32_t   reserved;
-        u_int32_t   osXDirID;
-        u_int64_t   volID;
+        uint32_t   bootDirID;
+        uint32_t   bootParentID;
+        uint32_t   openWindowDirID;
+        uint32_t   os9DirID;
+        uint32_t   reserved;
+        uint32_t   osXDirID;
+        uint64_t   volID;
     };
 };
 typedef union HFSPlusVolumeFinderInfo HFSPlusVolumeFinderInfo;

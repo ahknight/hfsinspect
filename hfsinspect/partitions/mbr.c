@@ -7,34 +7,10 @@
 //
 
 #include "mbr.h"
-#include "hfs_pstruct.h"
-#include "hfs_endian.h"
+#include "output.h"
+#include "_endian.h"
 
 int mbr_load_header(Volume *vol, MBR *mbr);
-
-
-void mbr_print(HFSVolume* hfs, MBR* mbr)
-{
-    PrintHeaderString("Master Boot Record");
-    PrintAttributeString("signature", "%#x", S16(*(u_int16_t*)mbr->signature));
-    
-    FOR_UNTIL(i, 4) {
-        MBRPartition* partition = &mbr->partitions[i];
-        
-        PrintHeaderString("Partition %d", i + 1);
-        PrintUIHex  (partition, status);
-        PrintUI     (partition, first_sector.head);
-        PrintUI     (partition, first_sector.cylinder);
-        PrintUI     (partition, first_sector.sector);
-        PrintUIHex  (partition, type);
-        PrintUI     (partition, last_sector.head);
-        PrintUI     (partition, last_sector.cylinder);
-        PrintUI     (partition, last_sector.sector);
-        PrintUI     (partition, first_sector_lba);
-        PrintUI     (partition, sector_count);
-        _PrintDataLength("(size)", partition->sector_count*hfs->block_size);
-    }
-}
 
 int mbr_load_header(Volume *vol, MBR *mbr)
 {
@@ -121,7 +97,7 @@ int mbr_dump(Volume *vol)
         return -1;
     
     PrintHeaderString("Master Boot Record");
-    PrintAttributeString("signature", "%#x", S16(*(u_int16_t*)mbr->signature));
+    PrintAttributeString("signature", "%#x", bswap16(*(uint16_t*)mbr->signature));
     
     FOR_UNTIL(i, 4) {
         MBRPartition* partition = &mbr->partitions[i];

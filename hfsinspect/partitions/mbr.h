@@ -6,7 +6,6 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "hfs_structs.h"
 #include "volume.h"
 #include "partition_support.h"
 
@@ -105,7 +104,7 @@ static MBRPartitionName mbr_partition_types[] __attribute__((unused)) = {
 
 #pragma mark - Functions
 
-void mbr_print(HFSVolume* hfs, MBR* mbr);
+//void mbr_print(HFSVolume* hfs, MBR* mbr);
 
 /**
  Tests a volume to see if it contains an MBR partition map.

@@ -6,12 +6,34 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <stdio.h>
 #include "apm.h"
-#include "hfs_structs.h"
-#include "hfs_pstruct.h"
+
+#include "_endian.h"
 #include "hfs_io.h"
-#include "hfs_endian.h"
+#include "output.h"
+#include "output_hfs.h"
+
+void swap_APMHeader(APMHeader* record)
+{
+    Convert16(record->signature);
+    Convert16(record->reserved1);
+	Convert32(record->partition_count);
+	Convert32(record->partition_start);
+	Convert32(record->partition_length);
+//    char            name[32];
+//    char            type[32];
+	Convert32(record->data_start);
+	Convert32(record->data_length);
+	Convert32(record->status);
+	Convert32(record->boot_code_start);
+	Convert32(record->boot_code_length);
+	Convert32(record->bootloader_address);
+	Convert32(record->reserved2);
+	Convert32(record->boot_code_entry);
+	Convert32(record->reserved3);
+	Convert32(record->boot_code_checksum);
+//    char            processor_type[16];
+}
 
 int apm_get_header(HFSVolume* hfs, APMHeader* header, unsigned partition_number)
 {

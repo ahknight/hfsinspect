@@ -1,5 +1,5 @@
 //
-//  hfs_extents.h
+//  hfs_extent_ops.h
 //  hfsinspect
 //
 //  Created by Adam Knight on 6/4/13.

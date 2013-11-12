@@ -7,20 +7,22 @@
 //
 
 #include "logging.h"
-#include <signal.h>
+#include <stdarg.h>
+#include <libgen.h>
+#include <sys/param.h>  //MIN/MAX
 
 struct _colorState {
     struct {
-        u_int8_t    red;
-        u_int8_t    green;
-        u_int8_t    blue;
-        u_int8_t    white;
+        uint8_t    red;
+        uint8_t    green;
+        uint8_t    blue;
+        uint8_t    white;
     }           foreground;
     struct {
-        u_int8_t    red;
-        u_int8_t    green;
-        u_int8_t    blue;
-        u_int8_t    white;
+        uint8_t    red;
+        uint8_t    green;
+        uint8_t    blue;
+        uint8_t    white;
     }           background;
 };
 typedef struct _colorState colorState;
@@ -36,7 +38,7 @@ void _print_reset(FILE* f)
     fprintf(f, "\x1b[0m");
 }
 
-void _print_gray(FILE* f, u_int8_t gray, bool background)
+void _print_gray(FILE* f, uint8_t gray, bool background)
 {
     if (_useColor() == false) return;
     // values must be from 0-23.
@@ -44,7 +46,7 @@ void _print_gray(FILE* f, u_int8_t gray, bool background)
     fprintf(f, "\x1b[%u;5;%um", (background?48:38), color);
 }
 
-void _print_color(FILE* f, u_int8_t red, u_int8_t green, u_int8_t blue, bool background)
+void _print_color(FILE* f, uint8_t red, uint8_t green, uint8_t blue, bool background)
 {
     if (_useColor() == false) return;
     // values must be from 0-5.
@@ -145,20 +147,25 @@ void PrintLine(FILE* f, enum LogLevel level, const char* file, const char* funct
     va_start(argp, format);
     
     // "Print" the input format string to a string.
-    char* inputstr;
+    char inputstr[1024];
     if (argp != NULL)
-        vasprintf(&inputstr, format, argp);
+        vsnprintf((char*)&inputstr, 1024, format, argp);
     else
-        inputstr = (char*)format;
+        strlcpy(inputstr, format, 1024);
     
     // Indent the string with the call depth.
     unsigned int depth = stack_depth(40) - 1; // remove our frame
     depth = MIN(depth, 40);
-    char* indent;
-    INIT_STRING(indent, 100);
-    memset(indent, ' ', malloc_size(indent));
+    char indent[1024];
+    
+    // Fill the indent string with spaces.
+    memset(indent, ' ', 1024);
+    
+    // Mark the current depth.
     indent[depth] = '\0';
-    strlcat(indent, inputstr, malloc_size(indent));
+    
+    // Append the text after the indentation.
+    strlcat(indent, inputstr, 1024);
     
     bool showLineInfo = (getenv("DEBUG") != 0);
     char* levelName;
@@ -201,8 +208,5 @@ void PrintLine(FILE* f, enum LogLevel level, const char* file, const char* funct
     _print_reset(f);
     
     // Clean up.
-    FREE_BUFFER(inputstr);
-    FREE_BUFFER(indent);
-    
     va_end(argp);
 }
