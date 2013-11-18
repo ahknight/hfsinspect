@@ -44,6 +44,7 @@ void partition_dump(Volume *vol)
         return;
     }
     
-    PrintHeaderString("Parsed Volume");
+    BeginSection("Parsed Volume");
     vol_dump(vol);
+    EndSection();
 }

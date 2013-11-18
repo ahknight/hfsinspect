@@ -41,7 +41,7 @@ int mbr_test(Volume *vol)
 int mbr_load(Volume *vol)
 {
     MBR mbr;
-    bzero(&mbr, sizeof(MBR));
+    memset(&mbr, 0, sizeof(MBR));
     
     if ( mbr_load_header(vol, &mbr) < 0)
         return -1;
@@ -49,7 +49,7 @@ int mbr_load(Volume *vol)
     FOR_UNTIL(i, 4) {
         if (mbr.partitions[i].type) {
             Volume* v = NULL;
-            MBRPartition p = empty_MBRPartition;
+            MBRPartition p;
             PartitionHint hint = kHintIgnore;
             off_t offset = 0;
             size_t length = 0;
@@ -96,8 +96,8 @@ int mbr_dump(Volume *vol)
     if ( mbr_load_header(vol, mbr) < 0)
         return -1;
     
-    PrintHeaderString("Master Boot Record");
-    PrintAttributeString("signature", "%#x", bswap16(*(uint16_t*)mbr->signature));
+    BeginSection("Master Boot Record");
+    PrintAttribute("signature", "%#x", bswap16(*(uint16_t*)mbr->signature));
     
     FOR_UNTIL(i, 4) {
         MBRPartition* partition = &mbr->partitions[i];
@@ -105,19 +105,22 @@ int mbr_dump(Volume *vol)
         
         type_str = mbr_partition_type_str(partition->type, NULL);
         
-        PrintHeaderString("Partition %d", i + 1);
+        BeginSection("Partition %d", i + 1);
         PrintUIHex  (partition, status);
         PrintUI     (partition, first_sector.head);
         PrintUI     (partition, first_sector.cylinder);
         PrintUI     (partition, first_sector.sector);
-        PrintAttributeString("type", "0x%02X (%s)", partition->type, type_str);
+        PrintAttribute("type", "0x%02X (%s)", partition->type, type_str);
         PrintUI     (partition, last_sector.head);
         PrintUI     (partition, last_sector.cylinder);
         PrintUI     (partition, last_sector.sector);
         PrintUI     (partition, first_sector_lba);
         PrintUI     (partition, sector_count);
         _PrintDataLength("(size)", (partition->sector_count * vol->block_size));
+        EndSection();
     }
+    
+    EndSection();
     
     return 0;
 }

@@ -14,48 +14,6 @@
 #include <hfs/hfs_format.h>
 #include <math.h>
 
-// repeat character
-char* repchar(char c, int count)
-{
-    char* str = malloc( (sizeof(c) * count) + 1);
-    memset(str, c, count);
-    str[count] = '\0';
-    return str;
-}
-
-// repeat wide character
-wchar_t* repwchar(wchar_t c, int count)
-{
-    wchar_t* str = malloc(sizeof(c) * count);
-    memset(str, c, count);
-    str[count] = '\0';
-    return str;
-}
-
-ssize_t format_size(char* out, size_t value, bool metric, size_t length)
-{
-    float divisor = 1024.0;
-    if (metric) divisor = 1000.0;
-    
-    char* sizeNames[] = { "bytes", "KiB", "MiB", "GiB", "TiB", "EiB", "PiB", "ZiB", "YiB" };
-    char* metricNames[] = { "bytes", "KB", "MB", "GB", "TB", "EB", "PB", "ZB", "YB" };
-    
-    long double displaySize = value;
-    int count = 0;
-    while (count < 9) {
-        if (displaySize < divisor) break;
-        displaySize /= divisor;
-        count++;
-    }
-    char* sizeLabel;
-    
-    if (metric) sizeLabel = metricNames[count]; else sizeLabel = sizeNames[count];
-    
-    snprintf(out, length, "%0.2Lf %s", displaySize, sizeLabel);
-    
-    return strlen(out);
-}
-
 /**
  Get a string representation of a block of memory in any reasonable number base.
  @param out A buffer with enough space to hold the output. Pass NULL to get the size to allocate.
@@ -64,12 +22,12 @@ ssize_t format_size(char* out, size_t value, bool metric, size_t length)
  @param length The size of the buffer.
  @return The number of characters written to *out (or that would be written), or -1 on error.
  */
-ssize_t memstr(char* restrict out, uint8_t base, const char* input, size_t length)
+ssize_t memstr(char* restrict out, uint8_t base, const char* input, size_t nbytes, size_t length)
 {
     /* Verify parameters */
     
     // Zero length buffer == zero length result.
-    if (length == 0) return 0;
+    if (nbytes == 0) return 0;
     
     // No source buffer?
     if (input == NULL) { errno = EINVAL; return -1; }
@@ -84,10 +42,13 @@ ssize_t memstr(char* restrict out, uint8_t base, const char* input, size_t lengt
     if (chars_per_byte < 1) chars_per_byte = 1;
     
     // Determine the size of the result string.
-    size_t rlength = (length * chars_per_byte);
+    size_t rlength = (nbytes * chars_per_byte);
     
     // Return the size if the output buffer is empty.
     if (out == NULL) return rlength;
+    
+    // Ensure we have been granted enough space to do this.
+    if (rlength > length) { errno = ENOMEM; return -1; }
     
     
     /* Process the string */
@@ -98,7 +59,7 @@ ssize_t memstr(char* restrict out, uint8_t base, const char* input, size_t lengt
     
     // We build the result string from the tail, so here's the index in that string, starting at the end.
     uint8_t ridx = rlength - 1;
-    for (size_t byte = 0; byte < length; byte++) {
+    for (size_t byte = 0; byte < nbytes; byte++) {
         uint8_t chr = input[byte];      // Grab the current char from the input.
         while (chr != 0 && ridx >= 0) { // Iterate until we're out of input or output.
             uint8_t idx = chr % base;
@@ -150,11 +111,11 @@ void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t 
         if (mode & DUMP_ENCODED) {
             fprintf(file, " ");
             for (size_t c = 0; c < lineMax; c++) {
-                size_t size = memstr(NULL, base, &line[c], 1);
+                size_t size = memstr(NULL, base, &line[c], 1, 0);
                 if (size) {
                     if ((c % width) == 0) fprintf(file, " ");
                     char* group = malloc(size); memset(group, '0', size);
-                    memstr(group, base, &line[c], 1);
+                    memstr(group, base, &line[c], 1, size);
                     fprintf(file, "%s%s", group, ((mode & DUMP_PADDING) ? " " : ""));
                     free(group);
                 } else {

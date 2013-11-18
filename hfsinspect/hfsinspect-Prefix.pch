@@ -22,32 +22,17 @@
 
 #ifndef INIT_BUFFER
 #define INIT_BUFFER(name, size) { \
-    (name) = valloc( (size) ); \
+    (name) = calloc(1, (size) ); \
     if ((name) == NULL) { \
         exit(errno); \
     }; \
-    memset((name), 0, malloc_size((name))); \
-}
-#endif
-
-#ifndef INIT_STRING
-#define INIT_STRING(name, size) { \
-    (name) = malloc( (size) ); \
-    if ( (name) == NULL) { \
-        perror("malloc"); \
-        exit(errno); \
-    }; \
-    memset( (name), '\0', malloc_size( (name) )); \
 }
 #endif
 
 #ifndef FREE_BUFFER
 #define FREE_BUFFER(name)  { \
-    if (malloc_size( (name) )) { \
-        memset( (name), 0, malloc_size( (name) )); \
-        free( (name) ); \
-        (name) = NULL; \
-    } \
+    if (malloc_size( (name) )) memset( (name), 0, malloc_size( (name) )); \
+    free( (name) ); \
+    (name) = NULL; \
 }
 #endif
-

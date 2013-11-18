@@ -12,66 +12,173 @@
 #include "output_hfs.h"
 #include "hfs_btree.h"
 
-#pragma mark Struct Conveniences
+#define ASSERT_PTR(st) if (st == NULL) { errno = EINVAL; return -1; }
 
-HFSFork hfsfork_get_special(const HFSVolume *hfs, hfs_node_id cnid)
+#pragma mark stdio helper
+
+ssize_t fpread(FILE* f, void* buf, size_t nbytes, off_t offset)
 {
-    HFSPlusForkData forkData;
-    
-//	kHFSBadBlockFileID		= 5,	/* File ID of the bad allocation block file */
-//	kHFSStartupFileID		= 7,	/* File ID of the startup file (HFS Plus only) */
+    if ( fseeko(f, offset, SEEK_SET) == 0 )
+        return fread(buf, 1, nbytes, f);
+    else
+        return -1;
+}
 
-    switch (cnid) {
-        case kHFSExtentsFileID:
-            forkData = hfs->vh.extentsFile;
+#pragma mark HFS Volume
+
+ssize_t hfs_read(void* buffer, const HFS *hfs, size_t size, size_t offset)
+{
+    ASSERT_PTR(buffer);
+    ASSERT_PTR(hfs);
+    
+    return vol_read(hfs->vol, buffer, size, offset);
+}
+
+// Block arguments are relative to the volume.
+ssize_t hfs_read_blocks(void* buffer, const HFS *hfs, size_t block_count, size_t start_block)
+{
+    ASSERT_PTR(buffer);
+    ASSERT_PTR(hfs);
+    
+    unsigned ratio = hfs->block_size / hfs->vol->block_size;
+    return vol_read_blocks(hfs->vol, buffer, block_count*ratio, start_block*ratio);
+}
+
+#pragma mark funopen - HFSVolume
+
+typedef struct HFSVolumeCookie {
+    off_t   cursor;
+    HFS     *hfs;
+} HFSVolumeCookie;
+
+int hfs_readfn(void * c, char * buf, int nbytes)
+{
+    HFSVolumeCookie *cookie = (HFSVolumeCookie*)c;
+    off_t offset = cookie->cursor;
+    int bytes = 0;
+    
+    bytes = hfs_read(buf, cookie->hfs, nbytes, offset);
+    if (bytes > 0) cookie->cursor += bytes;
+    
+    return bytes;
+}
+
+fpos_t hfs_seekfn(void * c, fpos_t pos, int mode)
+{
+    HFSVolumeCookie *cookie = (HFSVolumeCookie*)c;
+    
+    switch (mode) {
+        case SEEK_CUR:
+            pos += cookie->cursor;
             break;
-            
-        case kHFSCatalogFileID:
-            forkData = hfs->vh.catalogFile;
-            break;
-            
-//        case kHFSExtentsFileID:
-//            forkData = hfs->vh.;
-//            break;
-            
-        case kHFSAllocationFileID:
-            forkData = hfs->vh.allocationFile;
-            break;
-            
-        case kHFSStartupFileID:
-            forkData = hfs->vh.startupFile;
-            break;
-            
-        case kHFSAttributesFileID:
-            forkData = hfs->vh.attributesFile;
-            break;
+        case SEEK_END:
+            pos = (cookie->hfs->vol->length - pos);
             
         default:
             break;
     }
-    
-    return hfsfork_make(hfs, forkData, HFSDataForkType, cnid);
+    cookie->cursor = pos;
+    return pos;
 }
 
-HFSFork hfsfork_make(const HFSVolume *hfs, const HFSPlusForkData forkData, hfs_fork_type forkType, hfs_node_id cnid)
+int hfs_closefn(void * c)
 {
-    debug("Creating fork for CNID %d and fork %d", cnid, forkType);
+    HFSVolumeCookie *cookie = (HFSVolumeCookie*)c;
+    free(cookie->hfs);
+    free(cookie);
+    return 0;
+}
+
+FILE* fopen_hfs(HFS* hfs)
+{
+    HFSVolumeCookie *cookie = calloc(1, sizeof(HFSVolumeCookie));
+    cookie->hfs = calloc(1, sizeof(HFS));
+    *cookie->hfs = *hfs;
     
-    HFSFork fork;
-    fork.hfs = *hfs;
-    fork.forkData = forkData;
-    fork.forkType = forkType;
-    fork.cnid = cnid;
-    fork.totalBlocks = forkData.totalBlocks;
-    fork.logicalSize = forkData.logicalSize;
+    return funopen(cookie, hfs_readfn, NULL, hfs_seekfn, hfs_closefn);
+}
+
+#pragma mark HFS Fork
+
+int hfsfork_get_special(HFSFork** fork, const HFS *hfs, bt_nodeid_t cnid)
+{
+    ASSERT_PTR(fork);
+    ASSERT_PTR(hfs);
     
-    fork.extents = extentlist_alloc();
-    bool success = hfs_extents_get_extentlist_for_fork(fork.extents, &fork);
-    if (!success) critical("Failed to get extents for new fork!");
+    HFSPlusForkData forkData;
     
-//    if (getenv("DEBUG")) PrintForkExtentsSummary(&fork);
+    switch (cnid) {
+        case kHFSExtentsFileID:
+            //kHFSExtentsFileID		= 3,	/* File ID of the extents file */
+            forkData = hfs->vh.extentsFile;
+            break;
+            
+        case kHFSCatalogFileID:
+            //kHFSCatalogFileID		= 4,	/* File ID of the catalog file */
+            forkData = hfs->vh.catalogFile;
+            break;
+            
+        case kHFSBadBlockFileID:
+            //kHFSBadBlockFileID		= 5,	/* File ID of the bad allocation block file */
+            /*
+             The bad block file is neither a special file nor a user file; this is merely convention used in the extents overflow file.
+             http://dubeiko.com/development/FileSystems/HFSPLUS/tn1150.html#BTrees
+             */
+            return -1;
+            break;
+            
+        case kHFSAllocationFileID: //6
+            //kHFSAllocationFileID		= 6,	/* File ID of the allocation file (HFS Plus only) */
+            forkData = hfs->vh.allocationFile;
+            break;
+            
+        case kHFSStartupFileID: // 7
+            //kHFSStartupFileID		= 7,	/* File ID of the startup file (HFS Plus only) */
+            forkData = hfs->vh.startupFile;
+            break;
+            
+        case kHFSAttributesFileID: // 8
+            //kHFSAttributesFileID		= 8,	/* File ID of the attribute file (HFS Plus only) */
+            forkData = hfs->vh.attributesFile;
+            break;
+            
+        default:
+            return -1;
+            break;
+    }
     
-    return fork;
+    if ( hfsfork_make(fork, hfs, forkData, HFSDataForkType, cnid) < 0 ) {
+        return -1;
+    }
+    
+    return 0;
+}
+
+int hfsfork_make (HFSFork** fork, const HFS *hfs, const HFSPlusForkData forkData, hfs_forktype_t forkType, bt_nodeid_t cnid)
+{
+    ASSERT_PTR(fork);
+    ASSERT_PTR(hfs);
+    
+    HFSFork *f = NULL;
+    INIT_BUFFER(f, sizeof(HFSFork));
+    
+    f->hfs = (HFS*)hfs;
+    f->forkData = forkData;
+    f->forkType = forkType;
+    f->cnid = cnid;
+    f->totalBlocks = forkData.totalBlocks;
+    f->logicalSize = forkData.logicalSize;
+    
+    f->extents = extentlist_make();
+    if ( hfs_extents_get_extentlist_for_fork(f->extents, f) == false) {
+        critical("Failed to get extents for new fork!");
+        FREE_BUFFER(f);
+        return -1;
+    }
+    
+    *fork = f;
+    
+    return 0;
 }
 
 void hfsfork_free(HFSFork *fork)
@@ -79,127 +186,17 @@ void hfsfork_free(HFSFork *fork)
     extentlist_free(fork->extents);
 }
 
-#pragma mark - Volume I/O
-
-ssize_t hfs_read_raw(void* buffer, const HFSVolume *hfs, size_t size, size_t offset)
-{
-    offset += hfs->vol->offset;
-    info("Reading %zu bytes at offset %zd.", size, offset);
-    
-    ssize_t result;
-    result = fseeko(hfs->vol->fp, offset, SEEK_SET);
-    if (result < 0) {
-        perror("fseek");
-        critical("read error");
-    }
-    
-    result = fread(buffer, sizeof(char), size, hfs->vol->fp);
-    if (result < 0) {
-        perror("fread");
-        critical("read error");
-    }
-    
-    return result;
-}
-
-// Block arguments are relative to the volume.
-ssize_t hfs_read_blocks(void* buffer, const HFSVolume *hfs, size_t block_count, size_t start_block)
-{
-    debug("Reading %u blocks starting at block %u", block_count, start_block);
-    debug("volume block size: %lu ; disk block size: %lu", hfs->block_size, hfs->vol->block_size);
-    unsigned ratio = hfs->block_size / hfs->vol->block_size;
-    return vol_read_blocks(hfs->vol, buffer, block_count*ratio, start_block*ratio);
-    
-    if (hfs->block_count && start_block > hfs->block_count) {
-        error("Request for a block past the end of the volume (%d, %d)", start_block, hfs->block_count);
-        errno = ESPIPE; // Illegal seek
-        return -1;
-    }
-    
-    // Trim to fit.
-    if (hfs->block_count && hfs->block_count < (start_block + block_count)) {
-        block_count = hfs->block_count - start_block;
-    }
-    
-    size_t  offset  = start_block * hfs->block_size;
-    size_t  size    = block_count * hfs->block_size;
-    
-//    debug("Reading %zd bytes at volume offset %zd.", size, offset);
-    ssize_t bytes_read = hfs_read_raw(buffer, hfs, size, offset);
-    if (bytes_read == -1) {
-        perror("read blocks error");
-        critical("read error");
-        return bytes_read;
-    }
-//    debug("read %zd bytes", bytes_read);
-    
-    // This layer thinks in blocks. Blocks in, blocks out.
-    int blocks_read = 0;
-    if (bytes_read > 0) {
-        blocks_read = MAX(bytes_read / hfs->block_size, 1);
-    }
-    return blocks_read;
-}
-
-ssize_t hfs_read_range(void* buffer, const HFSVolume *hfs, size_t size, size_t offset)
-{
-    debug("Reading from volume at (%d, %d)", offset, size);
-    
-    return vol_read(hfs->vol, buffer, size, offset);
-    
-    // Range check.
-    if (hfs->length && offset > hfs->length) {
-        error("Request for logical offset larger than the size of the volume (%d, %d)", offset, hfs->length);
-        errno = ESPIPE; // Illegal seek
-        return -1;
-    }
-    
-    if ( hfs->length && (offset + size) > hfs->length ) {
-        size = hfs->length - offset;
-        debug("Adjusted read to (%d, %d)", offset, size);
-    }
-    
-    if (size < 1) {
-        error("Zero-size request.");
-        errno = EINVAL;
-        return -1;
-    }
-    
-    // The range starts somewhere in this block.
-    size_t start_block = (size_t)(offset / hfs->block_size);
-    
-    // Offset of the request within the start block.
-    size_t byte_offset = (offset % hfs->block_size);
-    
-    // Add a block to the read if the offset is not block-aligned.
-    size_t block_count = (size / hfs->block_size) + ( ((offset + size) % hfs->block_size) ? 1 : 0);
-    
-    // Use the calculated size instead of the passed size to account for block alignment.
-    char* read_buffer; INIT_BUFFER(read_buffer, block_count * hfs->block_size);
-    
-    // Fetch the data into a read buffer (it may fail).
-    ssize_t read_blocks = hfs_read_blocks(read_buffer, hfs, block_count, start_block);
-    
-    // On success, copy the output.
-    if (read_blocks) memcpy(buffer, read_buffer + byte_offset, size);
-    
-    // Clean up.
-    FREE_BUFFER(read_buffer);
-    
-    // The amount we added to the buffer.
-    return size;
-}
-
-#pragma mark - Fork I/O
-
 ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, size_t start_block)
 {
+    ASSERT_PTR(buffer);
+    ASSERT_PTR(fork);
+    
     int loopCounter = 0; // Fail-safe.
     
     // Keep the original request around
     range request = make_range(start_block, block_count);
     
-    debug("Reading from CNID %u (%d, %d)", fork->cnid, request.start, request.count);
+//    debug("Reading from CNID %u (%d, %d)", fork->cnid, request.start, request.count);
     
     // Sanity checks
     if (request.count < 1) {
@@ -208,7 +205,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
     }
     
     if ( request.start > fork->totalBlocks ) {
-        error("Request would begin beyond the end of the file (start block: %u; file size: %u blocks.", request.start, fork->totalBlocks);
+        error("Request would begin beyond the end of the file (start block: %u; file size: %u blocks).", request.start, fork->totalBlocks);
         return -1;
     }
     
@@ -219,7 +216,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
     }
     
     char* read_buffer;
-    INIT_BUFFER(read_buffer, block_count * fork->hfs.block_size);
+    INIT_BUFFER(read_buffer, block_count * fork->hfs->block_size);
     ExtentList *extentList = fork->extents;;
     
     // Keep track of what's left to get
@@ -250,9 +247,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
         
         read_range.count = MIN(read_range.count, request.count);
         
-//        debug("Next section: (%zd, %zd)", read_range.start, read_range.count);
-        
-        ssize_t blocks = hfs_read_blocks(read_buffer, &fork->hfs, read_range.count, read_range.start);
+        ssize_t blocks = hfs_read_blocks(read_buffer, fork->hfs, read_range.count, read_range.start);
         if (blocks < 0) {
             FREE_BUFFER(read_buffer);
             perror("read fork");
@@ -265,25 +260,28 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
             
         if (remaining.count == 0) break;
     }
-//    debug("Appending bytes");
-    memcpy(buffer, read_buffer, MIN(block_count, request.count) * fork->hfs.block_size);
+    
+    memcpy(buffer, read_buffer, MIN(block_count, request.count) * fork->hfs->block_size);
     FREE_BUFFER(read_buffer);
     
-//    debug("returning %zd", request.count);
     return request.count;
 }
 
 // Grab a specific byte range of a fork.
 ssize_t hfs_read_fork_range(void* buffer, const HFSFork *fork, size_t size, size_t offset)
 {
-    debug("Reading from fork at (%d, %d)", offset, size);
+    ASSERT_PTR(buffer);
+    ASSERT_PTR(fork);
+    
+    size_t start_block = 0;
+    size_t byte_offset = 0;
+    size_t block_count = 0;
+    char* read_buffer = NULL;
+    ssize_t read_blocks = 0;
     
     // Range check.
     if (offset > fork->logicalSize) {
-        PrintHFSPlusForkData(&fork->forkData, fork->cnid, fork->forkType);
-        error("Request for logical offset larger than the size of the fork (%d, %d)", offset, fork->logicalSize);
-        errno = ESPIPE; // Illegal seek
-        return -1;
+        return 0;
     }
     
     if ( (offset + size) > fork->logicalSize ) {
@@ -292,25 +290,23 @@ ssize_t hfs_read_fork_range(void* buffer, const HFSFork *fork, size_t size, size
     }
     
     if (size < 1) {
-        error("Zero-size request.");
-        errno = EINVAL;
-        return -1;
+        return 0;
     }
     
     // The range starts somewhere in this block.
-    size_t start_block = (size_t)(offset / fork->hfs.block_size);
+    start_block = (size_t)(offset / fork->hfs->block_size);
     
     // Offset of the request within the start block.
-    size_t byte_offset = (offset % fork->hfs.block_size);
+    byte_offset = (offset % fork->hfs->block_size);
     
     // Add a block to the read if the offset is not block-aligned.
-    size_t block_count = (size / fork->hfs.block_size) + ( ((offset + size) % fork->hfs.block_size) ? 1 : 0);
+    block_count = (size / fork->hfs->block_size) + ( ((offset + size) % fork->hfs->block_size) ? 1 : 0);
     
     // Use the calculated size instead of the passed size to account for block alignment.
-    char* read_buffer; INIT_BUFFER(read_buffer, block_count * fork->hfs.block_size);
+    INIT_BUFFER(read_buffer, block_count * fork->hfs->block_size);
     
     // Fetch the data into a read buffer (it may fail).
-    ssize_t read_blocks = hfs_read_fork(read_buffer, fork, block_count, start_block);
+    read_blocks = hfs_read_fork(read_buffer, fork, block_count, start_block);
     
     // On success, append the data to the buffer (consumers: set buffer.offset properly!).
     if (read_blocks) {
@@ -322,4 +318,58 @@ ssize_t hfs_read_fork_range(void* buffer, const HFSFork *fork, size_t size, size
     
     // The amount we added to the buffer.
     return size;
+}
+
+#pragma mark funopen - HFSFork
+
+typedef struct HFSForkCookie {
+    off_t     cursor;
+    HFSFork   *fork;
+} HFSForkCookie;
+
+int fork_readfn(void * c, char * buf, int nbytes)
+{
+    HFSForkCookie *cookie = (HFSForkCookie*)c;
+    off_t offset = cookie->cursor;
+    int bytes = 0;
+    
+    bytes = hfs_read_fork_range(buf, cookie->fork, nbytes, offset);
+    if (bytes > 0) cookie->cursor += bytes;
+    
+    return bytes;
+}
+
+fpos_t fork_seekfn(void * c, fpos_t pos, int mode)
+{
+    HFSForkCookie *cookie = (HFSForkCookie*)c;
+    
+    switch (mode) {
+        case SEEK_CUR:
+            pos += cookie->cursor;
+            break;
+        case SEEK_END:
+            pos = (cookie->fork->logicalSize - pos);
+            
+        default:
+            break;
+    }
+    cookie->cursor = pos;
+    return pos;
+}
+
+int fork_closefn(void * c)
+{
+    HFSForkCookie *cookie = (HFSForkCookie*)c;
+    free(cookie->fork);
+    free(cookie);
+    return 0;
+}
+
+FILE* fopen_hfsfork(HFSFork* fork)
+{
+    HFSForkCookie *cookie = calloc(1, sizeof(HFSForkCookie));
+    cookie->fork = calloc(1, sizeof(HFSFork));
+    *cookie->fork = *fork;
+    
+    return funopen(cookie, fork_readfn, NULL, fork_seekfn, fork_closefn);
 }

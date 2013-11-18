@@ -339,20 +339,20 @@ void swap_HFSPlusAttrRecord(HFSPlusAttrRecord* record)
     }
 }
 
-int swap_BTreeNode(HFSBTreeNode *node)
+int swap_BTreeNode(BTreeNode *node)
 {
-    // node->buffer is a 4-8KB block read from disk in BE format.
+    // node->data is a 4-8KB block read from disk in BE format.
     // Figure out what it is and swap everything that needs swapping.
     // Good luck.
     
     // Check record offset 0 to see if we've done this before (last two bytes of the node). It's a constant 14.
-    uint16_t sentinel = *(uint16_t*)(node->buffer.data + node->bTree.headerRecord.nodeSize - sizeof(uint16_t));
+    uint16_t sentinel = *(uint16_t*)(node->data + node->bTree.headerRecord.nodeSize - sizeof(uint16_t));
     if ( sentinel == 14 ) return 1;
     
     // Verify that this is a node in the first place (swap error protection).
     sentinel = bswap16(sentinel);
     if ( sentinel != 14 ) {
-        debug("Node %u (offset %u) is not a node (sentinel: %u != 14).", node->nodeNumber, node->nodeOffset, sentinel);
+        warning("Node %u (offset %u) is not a node (sentinel: %u != 14).", node->nodeNumber, node->nodeOffset, sentinel);
         errno = EINVAL;
         return -1;
     }
@@ -360,19 +360,19 @@ int swap_BTreeNode(HFSBTreeNode *node)
     /* First, swap things universal to all nodes. */
     
     // Swap node descriptor
-    node->nodeDescriptor = *(BTNodeDescriptor*)(node->buffer.data);
+    node->nodeDescriptor = *(BTNodeDescriptor*)(node->data);
     swap_BTNodeDescriptor(&node->nodeDescriptor);
     
     // Verify this is a valid node (additional protection against swap errors)
     if (node->nodeDescriptor.kind < kBTLeafNode || node->nodeDescriptor.kind > kBTMapNode) {
-        debug("Invalid node kind: %d", node->nodeDescriptor.kind);
+        warning("Invalid node kind: %d", node->nodeDescriptor.kind);
         errno = EINVAL;
         return -1;
     }
     
     // Swap record offsets
     uint16_t numRecords = node->nodeDescriptor.numRecords + 1;  // "+1" gets the free space record.
-    uint16_t *offsets = (uint16_t*)(node->buffer.data + node->bTree.headerRecord.nodeSize - (sizeof(uint16_t) * numRecords));
+    uint16_t *offsets = (uint16_t*)(node->data + node->bTree.headerRecord.nodeSize - (sizeof(uint16_t) * numRecords));
     
     FOR_UNTIL(i, numRecords) offsets[i] = bswap16(offsets[i]);
     
@@ -401,21 +401,18 @@ int swap_BTreeNode(HFSBTreeNode *node)
         int recordID        = lastRecordIndex - offsetID;
         int nextOffsetID    = offsetID - 1;
         
-        HFSBTreeNodeRecord *meta    = &node->records[lastRecordIndex - offsetID];
-        meta->treeCNID              = node->bTree.fork.cnid;
+        BTreeRecord *meta    = &node->records[lastRecordIndex - offsetID];
+        meta->treeCNID              = node->bTree.treeID;
         meta->nodeID                = node->nodeNumber;
         meta->node                  = node;
         meta->recordID              = recordID;
         meta->offset                = offsets[offsetID];
         meta->length                = offsets[nextOffsetID] - offsets[offsetID];
-        meta->record                = node->buffer.data + meta->offset;
+        meta->record                = node->data + meta->offset;
     }
     
-    // Note for branching
-    uint32_t treeID = node->bTree.fork.cnid;
-    
     for (int recordNum = 0; recordNum < node->nodeDescriptor.numRecords; recordNum++) {
-        HFSBTreeNodeRecord *meta = &node->records[recordNum];
+        BTreeRecord *meta = &node->records[recordNum];
 
         if (node->nodeDescriptor.kind == kBTIndexNode || node->nodeDescriptor.kind == kBTLeafNode) {
 /*
@@ -434,7 +431,6 @@ int swap_BTreeNode(HFSBTreeNode *node)
             
             if (node->nodeDescriptor.kind == kBTLeafNode) {
                 variableKeyLength = true;
-                
             } else if (node->nodeDescriptor.kind == kBTIndexNode && node->bTree.headerRecord.attributes & kBTVariableIndexKeysMask) {
                 variableKeyLength = true;
             }
@@ -442,15 +438,14 @@ int swap_BTreeNode(HFSBTreeNode *node)
             if (variableKeyLength) {
                 meta->keyLength = *(uint16_t*)meta->record;
                 meta->keyLength = bswap16(meta->keyLength);
-                
             } else {
                 meta->keyLength = node->bTree.headerRecord.maxKeyLength;
             }
             
-            meta->key = meta->record;
+            meta->key = (BTreeKey*)meta->record;
             
             // Each tree has a different key type.
-            switch (node->bTree.fork.cnid) {
+            switch (meta->treeCNID) {
                 case kHFSCatalogFileID:
                 {
                     if (meta->keyLength < kHFSPlusCatalogKeyMinimumLength) {
@@ -502,13 +497,13 @@ int swap_BTreeNode(HFSBTreeNode *node)
                 }
                    
                 default:
-                    critical("Unhandled tree type: %d", node->bTree.fork.cnid);
+                    critical("Unhandled tree type: %d", meta->treeCNID);
                     break;
             }
             
             if (meta->keyLength % 2) meta->keyLength++; // Round up to an even length.
             
-            meta->value         = meta->key + sizeof(uint16_t) + meta->keyLength;
+            meta->value         = (char*)meta->key + sizeof(uint16_t) + meta->keyLength;
             meta->valueLength   = meta->length - meta->keyLength;
         }
         
@@ -522,7 +517,7 @@ int swap_BTreeNode(HFSBTreeNode *node)
                 
             case kBTLeafNode:
             {
-                switch (node->bTree.fork.cnid) {
+                switch (meta->treeCNID) {
                     case kHFSCatalogFileID:
                     {
                         uint16_t recordKind = *(uint16_t*)meta->value;
@@ -560,7 +555,7 @@ int swap_BTreeNode(HFSBTreeNode *node)
                         
                     default:
                     {
-                        critical("Unknown tree CNID: %d", treeID);
+                        critical("Unknown tree CNID: %d", meta->treeCNID);
                         break;
                     }
                 }

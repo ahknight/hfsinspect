@@ -21,28 +21,32 @@
 
 #pragma mark - Function Declarations
 
+void            die                         (int val, char* format, ...);
+
 void            set_mode                    (int mode);
 void            clear_mode                  (int mode);
 bool            check_mode                  (int mode);
 
 void            usage                       (int status);
-void            show_version                (char* name);
+void            show_version                ();
 
 void            showPathInfo                (void);
-void            showCatalogRecord           (hfs_node_id parent, HFSUniStr255 filename, bool follow);
+void            showCatalogRecord           (bt_nodeid_t parent, HFSUniStr255 filename, bool follow);
 
-int             compare_ranked_files        (const Rank * a, const Rank * b);
-VolumeSummary   generateVolumeSummary       (HFSVolume* hfs);
-void            generateForkSummary         (ForkSummary* forkSummary, const HFSPlusCatalogFile* file, const HFSPlusForkData* fork, hfs_fork_type type);
+int             compare_ranked_files        (const void * a, const void * b);
+VolumeSummary   generateVolumeSummary       (HFS* hfs);
+void            generateForkSummary         (ForkSummary* forkSummary, const HFSPlusCatalogFile* file, const HFSPlusForkData* fork, hfs_forktype_t type);
 
 ssize_t         extractFork                 (const HFSFork* fork, const char* extractPath);
-void            extractHFSPlusCatalogFile   (const HFSVolume *hfs, const HFSPlusCatalogFile* file, const char* extractPath);
+void            extractHFSPlusCatalogFile   (const HFS *hfs, const HFSPlusCatalogFile* file, const char* extractPath);
 
 char*           deviceAtPath                (char*);
 bool            resolveDeviceAndPath        (char* path_in, char* device_out, char* path_out);
 
 
 #pragma mark - Variable Definitions
+
+char            PROGRAM_NAME[PATH_MAX];
 
 const char*     BTreeOptionCatalog          = "catalog";
 const char*     BTreeOptionExtents          = "extents";
@@ -77,20 +81,20 @@ static struct HIOptions {
     char        device_path[PATH_MAX];
     char        file_path[PATH_MAX];
     
-    hfs_node_id record_parent;
+    bt_nodeid_t record_parent;
     char        record_filename[PATH_MAX];
     
-    hfs_node_id cnid;
+    bt_nodeid_t cnid;
     
     char                extract_path[PATH_MAX];
     FILE*               extract_fp;
     HFSPlusCatalogFile  extract_HFSPlusCatalogFile;
-    HFSFork             extract_HFSFork;
+    HFSFork             *extract_HFSFork;
     
-    HFSVolume   hfs;
+    HFS   hfs;
     BTreeTypes  tree_type;
-    HFSBTree    tree;
-    hfs_node_id node_id;
+    BTree    tree;
+    bt_nodeid_t node_id;
 } HIOptions;
 
 #pragma mark - Function Definitions
@@ -132,7 +136,7 @@ void usage(int status)
      -X FILTERARGS, --filter_args=FILTERARGS
                                  pass this argument string to the filter callback
      */
-    char* help = "usage: hfsinspect [-hvjs] [-d file] [-V volumepath] [ [-b btree] [-n nodeid] ] [-p path] [-P absolutepath] [-F parent:name] [-o file] [--version] [path] \n\
+    char* help = "[-hvjs] [-d file] [-V volumepath] [ [-b btree] [-n nodeid] ] [-p path] [-P absolutepath] [-F parent:name] [-o file] [--version] [path] \n\
 \n\
 SOURCES: \n\
     hfsinspect will use the root filesystem by default, or the filesystem containing a target file in some cases. If you wish to\n\
@@ -166,14 +170,14 @@ ENVIRONMENT: \n\
     Set DEBUG to be overwhelmed with useless data. \n\
 \n\
 ";
-    fprintf(stderr, "%s", help);
+    fprintf(stderr, "usage: %s %s", PROGRAM_NAME, help);
     exit(status);
 }
 
-void show_version(char* name)
+void show_version()
 {
     debug("Version requested.");
-    fprintf(stdout, "%s %s\n", name, "1.0");
+    fprintf(stdout, "%s %s\n", PROGRAM_NAME, "1.0");
     exit(0);
 }
 
@@ -188,19 +192,17 @@ void showPathInfo(void)
     
     char* file_path = strdup(HIOptions.file_path);
     char* segment = NULL;
-    char* last_segment = NULL;
+    char last_segment[PATH_MAX] = "";
     
     HFSPlusCatalogFile *fileRecord = NULL;
     uint32_t parentID = kHFSRootFolderID, last_parentID = 0;
-//    HFSUniStr255 hfs_str;
     
     while ( (segment = strsep(&file_path, "/")) != NULL ) {
         debug("Segment: %d:%s", parentID, segment);
-        if (last_segment != NULL) FREE_BUFFER(last_segment);
-        last_segment = strdup(segment);
+        strlcpy(last_segment, segment, PATH_MAX);
         last_parentID = parentID;
         
-        HFSBTreeNode node;
+        BTreeNode* node;
         uint32_t recordID = 0;
         
         HFSPlusCatalogKey key;
@@ -211,12 +213,11 @@ void showPathInfo(void)
         
         if (result) {
             debug("Record found:");
-//            hfs_str = strtohfsuc(segment);
             
-            debug("%s: parent: %d (node %d; record %d)", segment, parentID, node.nodeNumber, recordID);
+            debug("%s: parent: %d (node %d; record %d)", segment, parentID, node->nodeNumber, recordID);
             if (strlen(segment) == 0) continue;
             
-            int kind = hfs_get_catalog_leaf_record(&key, &catalogRecord, &node, recordID);
+            int kind = hfs_get_catalog_leaf_record(&key, &catalogRecord, node, recordID);
             switch (kind) {
                 case kHFSPlusFolderRecord:
                 {
@@ -242,7 +243,7 @@ void showPathInfo(void)
                     break;
             }
         } else {
-            critical("Path segment not found: %d:%s", parentID, segment);
+            die(1, "Path segment not found: %d:%s", parentID, segment);
             
         }
         
@@ -257,13 +258,14 @@ void showPathInfo(void)
     }
 }
 
-void showCatalogRecord(hfs_node_id parent, HFSUniStr255 filename, bool follow)
+void showCatalogRecord(bt_nodeid_t parent, HFSUniStr255 filename, bool follow)
 {
-    wchar_t* filename_str = hfsuctowcs(&filename);
+    hfs_wc_str filename_str;
+    hfsuctowcs(filename_str, &filename);
     
     debug("Finding catalog record for %d:%ls", parent, filename_str);
     
-    HFSBTreeNode node;
+    BTreeNode* node;
     uint32_t recordID = 0;
     
     int8_t found = hfs_catalog_find_record(&node, &recordID, &HIOptions.hfs, parent, filename);
@@ -272,12 +274,11 @@ void showCatalogRecord(hfs_node_id parent, HFSUniStr255 filename, bool follow)
         HFSPlusCatalogKey record_key;
         HFSPlusCatalogRecord catalogRecord;
         
-        int type = hfs_get_catalog_leaf_record(&record_key, &catalogRecord, &node, recordID);
+        int type = hfs_get_catalog_leaf_record(&record_key, &catalogRecord, node, recordID);
         
         if (type == kHFSPlusFileThreadRecord || type == kHFSPlusFolderThreadRecord) {
             if (follow) {
                 debug("Following thread for %d:%ls", parent, filename_str);
-                FREE_BUFFER(filename_str);
                 showCatalogRecord(catalogRecord.catalogThread.parentID, catalogRecord.catalogThread.nodeName, follow);
                 return;
                 
@@ -285,7 +286,7 @@ void showCatalogRecord(hfs_node_id parent, HFSUniStr255 filename, bool follow)
                 if (type == kHFSPlusFolderThreadRecord && check_mode(HIModeListFolder)) {
                     PrintFolderListing(record_key.parentID);
                 } else {
-                    PrintNodeRecord(&node, recordID);
+                    PrintNodeRecord(node, recordID);
                 }
             }
             
@@ -301,16 +302,16 @@ void showCatalogRecord(hfs_node_id parent, HFSUniStr255 filename, bool follow)
             }
             
             // Display record
-            PrintNodeRecord(&node, recordID);
+            PrintNodeRecord(node, recordID);
             
             // Set extract file
-            HIOptions.extract_HFSPlusCatalogFile = *(HFSPlusCatalogFile*)node.records[recordID].value;
+            HIOptions.extract_HFSPlusCatalogFile = *(HFSPlusCatalogFile*)node->records[recordID].value;
             
         } else if (type == kHFSPlusFolderRecord) {
             if (check_mode(HIModeListFolder)) {
                 PrintFolderListing(catalogRecord.catalogFolder.folderID);
             } else {
-                PrintNodeRecord(&node, recordID);
+                PrintNodeRecord(node, recordID);
             }
             
         } else {
@@ -320,161 +321,138 @@ void showCatalogRecord(hfs_node_id parent, HFSUniStr255 filename, bool follow)
     } else {
         error("Record not found: %d:%ls", parent, filename_str);
     }
-    
-    FREE_BUFFER(filename_str);
 }
 
-int compare_ranked_files(const Rank * a, const Rank * b)
+int compare_ranked_files(const void * a, const void * b)
 {
-    int result = -1;
+    const Rank *A = (Rank*)a;
+    const Rank *B = (Rank*)b;
     
-    if (a->measure == b->measure) {
-        result = 0;
-    } else if (a->measure > b->measure) result = 1;
+    int result = cmp(A->measure, B->measure);
     
     return result;
 }
 
-VolumeSummary generateVolumeSummary(HFSVolume* hfs)
+VolumeSummary generateVolumeSummary(HFS* hfs)
 {
     /*
      Walk the leaf catalog nodes and gather various stats about the volume as a whole.
      */
     
-    VolumeSummary summary;
-    memset(&summary, 0, sizeof(summary));
+    VolumeSummary summary = {0};
     
-    HFSBTree catalog = hfs_get_catalog_btree(hfs);
-    uint32_t cnid = catalog.headerRecord.firstLeafNode;
+    BTree catalog = {0};
+    hfs_get_catalog_btree(&catalog, hfs);
+    hfs_cnid_t cnid = catalog.headerRecord.firstLeafNode;
     
     while (1) {
-        HFSBTreeNode node;
-        int8_t result = hfs_btree_get_node(&node, &catalog, cnid);
-        if (result < 0) {
+        BTreeNode* node = NULL;
+        if ( btree_get_node(&node, &catalog, cnid) < 0) {
             perror("get node");
-            critical("There was an error fetching node %d", cnid);
+            die(1, "There was an error fetching node %d", cnid);
         }
         
         // Process node
         debug("Processing node %d", cnid); summary.nodeCount++;
-        for (unsigned recNum = 0; recNum < node.nodeDescriptor.numRecords; recNum++) {
-            HFSPlusCatalogRecord record = {0};
-            HFSPlusCatalogKey key = {0};
-            
-            // fileCount, folderCount
-            uint8_t type = hfs_get_catalog_leaf_record(&key, &record, &node, recNum);
-            if (type < 0) {
-                critical("Error fetching record %u of node %u", recNum, node.nodeNumber);
-                exit(1);
-            }
+        
+        FOR_UNTIL(recNum, node->nodeDescriptor.numRecords) {
             
             summary.recordCount++;
             
-            switch (type) {
+            HFSPlusCatalogRecord* record = (HFSPlusCatalogRecord*)node->records[recNum].value;
+            switch (record->record_type) {
                 case kHFSPlusFileRecord:
                 {
                     summary.fileCount++;
                     
-                    HFSPlusCatalogFile *file = &record.catalogFile;
+                    HFSPlusCatalogFile *file = &record->catalogFile;
                     
                     // hard links
-                    if (hfs_catalog_record_is_file_hard_link(&record)) { summary.hardLinkFileCount++; continue; }
-                    if (hfs_catalog_record_is_directory_hard_link(&record)) { summary.hardLinkFolderCount++; continue; }
+                    if (hfs_catalog_record_is_file_hard_link(record)) { summary.hardLinkFileCount++; continue; }
+                    if (hfs_catalog_record_is_directory_hard_link(record)) { summary.hardLinkFolderCount++; continue; }
                     
                     // symlink
-                    if (hfs_catalog_record_is_symbolic_link(&record)) { summary.symbolicLinkCount++; continue; }
+                    if (hfs_catalog_record_is_symbolic_link(record)) { summary.symbolicLinkCount++; continue; }
                     
                     // alias
-                    if (hfs_catalog_record_is_alias(&record)) { summary.aliasCount++; continue; }
+                    if (hfs_catalog_record_is_alias(record)) { summary.aliasCount++; continue; }
                     
                     // invisible
                     if (file->userInfo.fdFlags & kIsInvisible) { summary.invisibleFileCount++; continue; }
                     
                     // file sizes
-                    if (file->dataFork.logicalSize == 0 && file->resourceFork.logicalSize == 0) {
-                        summary.emptyFileCount++;
-                        continue;
-                        
-                    } else {
-                        if (file->dataFork.logicalSize) {
-                            generateForkSummary(&summary.dataFork, file, &file->dataFork, HFSDataForkType);
-                        }
-                        
-                        if (file->resourceFork.logicalSize) {
-                            generateForkSummary(&summary.resourceFork, file, &file->resourceFork, HFSResourceForkType);
-                        }
-                        
-                        size_t fileSize = file->dataFork.logicalSize + file->resourceFork.logicalSize;
-                        
-                        if (summary.largestFiles[0].measure < fileSize) {
-                            summary.largestFiles[0].measure = fileSize;
-                            summary.largestFiles[0].cnid = file->fileID;
-                            qsort(summary.largestFiles, 10, sizeof(Rank), (int(*)(const void*, const void*))compare_ranked_files);
-                        }
-                        
-                        break;
+                    if (file->dataFork.logicalSize == 0 && file->resourceFork.logicalSize == 0) { summary.emptyFileCount++; continue; }
+                    
+                    if (file->dataFork.logicalSize)
+                        generateForkSummary(&summary.dataFork, file, &file->dataFork, HFSDataForkType);
+                    
+                    if (file->resourceFork.logicalSize)
+                        generateForkSummary(&summary.resourceFork, file, &file->resourceFork, HFSResourceForkType);
+                    
+                    size_t fileSize = file->dataFork.logicalSize + file->resourceFork.logicalSize;
+                    
+                    if (summary.largestFiles[0].measure < fileSize) {
+                        summary.largestFiles[0].measure = fileSize;
+                        summary.largestFiles[0].cnid = file->fileID;
+                        qsort(summary.largestFiles, 10, sizeof(Rank), compare_ranked_files);
                     }
                     
-                case kHFSPlusFolderRecord:
-                    {
-                        HFSPlusCatalogFolder *folder = &record.catalogFolder;
-                        
-                        if (folder->valence == 0) {
-                            summary.emptyDirectoryCount++;
-                        }
-                        
-                        // folder
-                        summary.folderCount++;
-
-                        break;
-                    }
-                    
-                default:
-                    if (type < 1 || type > 4) {
-                        warning("Unknown record type: %d", type);
-                    }
                     break;
                 }
                     
+                case kHFSPlusFolderRecord:
+                {
+                    summary.folderCount++;
+                    
+                    HFSPlusCatalogFolder *folder = &record->catalogFolder;
+                    if (folder->valence == 0) summary.emptyDirectoryCount++;
+                    
+                    break;
+                }
+                    
+                default:
+                    break;
             }
             
         }
-        // Follow link
         
-        cnid = node.nodeDescriptor.fLink;
+        // Follow link
+        cnid = node->nodeDescriptor.fLink;
         if (cnid == 0) { break; } // End Of Line
         
-        static int count = 0;
-        static unsigned iter_size = 0;
+        // Console Status
+        static int count = 0; // count of records so far
+        static unsigned iter_size = 0; // update the status after this many records
         if (iter_size == 0) {
             iter_size = (catalog.headerRecord.leafRecords/100000);
             if (iter_size == 0) iter_size = 100;
         }
 
-        count += node.nodeDescriptor.numRecords;
-//        if (count >= 1000000) break;
+        count += node->nodeDescriptor.numRecords;
+//        if (count >= 100000) break;
         
         if ((count % iter_size) == 0) {
-            // Update
+            // Update status
             size_t space = summary.dataFork.logicalSpace + summary.resourceFork.logicalSpace;
-            char size[128];
+            char size[128] = {0};
             (void)format_size(size, space, false, 128);
             
-            fprintf(stdout, "\x1b[G%0.2f%% (files: %llu; directories: %llu; size: %s)",
-                    (float)count / (float)catalog.headerRecord.leafRecords * 100.,
+            fprintf(stdout, "\r%0.2f%% (files: %llu; directories: %llu; size: %s)",
+                    ((float)count / (float)catalog.headerRecord.leafRecords) * 100.,
                     summary.fileCount,
                     summary.folderCount,
                     size
                     );
             fflush(stdout);
         }
-    
+        
+        btree_free_node(node);
     }
     
     return summary;
 }
 
-void generateForkSummary(ForkSummary* forkSummary, const HFSPlusCatalogFile* file, const HFSPlusForkData* fork, hfs_fork_type type)
+void generateForkSummary(ForkSummary* forkSummary, const HFSPlusCatalogFile* file, const HFSPlusForkData* fork, hfs_forktype_t type)
 {
     forkSummary->count++;
     
@@ -489,8 +467,12 @@ void generateForkSummary(ForkSummary* forkSummary, const HFSPlusCatalogFile* fil
         if (fork->extents[i].blockCount > 0) forkSummary->extentDescriptors++; else break;
     }
     
-    HFSFork hfsfork = hfsfork_make(&HIOptions.hfs, *fork, type, file->fileID);
-    ExtentList *extents = hfsfork.extents;
+    HFSFork *hfsfork;
+    if ( hfsfork_make(&hfsfork, &HIOptions.hfs, *fork, type, file->fileID) < 0 ) {
+        die(1, "Could not create fork reference for fileID %u", file->fileID);
+    }
+        
+    ExtentList *extents = hfsfork->extents;
     
     unsigned counter = 1;
     
@@ -505,75 +487,89 @@ void generateForkSummary(ForkSummary* forkSummary, const HFSPlusCatalogFile* fil
         }
     }
     
-    hfsfork_free(&hfsfork);
+    hfsfork_free(hfsfork);
 }
 
 ssize_t extractFork(const HFSFork* fork, const char* extractPath)
 {
     print("Extracting fork to %s", extractPath);
-    PrintHFSPlusForkData(&fork->forkData, fork->cnid, fork->forkType);
+//    PrintHFSPlusForkData(&fork->forkData, fork->cnid, fork->forkType);
     
-    FILE* f = fopen(extractPath, "w");
-    if (f == NULL) {
-        perror("open");
-        return -1;
+    // Open output stream
+    FILE* f_out = fopen(extractPath, "w");
+    if (f_out == NULL) {
+        die(1, "could not open %s", extractPath);
     }
+    
+    FILE* f_in = fopen_hfsfork((HFSFork*)fork);
+    fseeko(f_in, 0, SEEK_SET);
     
     off_t offset        = 0;
-    size_t chunkSize    = fork->hfs.block_size*1024;
+    size_t chunkSize    = fork->hfs->block_size*1024;
     char* chunk         = malloc(chunkSize);
+    ssize_t nbytes      = 0;
     
-    while ( offset < fork->logicalSize ) {
-        info("Remaining: %zu bytes", fork->logicalSize - offset);
-        
-        memset(chunk, 0, chunkSize);
-        
-        ssize_t size = hfs_read_fork_range(chunk, fork, chunkSize, offset);
-        if (size < 1) {
-            perror("extractFork");
-            critical("Read error while extracting range (%llu, %zu)", offset, chunkSize);
-            return -1;
-        } else {
-            fwrite(chunk, sizeof(char), size, f);
-            offset += size;
+    size_t totalBytes, bytes;
+    char totalStr[100] = {0}, bytesStr[100] = {0};
+    totalBytes = fork->logicalSize;
+    bytes = 0;
+    format_size(totalStr, totalBytes, 0, 100);
+    format_size(bytesStr, bytes, 0, 100);
+    
+    do {
+        nbytes = fread(chunk, sizeof(char), chunkSize, f_in);
+        if (nbytes) {
+            nbytes = fwrite(chunk, sizeof(char), nbytes, f_out);
         }
-    }
+        bytes += nbytes;
+        format_size(bytesStr, bytes, 0, 100);
+        fprintf(stdout, "\r%s of %s copied", bytesStr, totalStr);
+        fflush(stdout);
+        
+    } while (nbytes > 0);
     
-    fflush(f);
-    fclose(f);
+    fflush(f_out);
+    fclose(f_out);
+    fclose(f_in);
     
     FREE_BUFFER(chunk);
     
+    print("Done.");
     return offset;
 }
 
-void extractHFSPlusCatalogFile(const HFSVolume *hfs, const HFSPlusCatalogFile* file, const char* extractPath)
+void extractHFSPlusCatalogFile(const HFS *hfs, const HFSPlusCatalogFile* file, const char* extractPath)
 {
     if (file->dataFork.logicalSize > 0) {
-        HFSFork fork = hfsfork_make(hfs, file->dataFork, HFSDataForkType, file->fileID);
-        ssize_t size = extractFork(&fork, extractPath);
+        HFSFork *fork = NULL;
+        if ( hfsfork_make(&fork, hfs, file->dataFork, HFSDataForkType, file->fileID) < 0 ) {
+            die(1, "Could not create fork for fileID %u", file->fileID);
+        }
+        ssize_t size = extractFork(fork, extractPath);
         if (size < 0) {
             perror("extract");
-            critical("Extract data fork failed.");
+            die(1, "Extract data fork failed.");
         }
-        hfsfork_free(&fork);
+        hfsfork_free(fork);
     }
     if (file->resourceFork.logicalSize > 0) {
         char* outputPath;
-        INIT_STRING(outputPath, FILENAME_MAX);
+        INIT_BUFFER(outputPath, FILENAME_MAX);
         ssize_t size;
         size = strlcpy(outputPath, extractPath, sizeof(outputPath));
-        if (size < 1) critical("Could not create destination filename.");
+        if (size < 1) die(1, "Could not create destination filename.");
         size = strlcat(outputPath, ".rsrc", sizeof(outputPath));
-        if (size < 1) critical("Could not create destination filename.");
+        if (size < 1) die(1, "Could not create destination filename.");
         
-        HFSFork fork = hfsfork_make(hfs, file->resourceFork, HFSResourceForkType, file->fileID);
-        size = extractFork(&fork, extractPath);
-        if (size < 0) {
-            perror("extract");
-            critical("Extract resource fork failed.");
-        }
-        hfsfork_free(&fork);
+        HFSFork *fork = NULL;
+        if ( hfsfork_make(&fork, hfs, file->resourceFork, HFSResourceForkType, file->fileID) < 0 )
+            die(1, "Could not create fork for fileID %u", file->fileID);
+        
+        size = extractFork(fork, extractPath);
+        if (size < 0) die(1, "Extract resource fork failed.");
+        
+        hfsfork_free(fork);
+        
         FREE_BUFFER(outputPath);
     }
     // TODO: Merge forks, set attributes ... essentially copy it. Maybe extract in AppleSingle/Double/MacBinary format?
@@ -598,7 +594,7 @@ bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
     char* path = realpath(path_in, NULL);
     if (path == NULL) {
         perror("realpath");
-        critical("Target not found: %s", path_in);
+        die(1, "Target not found: %s", path_in);
         return false;
     }
     
@@ -639,48 +635,72 @@ bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
     return true;
 }
 
+void die(int val, char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    char str[1024];
+    vsnprintf(str, 1024, format, args);
+    va_end(args);
+    
+    if (errno > 0) perror(str);
+    
+    error(str);
+    
+    exit(val);
+}
+
 void loadBTree()
 {
     // Load the tree
-    if (HIOptions.tree_type == BTreeTypeCatalog)
-        HIOptions.tree = hfs_get_catalog_btree(&HIOptions.hfs);
+    if (HIOptions.tree_type == BTreeTypeCatalog) {
+        if ( hfs_get_catalog_btree(&HIOptions.tree, &HIOptions.hfs) < 0)
+            die(1, "Could not get Catalog BTree!");
     
-    else if (HIOptions.tree_type == BTreeTypeExtents)
-        HIOptions.tree = hfs_get_extents_btree(&HIOptions.hfs);
+    } else if (HIOptions.tree_type == BTreeTypeExtents) {
+        if ( hfs_get_extents_btree(&HIOptions.tree, &HIOptions.hfs) < 0)
+            die(1, "Could not get Extents BTree!");
     
-    else if (HIOptions.tree_type == BTreeTypeAttributes)
-        HIOptions.tree = hfs_get_attribute_btree(&HIOptions.hfs);
+    } else if (HIOptions.tree_type == BTreeTypeAttributes) {
+        if ( hfs_get_attribute_btree(&HIOptions.tree, &HIOptions.hfs) < 0)
+            die(1, "Could not get Attribute BTree!");
     
-    else if (HIOptions.tree_type == BTreeTypeHotfile) {
-        HFSBTreeNode node;
-        hfs_record_id recordID;
-        hfs_node_id parentfolder = kHFSRootFolderID;
+    } else if (HIOptions.tree_type == BTreeTypeHotfile) {
+        BTreeNode* node = NULL;
+        bt_recordid_t recordID = 0;
+        bt_nodeid_t parentfolder = kHFSRootFolderID;
         HFSUniStr255 name = wcstohfsuc(L".hotfiles.btree");
         int found = hfs_catalog_find_record(&node, &recordID, &HIOptions.hfs, parentfolder, name);
         if (found != 1) {
             error("Hotfiles btree not found. Target must be a hard drive with a copy of Mac OS X that has successfully booted to create this file (it will not be present on SSDs).");
             exit(1);
         }
-        HFSPlusCatalogRecord* record = (HFSPlusCatalogRecord*)node.records[recordID].value;
-        HFSFork fork = hfsfork_make(&HIOptions.hfs, record->catalogFile.dataFork, 0x00, record->catalogFile.fileID);
+        HFSPlusCatalogRecord* record = (HFSPlusCatalogRecord*)node->records[recordID].value;
+        HFSFork *fork = NULL;
+        if ( hfsfork_make(&fork, &HIOptions.hfs, record->catalogFile.dataFork, 0x00, record->catalogFile.fileID) < 0 ) {
+            die(1, "Could not create fork for fileID %u", record->catalogFile.fileID);
+        }
         
-        int result = hfs_btree_init(&HIOptions.tree, &fork);
+        int result = btree_init(&HIOptions.tree, fork);
         if (result < 1) {
             error("Error initializing hotfiles btree.");
             exit(1);
         }
         
     } else {
-        critical("Unsupported tree: %s", HIOptions.tree_type);
+        die(1, "Unsupported tree: %s", HIOptions.tree_type);
     }
 }
 
 int main (int argc, char* const *argv)
 {
+    strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
     
     if (argc == 1) usage(1);
     
     setlocale(LC_ALL, "");
+    
+    DEBUG = getenv("DEBUG");
     
 #pragma mark Process Options
     
@@ -722,7 +742,7 @@ int main (int argc, char* const *argv)
                 
             case 'l': set_mode(HIModeListFolder); break;
                 
-            case 'Z': show_version(basename(argv[0])); break;       // Exits
+            case 'Z': show_version(); break;       // Exits
                 
             case 'h': usage(0); break;                              // Exits
                 
@@ -847,7 +867,7 @@ OPEN:
             // If the device is busy, see if we can use the raw disk instead (and aren't already).
             if (strstr(HIOptions.device_path, "/dev/disk") != NULL) {
                 char* newDevicePath;
-                INIT_STRING(newDevicePath, PATH_MAX + 1);
+                INIT_BUFFER(newDevicePath, PATH_MAX + 1);
                 strlcat(newDevicePath, "/dev/rdisk", PATH_MAX);
                 strlcat(newDevicePath, &HIOptions.device_path[9], PATH_MAX);
                 info("Device %s busy. Trying the raw disk instead: %s", HIOptions.device_path, newDevicePath);
@@ -879,8 +899,7 @@ OPEN:
     vol = hfs_find(vol);
     if (vol == NULL) {
         // No HFS Plus volumes found.
-        critical("No HFS+ filesystems found.");
-        exit(1);
+        die(1, "No HFS+ filesystems found.");
     }
     
     if (hfs_attach(&HIOptions.hfs, vol) < 0) {
@@ -895,8 +914,7 @@ OPEN:
     if (check_mode(HIModeExtractFile)) {
         char* dir = strdup(dirname(HIOptions.extract_path));
         if ( !strlen(dir) ) {
-            error("Output file directory does not exist: %s", dir);
-            exit(1);
+            die(1, "Output file directory does not exist: %s", dir);
         }
         
         struct stat dirstat = {0};
@@ -908,6 +926,7 @@ OPEN:
         
         uid = dirstat.st_uid;
         gid = dirstat.st_gid;
+        free(dir);
     }
 
 #pragma mark Drop Permissions
@@ -915,8 +934,8 @@ OPEN:
     // If we're root, drop down.
     if (geteuid() == 0) {
         debug("Dropping privs");
-        if (setegid(gid) != 0) critical("Failed to drop group privs.");
-        if (seteuid(uid) != 0) critical("Failed to drop user privs.");
+        if (setegid(gid) != 0) die(1, "Failed to drop group privs.");
+        if (seteuid(uid) != 0) die(1, "Failed to drop user privs.");
         info("Was running as root.  Now running as %u/%u.", geteuid(), getegid());
     }
     
@@ -951,8 +970,14 @@ OPEN:
             if (HIOptions.hfs.vh.journalInfoBlock != 0) {
                 JournalInfoBlock block = {0};
                 bool success = hfs_get_JournalInfoBlock(&block, &HIOptions.hfs);
-                if (!success) critical("Could not get the journal info block!");
+                if (!success) die(1, "Could not get the journal info block!");
                 PrintJournalInfoBlock(&block);
+                
+                journal_header header = {0};
+                success = hfs_get_journalheader(&header, block, &HIOptions.hfs);
+                if (!success) die(1, "Could not get the journal header!");
+                PrintJournalHeader(&header);
+                
             } else {
                 warning("Consistency error: volume attributes indicate it is journaled but the journal info block is empty!");
             }
@@ -989,24 +1014,24 @@ OPEN:
         
         loadBTree();
         
-        if (HIOptions.tree.fork.cnid == kHFSCatalogFileID) {
-            PrintHeaderString("Catalog B-Tree Header");
+        if (HIOptions.tree.treeID == kHFSCatalogFileID) {
+            BeginSection("Catalog B-Tree Header");
             
-        } else if (HIOptions.tree.fork.cnid == kHFSExtentsFileID) {
-            PrintHeaderString("Extents B-Tree Header");
+        } else if (HIOptions.tree.treeID == kHFSExtentsFileID) {
+            BeginSection("Extents B-Tree Header");
             
-        } else if (HIOptions.tree.fork.cnid == kHFSAttributesFileID) {
-            PrintHeaderString("Attributes B-Tree Header");
+        } else if (HIOptions.tree.treeID == kHFSAttributesFileID) {
+            BeginSection("Attributes B-Tree Header");
             
         } else if (HIOptions.tree_type == BTreeTypeHotfile) {
-            PrintHeaderString("Hotfile B-Tree Header");
+            BeginSection("Hotfile B-Tree Header");
             
         } else {
-            critical("Unknown tree type: %d", HIOptions.tree_type);
-            return 1;
+            die(1, "Unknown tree type: %d", HIOptions.tree_type);
         }
         
         PrintTreeNode(&HIOptions.tree, 0);
+        EndSection();
     }
     
     // Show a B-Tree node by ID
@@ -1016,20 +1041,19 @@ OPEN:
         loadBTree();
         
         if (HIOptions.tree_type == BTreeTypeCatalog) {
-            PrintHeaderString("Catalog B-Tree Node %d", HIOptions.node_id);
+            BeginSection("Catalog B-Tree Node %d", HIOptions.node_id);
             
         } else if (HIOptions.tree_type == BTreeTypeExtents) {
-            PrintHeaderString("Extents B-Tree Node %d", HIOptions.node_id);
+            BeginSection("Extents B-Tree Node %d", HIOptions.node_id);
             
         } else if (HIOptions.tree_type == BTreeTypeAttributes) {
-            PrintHeaderString("Attributes B-Tree Node %d", HIOptions.node_id);
+            BeginSection("Attributes B-Tree Node %d", HIOptions.node_id);
             
         } else if (HIOptions.tree_type == BTreeTypeHotfile) {
-            PrintHeaderString("Hotfile B-Tree Node %d", HIOptions.node_id);
+            BeginSection("Hotfile B-Tree Node %d", HIOptions.node_id);
             
         } else {
-            critical("Unknown tree type: %s", HIOptions.tree_type);
-            return 1;
+            die(1, "Unknown tree type: %s", HIOptions.tree_type);
         }
         
         bool showHex = 0;
@@ -1038,11 +1062,14 @@ OPEN:
             size_t length = HIOptions.tree.headerRecord.nodeSize;
             off_t offset = length * HIOptions.node_id;
             char* buf = malloc(length);
-            hfs_read_fork_range(buf, &HIOptions.tree.fork, length, offset);
+            fpread(HIOptions.tree.fp, buf, length, offset);
             VisualizeData(buf, length);
+            
         } else {
             PrintTreeNode(&HIOptions.tree, HIOptions.node_id);
         }
+        
+        EndSection();
         
     }
     
@@ -1050,8 +1077,10 @@ OPEN:
 
     // Extract any found files (not complete; FIXME: dropping perms breaks right now)
     if (check_mode(HIModeExtractFile)) {
-        if (HIOptions.extract_HFSFork.cnid == 0 && HIOptions.tree.fork.cnid != 0) {
-            HIOptions.extract_HFSFork = HIOptions.tree.fork;
+        if (HIOptions.extract_HFSFork == NULL && HIOptions.tree.treeID != 0) {
+            HFSFork *fork;
+            hfsfork_get_special(&fork, &HIOptions.hfs, HIOptions.tree.treeID);
+            HIOptions.extract_HFSFork = fork;
         }
         
         // Extract any found data, if requested.
@@ -1059,8 +1088,8 @@ OPEN:
             debug("Extracting data.");
             if (HIOptions.extract_HFSPlusCatalogFile.fileID != 0) {
                 extractHFSPlusCatalogFile(&HIOptions.hfs, &HIOptions.extract_HFSPlusCatalogFile, HIOptions.extract_path);
-            } else if (HIOptions.extract_HFSFork.cnid != 0) {
-                extractFork(&HIOptions.extract_HFSFork, HIOptions.extract_path);
+            } else if (HIOptions.extract_HFSFork != NULL) {
+                extractFork(HIOptions.extract_HFSFork, HIOptions.extract_path);
             }
         }
     }

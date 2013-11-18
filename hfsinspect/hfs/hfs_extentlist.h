@@ -22,7 +22,7 @@ typedef struct _Extent {
 typedef TAILQ_HEAD(_ExtentList, _Extent) ExtentList;
 
 // Creates the tailq head node.
-ExtentList* extentlist_alloc            (void);
+ExtentList* extentlist_make            (void);
 
 // Adds a node.
 void        extentlist_add              (ExtentList *list, size_t startBlock, size_t blockCount);

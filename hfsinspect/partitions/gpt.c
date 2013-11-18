@@ -39,11 +39,11 @@ const char* gpt_partition_type_str(uuid_t uuid, PartitionHint* hint)
     return string;
 }
 
-void gpt_print(HFSVolume* hfs)
+void gpt_print(HFS* hfs)
 {
     Volume *vol = hfs->vol;
-    uuid_string_t uuid_str;
-    uuid_t* uuid_ptr;
+    uuid_t* uuid_ptr;       // packed
+    uuid_string_t uuid_str; // string
     
     GPTHeader header; ZERO_STRUCT(header);
     GPTPartitionRecord entries; ZERO_STRUCT(entries);
@@ -58,7 +58,7 @@ void gpt_print(HFSVolume* hfs)
     
     GPTHeader *header_p = &header;
     
-    PrintHeaderString("GPT Partition Map");
+    BeginSection("GPT Partition Map");
     PrintUIHex              (header_p, revision);
     PrintDataLength         (header_p, header_size);
     PrintUIHex              (header_p, header_crc32);
@@ -68,7 +68,7 @@ void gpt_print(HFSVolume* hfs)
     PrintUI                 (header_p, first_lba);
     PrintUI                 (header_p, last_lba);
     _PrintDataLength        ("(size)", (header.last_lba * vol->block_size) - (header.first_lba * vol->block_size) );
-    PrintAttributeString    ("uuid", uuid_str);
+    PrintAttribute    ("uuid", uuid_str);
     PrintUI                 (header_p, partition_start_lba);
     PrintUI                 (header_p, partition_entry_count);
     PrintDataLength         (header_p, partition_entry_size);
@@ -81,26 +81,29 @@ void gpt_print(HFSVolume* hfs)
         
         if (partition.first_lba == 0 && partition.last_lba == 0) break;
         
-        PrintHeaderString("Partition: %d (%llu)", i + 1, (partition.first_lba * vol->block_size));
+        BeginSection("Partition: %d (%llu)", i + 1, (partition.first_lba * vol->block_size));
         
         uuid_ptr = gpt_swap_uuid(&partition.type_uuid);
         uuid_unparse(*uuid_ptr, uuid_str);
         type = gpt_partition_type_str(*uuid_ptr, NULL);
-        PrintAttributeString("type", "%s (%s)", type, uuid_str);
+        PrintAttribute("type", "%s (%s)", type, uuid_str);
         
         uuid_ptr = gpt_swap_uuid(&partition.uuid);
         uuid_unparse(*uuid_ptr, uuid_str);
-        PrintAttributeString("uuid", "%s", uuid_str);
+        PrintAttribute("uuid", "%s", uuid_str);
         
-        PrintAttributeString("first_lba", "%llu", partition.first_lba);
-        PrintAttributeString("last_lba", "%llu", partition.last_lba);
+        PrintAttribute("first_lba", "%llu", partition.first_lba);
+        PrintAttribute("last_lba", "%llu", partition.last_lba);
         _PrintDataLength("(size)", (partition.last_lba * hfs->block_size) - (partition.first_lba * hfs->block_size) );
         _PrintRawAttribute("attributes", &partition.attributes, sizeof(partition.attributes), 2);
         wchar_t name[37] = {0};
         for(int c = 0; c < 37; c++) name[c] = partition.name[c];
         name[36] = '\0';
-        PrintAttributeString("name", "%ls", name);
+        PrintAttribute("name", "%ls", name);
+        EndSection();
     }
+    
+    EndSection();
 }
 
 int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entries_out)
@@ -244,7 +247,7 @@ int gpt_dump(Volume *vol)
     
     GPTHeader *header_p = &header;
     
-    PrintHeaderString("GPT Partition Map");
+    BeginSection("GPT Partition Map");
     PrintUIHex              (header_p, revision);
     PrintDataLength         (header_p, header_size);
     PrintUIHex              (header_p, header_crc32);
@@ -254,7 +257,7 @@ int gpt_dump(Volume *vol)
     PrintUI                 (header_p, first_lba);
     PrintUI                 (header_p, last_lba);
     _PrintDataLength        ("(size)", (header.last_lba * vol->block_size) - (header.first_lba * vol->block_size) );
-    PrintAttributeString    ("uuid", uuid_str);
+    PrintAttribute    ("uuid", uuid_str);
     PrintUI                 (header_p, partition_start_lba);
     PrintUI                 (header_p, partition_entry_count);
     PrintDataLength         (header_p, partition_entry_size);
@@ -267,25 +270,29 @@ int gpt_dump(Volume *vol)
         
         if (partition.first_lba == 0 && partition.last_lba == 0) break;
         
-        PrintHeaderString("Partition: %d (%llu)", i + 1, (partition.first_lba * vol->block_size));
+        BeginSection("Partition: %d (%llu)", i + 1, (partition.first_lba * vol->block_size));
         
         uuid_ptr = gpt_swap_uuid(&partition.type_uuid);
         uuid_unparse(*uuid_ptr, uuid_str);
         type = gpt_partition_type_str(*uuid_ptr, NULL);
-        PrintAttributeString("type", "%s (%s)", type, uuid_str);
+        PrintAttribute("type", "%s (%s)", type, uuid_str);
         
         uuid_ptr = gpt_swap_uuid(&partition.uuid);
         uuid_unparse(*uuid_ptr, uuid_str);
-        PrintAttributeString("uuid", "%s", uuid_str);
+        PrintAttribute("uuid", "%s", uuid_str);
         
-        PrintAttributeString("first_lba", "%llu", partition.first_lba);
-        PrintAttributeString("last_lba", "%llu", partition.last_lba);
+        PrintAttribute("first_lba", "%llu", partition.first_lba);
+        PrintAttribute("last_lba", "%llu", partition.last_lba);
         _PrintDataLength("(size)", (partition.last_lba * vol->block_size) - (partition.first_lba * vol->block_size) );
         _PrintRawAttribute("attributes", &partition.attributes, sizeof(partition.attributes), 2);
         wchar_t name[37] = {0};
         for(int c = 0; c < 37; c++) name[c] = partition.name[c];
         name[36] = '\0';
-        PrintAttributeString("name", "%ls", name);
+        PrintAttribute("name", "%ls", name);
+        EndSection();
     }
+    
+    EndSection();
+    
     return 0;
 }

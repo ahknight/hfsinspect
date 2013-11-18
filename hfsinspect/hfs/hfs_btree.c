@@ -12,116 +12,136 @@
 #include "hfs_endian.h"
 #include "output_hfs.h"
 #include <search.h>
+#include <stdlib.h>
 
-hfs_fork_type HFSDataForkType = 0x00;
-hfs_fork_type HFSResourceForkType = 0xFF;
+hfs_forktype_t HFSDataForkType = 0x00;
+hfs_forktype_t HFSResourceForkType = 0xFF;
 
 #pragma mark Tree Abstractions
 
-ssize_t hfs_btree_init(HFSBTree *tree, const HFSFork *fork)
+int btree_init(BTree *tree, const HFSFork *fork)
 {
     debug("Creating B-Tree for CNID %d", fork->cnid);
     
-	ssize_t size1 = 0, size2 = 0;
+    ssize_t nbytes;
+    char buf[512];
     
     // First, init the fork record for future calls.
-    tree->fork = *fork;
+//    tree->fork = *fork;
+    tree->treeID = fork->cnid;
+    tree->fp = fopen_hfsfork((HFSFork*)fork);
     
     // Now load up the header node.
-    char* buf;
-    INIT_BUFFER(buf, 512);
+    if ( (nbytes = fpread(tree->fp, &buf, sizeof(BTNodeDescriptor), 0)) < 0 )
+        return -1;
     
-    size1 = hfs_read_fork_range(buf, &tree->fork, sizeof(BTNodeDescriptor), 0);
-    
-    tree->nodeDescriptor = *( (BTNodeDescriptor*) buf );
-    
-    if (size1)
-        swap_BTNodeDescriptor(&tree->nodeDescriptor);
+    tree->nodeDescriptor = *(BTNodeDescriptor*)&buf;
+    swap_BTNodeDescriptor(&tree->nodeDescriptor);
     
     // If there's a header record, we'll likely want that as well.
     if (tree->nodeDescriptor.numRecords > 0) {
-        memset(buf, 0, malloc_size(buf));
+        memset(buf, 0, 512);
         
-        size2 = hfs_read_fork_range(buf, fork, sizeof(BTHeaderRec), sizeof(BTNodeDescriptor));
-        tree->headerRecord = *( (BTHeaderRec*) buf);
+        if ( (nbytes = fpread(tree->fp, &buf, sizeof(BTHeaderRec), sizeof(BTNodeDescriptor))) < 0 )
+            return -1;
         
-        if (size2)
-            swap_BTHeaderRec(&tree->headerRecord);
+        tree->headerRecord = *(BTHeaderRec*)&buf;
+        swap_BTHeaderRec(&tree->headerRecord);
         
-        // Then 128 bytes of "user" space for record 2.
-        // Then the remainder of the node is allocation bitmap data for record 3.
+        // Next comes 128 bytes of "user" space for record 2 that we don't care about.
+        // TODO: Then the remainder of the node is allocation bitmap data for record 3 which we'll care about later.
     }
     
-    FREE_BUFFER(buf);
+    // Init the node cache.
+    cache_init(&tree->nodeCache, 100);
     
-    return (size1 + size2);
+    return 0;
 }
 
-int8_t hfs_btree_get_node (HFSBTreeNode *out_node, const HFSBTree *tree, hfs_node_id nodeNumber)
+int btree_get_node (BTreeNode** out_node, const BTree *tree, bt_nodeid_t nodeNumber)
 {
     info("Getting node %d", nodeNumber);
     
-    if(nodeNumber > tree->headerRecord.totalNodes) {
+    if(nodeNumber >= tree->headerRecord.totalNodes) {
         error("Node beyond file range.");
         return -1;
     }
     
-    HFSBTreeNode node;
-    node.nodeSize       = tree->headerRecord.nodeSize;
-    node.nodeNumber     = nodeNumber;
-    node.nodeOffset     = node.nodeNumber * node.nodeSize;;
-    node.bTree          = *tree;
+    BTreeNode* node;
+    INIT_BUFFER(node, sizeof(BTreeNode));
     
-    debug("Reading %zu bytes at logical offset %u", node.nodeSize, node.nodeOffset);
+    node->nodeSize      = tree->headerRecord.nodeSize;
+    node->nodeNumber    = nodeNumber;
+    node->nodeOffset    = node->nodeNumber * node->nodeSize;;
+    node->bTree         = *tree;
+    node->treeID        = tree->treeID;
     
     ssize_t result = 0;
     char* data;
-    INIT_BUFFER(data, node.nodeSize);
+    INIT_BUFFER(data, node->nodeSize);
     
-    result = hfs_read_fork_range(data, &node.bTree.fork, node.nodeSize, node.nodeOffset);
+    if (tree->nodeCache != NULL) {
+        result = cache_get(tree->nodeCache, (void*)data, node->nodeSize, nodeNumber);
+        if (result)
+            info("Loaded a cached node for %u:%u", tree->treeID, nodeNumber);
+    }
+    
+    if (result < 1) {
+        result = fpread(node->bTree.fp, data, node->nodeSize, node->nodeOffset);
+        if (result && tree->nodeCache != NULL)
+            result = cache_set(tree->nodeCache, data, node->nodeSize, nodeNumber);
+    }
     
     if (result < 0) {
         error("Error reading from fork.");
         FREE_BUFFER(data);
+        FREE_BUFFER(node);
         return result;
         
     } else {
-        node.buffer = buffer_alloc(node.nodeSize);
-        buffer_set(&node.buffer, data, malloc_size(data));
+        node->dataLen = malloc_size(data);
+        INIT_BUFFER(node->data, node->dataLen);
+        memcpy(node->data, data, node->dataLen);
         FREE_BUFFER(data);
         
-        int swap_result = swap_BTreeNode(&node);
-        if (swap_result == -1) {
-            buffer_free(&node.buffer);
-            debug("Byte-swap of node failed.");
+        if ( swap_BTreeNode(node) < 0 ) {
+            FREE_BUFFER(node->data);
+            FREE_BUFFER(node);
+            warning("Byte-swap of node failed.");
             errno = EINVAL;
             return -1;
         }
     }
     
-    node.recordCount = node.nodeDescriptor.numRecords;
+    node->recordCount = node->nodeDescriptor.numRecords;
     
     *out_node = node;
-    return 1;
+    
+    return 0;
 }
 
-void hfs_btree_free_node (HFSBTreeNode *node)
+void btree_free_node (BTreeNode *node)
 {
-    debug("Freeing node %d", node->nodeNumber);
-    
-    buffer_free(&node->buffer);
+    if (node != NULL && node->data != NULL) {
+        FREE_BUFFER(node->data);
+        FREE_BUFFER(node);
+    }
 }
 
 int icmp(const void* a, const void* b)
 {
-    if (a == b) {
-        return 0;
-    } else return a > b;
+    return (a > b ? 1 : (a < b ? -1 : 0));
+//    if (a == b) {
+//        return 0;
+//    } else return a > b;
 }
 
-bool hfs_btree_search_tree(HFSBTreeNode *node, hfs_record_id *index, const HFSBTree *tree, const void *searchKey)
+bool btree_search_tree(BTreeNode** node, bt_recordid_t *index, const BTree *tree, const void *searchKey)
 {
-    debug("Searching tree %d for key of length %d", tree->fork.cnid, ((BTreeKey*)searchKey)->length16 );
+    debug("Searching tree %d for key of length %d", tree->treeID, ((BTreeKey*)searchKey)->length16 );
+//    if (DEBUG)
+//        if (tree->treeID == kHFSExtentsFileID)
+//            VisualizeHFSPlusExtentKey(searchKey, "Search Key", 1);
     
     /*
      Starting at the node the btree defines as the root:
@@ -134,9 +154,9 @@ bool hfs_btree_search_tree(HFSBTreeNode *node, hfs_record_id *index, const HFSBT
      */
     
     int depth                   = tree->headerRecord.treeDepth;
-    hfs_node_id currentNode     = tree->headerRecord.rootNode;
-    HFSBTreeNode searchNode;
-    hfs_record_id searchIndex   = 0;
+    bt_nodeid_t currentNode     = tree->headerRecord.rootNode;
+    BTreeNode* searchNode;
+    bt_recordid_t searchIndex   = 0;
     bool search_result          = false;
     int level                   = depth;
     
@@ -146,7 +166,7 @@ bool hfs_btree_search_tree(HFSBTreeNode *node, hfs_record_id *index, const HFSBT
         return false;
     }
 
-    hfs_node_id history[depth];
+    bt_nodeid_t history[depth];
     for (int i = 0; i < depth; i++) history[i] = 0;
     
     while (1) {
@@ -154,11 +174,11 @@ bool hfs_btree_search_tree(HFSBTreeNode *node, hfs_record_id *index, const HFSBT
             critical("Current node is %u but tree only has %u nodes. Aborting search.", currentNode, tree->headerRecord.totalNodes);
         }
         
-        info("SEARCHING NODE %d (CNID %d; level %d)", currentNode, tree->fork.cnid, level);
+        info("SEARCHING NODE %d (CNID %d; level %d)", currentNode, tree->treeID, level);
         
         errno = 0;
         size_t num_nodes = tree->headerRecord.treeDepth;
-        void* r = lfind(&currentNode, &history, &num_nodes, sizeof(hfs_node_id), icmp);
+        void* r = lfind(&currentNode, &history, &num_nodes, sizeof(bt_nodeid_t), icmp);
         if (r == NULL) {
             if (errno) perror("search");
             history[level-1] = currentNode;
@@ -166,55 +186,53 @@ bool hfs_btree_search_tree(HFSBTreeNode *node, hfs_record_id *index, const HFSBT
             critical("Recursion detected in search!");
         }
         
-        int node_result = hfs_btree_get_node(&searchNode, tree, currentNode);
-        if (node_result == -1) {
+        if ( btree_get_node(&searchNode, tree, currentNode) < 0) {
             error("search tree: failed to get node %u!", currentNode);
             perror("search");
             return false;
         }
         
         // Validate the node
-        if (searchNode.nodeDescriptor.height != level) {
+        if (searchNode->nodeDescriptor.height != level) {
             // Nodes have a specific height.  This one fails.
-            critical("Node found at unexpected height (got %d; expected %d).", searchNode.nodeDescriptor.height, level);
+            critical("Node found at unexpected height (got %d; expected %d).", searchNode->nodeDescriptor.height, level);
         }
         if (level == 1) {
-            if (searchNode.nodeDescriptor.kind != kBTLeafNode) {
+            if (searchNode->nodeDescriptor.kind != kBTLeafNode) {
                 critical("Node found at level 1 that is not a leaf node!");
             }
         } else {
-            if (searchNode.nodeDescriptor.kind != kBTIndexNode) {
-                PrintBTNodeDescriptor(&searchNode.nodeDescriptor);
+            if (searchNode->nodeDescriptor.kind != kBTIndexNode) {
+                PrintBTNodeDescriptor(&searchNode->nodeDescriptor);
                 critical("Invalid node! (expected an index node at level %d)", level);
             }
         }
         
         // Search the node
-        search_result = hfs_btree_search_node(&searchIndex, &searchNode, searchKey);
+        search_result = btree_search_node(&searchIndex, searchNode, searchKey);
         info("SEARCH NODE RESULT: %d; idx %d", search_result, searchIndex);
         
-//        if (getenv("DEBUG")) {
+//        if (DEBUG) {
 //            printf("History: "); for (int i = 0; i < depth; i++) { printf("%d:", history[i]); } printf("\n");
 //        }
 
         // If this was a leaf node, return it as there's no next node to search.
-        int8_t nodeKind = ((BTNodeDescriptor*)searchNode.buffer.data)->kind;
-        if (nodeKind == kBTLeafNode) {
+        if ( ((BTNodeDescriptor*)searchNode->data)->kind == kBTLeafNode) {
             debug("Breaking on leaf node.");
             break;
         }
         
-        HFSBTreeNodeRecord *record = &searchNode.records[searchIndex];
-        info("FOLLOWING RECORD %d from node %d", searchIndex, searchNode.nodeNumber);
+        BTreeRecord *record = &searchNode->records[searchIndex];
+        info("FOLLOWING RECORD %d from node %d", searchIndex, searchNode->nodeNumber);
         
-//        if (getenv("DEBUG")) {
-//            if (tree->fork.cnid == kHFSCatalogFileID)
-//                VisualizeHFSPlusCatalogKey(record->key, "Returned Key", 1);
-//            else if (tree->fork.cnid == kHFSExtentsFileID)
-//                VisualizeHFSPlusExtentKey(record->key, "Returned Key", 1);
+//        if (DEBUG) {
+//            if (tree->treeID == kHFSCatalogFileID)
+//                VisualizeHFSPlusCatalogKey((void*)record->key, "Returned Key", 1);
+//            else if (tree->treeID == kHFSExtentsFileID)
+//                VisualizeHFSPlusExtentKey((void*)record->key, "Returned Key", 1);
 //        }
         
-        currentNode = *( (hfs_node_id*)record->value );
+        currentNode = *( (bt_nodeid_t*)record->value );
         if (currentNode == 0) {
             debug("Record size: %zd", record->length);
             VisualizeData(record->record, record->length);
@@ -226,7 +244,7 @@ bool hfs_btree_search_tree(HFSBTreeNode *node, hfs_record_id *index, const HFSBT
             critical("Search failed. Returned record's key is higher than the search key.");
         }
         
-        hfs_btree_free_node(&searchNode);
+        btree_free_node(searchNode);
         
         --level;
         
@@ -234,13 +252,14 @@ bool hfs_btree_search_tree(HFSBTreeNode *node, hfs_record_id *index, const HFSBT
     }
 
     // Either index is the node, or the insertion point where it would go.
-    *node = searchNode; //Return a brand new node.
+    *node = searchNode;
     *index = searchIndex;
+    
     return search_result;
 }
 
 // Returns 1/0 for found and the index where the record is/would be.
-bool hfs_btree_search_node(hfs_record_id *index, const HFSBTreeNode *node, const void *searchKey)
+bool btree_search_node(bt_recordid_t *index, const BTreeNode *node, const void *searchKey)
 {
 //    debug("Search node %d for key of length %d", node->nodeNumber, ((BTreeKey*)searchKey)->length16);
     
@@ -270,7 +289,7 @@ bool hfs_btree_search_node(hfs_record_id *index, const HFSBTreeNode *node, const
     void* testKey = NULL;
     
     if (keyFunc == NULL) {
-        critical("Unsupported B-Tree: %u", node->bTree.fork.cnid);
+        critical("Unsupported B-Tree: %u", node->bTree.treeID);
         return false;
     }
     
@@ -301,14 +320,14 @@ bool hfs_btree_search_node(hfs_record_id *index, const HFSBTreeNode *node, const
     return found;
 }
 
-unsigned hfs_btree_iterate_tree_leaves (void* context, HFSBTree *tree, bool(*process)(void* context, HFSBTreeNode* node))
+unsigned btree_iterate_tree_leaves (void* context, BTree *tree, bool(*process)(void* context, BTreeNode* node))
 {
     return 0;
 }
 
-unsigned hfs_btree_iterate_node_records (void* context, HFSBTreeNode* node, bool(*process)(void* context, HFSBTreeNodeRecord* record))
+unsigned btree_iterate_node_records (void* context, BTreeNode* node, bool(*process)(void* context, BTreeRecord* record))
 {
-    hfs_node_id processed = 0;
+    bt_nodeid_t processed = 0;
     for (unsigned recNum = 0; recNum < node->nodeDescriptor.numRecords; recNum++) {
         if (! process(context, &node->records[recNum]) ) break;
         processed++;
@@ -317,27 +336,27 @@ unsigned hfs_btree_iterate_node_records (void* context, HFSBTreeNode* node, bool
 }
 
 // Wait until we process the node allocation bitmap...
-unsigned hfs_btree_iterate_all_nodes (void* context, HFSBTree *tree, bool(*process)(void* context, HFSBTreeNode* node))
+unsigned btree_iterate_all_nodes (void* context, BTree *tree, bool(*process)(void* context, BTreeNode* node))
 {
     return 0;
 }
 
-unsigned hfs_btree_iterate_all_records (void* context, HFSBTree *tree, bool(*process)(void* context, HFSBTreeNodeRecord* record))
+unsigned btree_iterate_all_records (void* context, BTree *tree, bool(*process)(void* context, BTreeRecord* record))
 {
-    hfs_node_id cnid = tree->headerRecord.firstLeafNode;
-    hfs_node_id processed = 0;
+    bt_nodeid_t cnid = tree->headerRecord.firstLeafNode;
+    bt_nodeid_t processed = 0;
     
     while (1) {
-        HFSBTreeNode node;
-        int8_t result = hfs_btree_get_node(&node, tree, cnid);
-        if (result < 0) {
+        BTreeNode* node = NULL;
+        if ( btree_get_node(&node, tree, cnid) < 0) {
             perror("get node");
             critical("There was an error fetching node %d", cnid);
+            return -1;
         }
         
         // Process node
-        for (unsigned recNum = 0; recNum < node.nodeDescriptor.numRecords; recNum++) {
-            if (! process(context, &node.records[recNum]) ) return processed;
+        for (unsigned recNum = 0; recNum < node->nodeDescriptor.numRecords; recNum++) {
+            if (! process(context, &node->records[recNum]) ) return processed;
             processed++;
         }
     }

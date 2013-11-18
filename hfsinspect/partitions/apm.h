@@ -88,7 +88,7 @@ static uint32_t kAPMStatusIsStartup            __attribute__((unused)) = 0x80000
 
 void        swap_APMHeader          (APMHeader* record);
 
-bool        apm_sniff               (HFSVolume* hfs);
-void        apm_print               (HFSVolume* hfs);
+bool        apm_sniff               (HFS* hfs);
+void        apm_print               (HFS* hfs);
 
 #endif

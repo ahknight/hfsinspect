@@ -8,8 +8,11 @@
 
 #include "logging.h"
 #include <stdarg.h>
+#include <unistd.h>
 #include <libgen.h>
 #include <sys/param.h>  //MIN/MAX
+
+bool DEBUG = false;
 
 struct _colorState {
     struct {
@@ -27,20 +30,20 @@ struct _colorState {
 };
 typedef struct _colorState colorState;
 
-bool _useColor()
+bool _useColor(FILE* f)
 {
-    return ( getenv("NOCOLOR") == NULL );
+    return ( isatty(fileno(f)) == 1 && getenv("NOCOLOR") == NULL );
 }
 
 void _print_reset(FILE* f)
 {
-    if (_useColor() == false) return;
+    if (_useColor(f) == false) return;
     fprintf(f, "\x1b[0m");
 }
 
 void _print_gray(FILE* f, uint8_t gray, bool background)
 {
-    if (_useColor() == false) return;
+    if (_useColor(f) == false) return;
     // values must be from 0-23.
     int color = 232 + gray;
     fprintf(f, "\x1b[%u;5;%um", (background?48:38), color);
@@ -48,7 +51,7 @@ void _print_gray(FILE* f, uint8_t gray, bool background)
 
 void _print_color(FILE* f, uint8_t red, uint8_t green, uint8_t blue, bool background)
 {
-    if (_useColor() == false) return;
+    if (_useColor(f) == false) return;
     // values must be from 0-5.
     if (red == green && green == blue) {
         _print_gray(f, red, background);
@@ -61,7 +64,7 @@ void _print_color(FILE* f, uint8_t red, uint8_t green, uint8_t blue, bool backgr
 
 void _printColor(FILE* f, unsigned level)
 {
-    if (_useColor() == false) return;
+    if (_useColor(f) == false) return;
 
     // Critical:    always white on red
     colorState critical = { { .white = 23 }, { .red = 5 } };
@@ -167,32 +170,33 @@ void PrintLine(FILE* f, enum LogLevel level, const char* file, const char* funct
     // Append the text after the indentation.
     strlcat(indent, inputstr, 1024);
     
-    bool showLineInfo = (getenv("DEBUG") != 0);
+    bool showLineInfo = (DEBUG != 0);
     char* levelName;
     
+    // Emoji: because why not?
     switch (level) {
         case L_CRITICAL:
-            levelName = "CRIT";
+            levelName = "❕";
             break;
 
         case L_ERROR:
-            levelName = "ERROR";
+            levelName = "⛔️";
             break;
 
         case L_WARNING:
-            levelName = "WARN";
+            levelName = "🚸";
             break;
 
         case L_STANDARD:
-            levelName = "OUT";
+            levelName = "🆗";
             break;
 
         case L_INFO:
-            levelName = "INFO";
+            levelName = "ℹ️";
             break;
 
         case L_DEBUG:
-            levelName = "DEBUG";
+            levelName = "🐞";
             break;
 
         default:
@@ -202,10 +206,12 @@ void PrintLine(FILE* f, enum LogLevel level, const char* file, const char* funct
     // Now add our format to that string and print to stdout.
     _printColor(f, level);
     if (file != NULL && showLineInfo)
-        fprintf(f, "[%2d] [%-5s]%-80s [%s:%u %s()]\n", depth, levelName, indent, basename((char*)file), line, function);
+        fprintf(f, "%s %-80s [%s:%u %s()]", levelName, indent, basename((char*)file), line, function);
+//        fprintf(f, "[%2d] %s %-80s [%s:%u %s()]\n", depth, levelName, indent, basename((char*)file), line, function);
     else
-        fprintf(f, "%s\n", inputstr);
+        fprintf(f, "%s   %s", levelName, inputstr);
     _print_reset(f);
+    fprintf(f, "\n");
     
     // Clean up.
     va_end(argp);

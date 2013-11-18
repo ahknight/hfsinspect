@@ -30,7 +30,7 @@ int hfs_load_header(Volume *vol, HFSPlusVolumeHeader *vh)
     return 0;
 }
 
-int hfs_attach(HFSVolume* hfs, Volume *vol)
+int hfs_attach(HFS* hfs, Volume *vol)
 {
     if (hfs == NULL || vol == NULL) { errno = EINVAL; return -1; }
     
@@ -127,7 +127,7 @@ Volume* hfs_find(Volume* vol)
     return result;
 }
 
-int hfs_close(HFSVolume *hfs) {
+int hfs_close(HFS *hfs) {
     debug("Closing volume.");
     int result = vol_close(hfs->vol);
     return result;
@@ -135,13 +135,13 @@ int hfs_close(HFSVolume *hfs) {
 
 #pragma mark Volume Structures
 
-bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFSVolume* hfs)
+bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFS* hfs)
 {
     if (hfs->vol) {
         char* buffer;
         INIT_BUFFER(buffer, 2048)
         
-        ssize_t size = hfs_read_raw(buffer, hfs, 2048, 0);
+        ssize_t size = hfs_read(buffer, hfs, 2048, 0);
         
         if (size < 1) {
             perror("read");
@@ -161,13 +161,13 @@ bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFSVolum
     return false;
 }
 
-bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFSVolume* hfs)
+bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFS* hfs)
 {
     if (hfs->vol) {
         char* buffer;
         INIT_BUFFER(buffer, 2048)
         
-        ssize_t size = hfs_read_raw(buffer, hfs, 2048, 0);
+        ssize_t size = hfs_read(buffer, hfs, 2048, 0);
         
         if (size < 1) {
             perror("read");
@@ -187,7 +187,7 @@ bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFSVolume* hfs)
     return false;
 }
 
-bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFSVolume* hfs)
+bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFS* hfs)
 {
     if (hfs->vh.journalInfoBlock) {
         char* buffer;
@@ -204,6 +204,20 @@ bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFSVolume* hfs)
         FREE_BUFFER(buffer);
         
         swap_JournalInfoBlock(block);
+        return true;
+    }
+    
+    return false;
+}
+
+bool hfs_get_journalheader(journal_header *header, JournalInfoBlock info, const HFS* hfs)
+{
+    if (info.flags & kJIJournalInFSMask && info.offset) {
+        ssize_t nbytes = hfs_read(header, hfs, sizeof(journal_header), info.offset);
+        if (nbytes < 0) {
+            perror("hfs_read");
+            return false;
+        }
         return true;
     }
     

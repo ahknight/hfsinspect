@@ -11,7 +11,7 @@
 #include "output.h"
 #include "output_hfs.h"
 
-int cs_get_volume_header(HFSVolume* hfs, CSVolumeHeader* header)
+int cs_get_volume_header(HFS* hfs, CSVolumeHeader* header)
 {
     char* buf = valloc(4096);
     if ( buf == NULL ) {
@@ -19,7 +19,7 @@ int cs_get_volume_header(HFSVolume* hfs, CSVolumeHeader* header)
         return -1;
     }
     
-    ssize_t bytes = hfs_read_range(buf, hfs, hfs->block_size, 0);
+    ssize_t bytes = hfs_read(buf, hfs, hfs->block_size, 0);
     if (bytes < 0) {
         perror("read");
         return -1;
@@ -31,7 +31,7 @@ int cs_get_volume_header(HFSVolume* hfs, CSVolumeHeader* header)
     return 0;
 }
 
-bool cs_sniff(HFSVolume* hfs)
+bool cs_sniff(HFS* hfs)
 {
     CSVolumeHeader header;
     int result = cs_get_volume_header(hfs, &header);
@@ -43,22 +43,24 @@ bool cs_sniff(HFSVolume* hfs)
 
 void cs_print_block_header(CSBlockHeader* header)
 {
-    PrintHeaderString("Core Storage Block Header");
+    BeginSection("Core Storage Block Header");
     
-    PrintUIHex      (header, checksum);
-    PrintUIHex      (header, checksum_seed);
-    PrintUI         (header, version);
-    PrintUIHex      (header, block_type);
-    PrintUI         (header, block_number);
-    PrintDataLength (header, block_size);
-    PrintBinaryDump (header, flags);
+    PrintUIHex(header, checksum);
+    PrintUIHex(header, checksum_seed);
+    PrintUI(header, version);
+    PrintUIHex(header, block_type);
+    PrintUI(header, block_number);
+    PrintDataLength(header, block_size);
+    PrintRawAttribute(header, flags, 2);
+    
+    EndSection();
 }
 
 void cs_print_block_11(CSMetadataBlockType11* block)
 {
     cs_print_block_header(&block->block_header);
     
-    PrintHeaderString("Core Storage Block Type 11");
+    BeginSection("Core Storage Block Type 11");
     
     PrintDataLength(block, size);
     PrintUIHex(block, checksum);
@@ -69,22 +71,24 @@ void cs_print_block_11(CSMetadataBlockType11* block)
     PrintUI(block, backup_volume_header_block);
     PrintUI(block, record_count);
     for (int i = 0; i < block->record_count; i++) {
-        PrintHeaderString("Record %d", i);
-        PrintAttributeString("index", "%llu", block->records[i].index);
-        PrintAttributeString("start", "%llu", block->records[i].start);
-        PrintAttributeString("end", "%llu", block->records[i].end);
+        BeginSection("Record %d", i);
+        PrintAttribute("index", "%llu", block->records[i].index);
+        PrintAttribute("start", "%llu", block->records[i].start);
+        PrintAttribute("end", "%llu", block->records[i].end);
+        EndSection();
     }
+    EndSection();
 }
 
-void cs_print(HFSVolume* hfs)
+void cs_print(HFS* hfs)
 {
     CSVolumeHeader* header = malloc(sizeof(CSVolumeHeader));
     int result = cs_get_volume_header(hfs, header);
-    if (result == -1) { perror("get cs header"); return; }
+    if (result == -1) { free(header); perror("get cs header"); return; }
     
     cs_print_block_header(&header->block_header);
     
-    PrintHeaderString("Core Storage Volume");
+    BeginSection("Core Storage Volume");
     
     PrintDataLength (header, physical_size);
     PrintHFSChar    (header, signature);
@@ -106,18 +110,22 @@ void cs_print(HFSVolume* hfs)
         print("\n# Metadata Block %d (block %#llx; offset %llu)", i, block_number, offset);
         _PrintDataLength("offset", offset);
         
-        ssize_t bytes = hfs_read_range(buf, hfs, buf_size, offset);
-        if (bytes < 0) { perror("read"); return; }
+        ssize_t bytes = hfs_read(buf, hfs, buf_size, offset);
+        if (bytes < 0) { free(header); perror("read"); return; }
         
         CSMetadataBlockType11* block = ((CSMetadataBlockType11*)buf);
         cs_print_block_11(block);
         VisualizeData(buf, buf_size);
     }
     free(buf); buf = NULL;
+    EndSection();
     
-    PrintHeaderString("Encryption Key Info");
+    BeginSection("Encryption Key Info");
     PrintDataLength (header, encryption_key_size); //bytes
     PrintUI         (header, encryption_key_algo);
     _PrintRawAttribute("encryption_key_data", &header->encryption_key_data, MIN(header->encryption_key_size, 128), 16);
+    EndSection();
+    
+    FREE_BUFFER(header);
 }
 

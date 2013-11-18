@@ -11,27 +11,28 @@
 
 #include "hfs_structs.h"
 #include "hfs_extentlist.h"
+#include "vfs_journal.h"
 
 #define MAC_GMT_FACTOR 2082844800UL
 
-void set_hfs_volume                 (HFSVolume *v);
+void set_hfs_volume                 (HFS *v);
 
 
 void _PrintHFSBlocks                (const char* label, uint64_t blocks);
-void _PrintHFSChar                  (const char* label, const void* i, size_t nbytes);
+void _PrintHFSChar                  (const char* label, const char* i, size_t nbytes);
 void _PrintHFSTimestamp             (const char* label, uint32_t timestamp);
 void _PrintHFSUniStr255             (const char* label, const HFSUniStr255 *record);
-void _PrintCatalogName              (char* label, hfs_node_id cnid);
+void _PrintCatalogName              (char* label, bt_nodeid_t cnid);
 
 
 #define PrintCatalogName(record, value)         _PrintCatalogName(#value, record->value)
 #define PrintHFSBlocks(record, value)           _PrintHFSBlocks(#value, record->value)
-#define PrintHFSChar(record, value)             _PrintHFSChar(#value, &(record->value), sizeof(record->value))
+#define PrintHFSChar(record, value)             _PrintHFSChar(#value, (char*)&(record->value), sizeof(record->value))
 #define PrintHFSTimestamp(record, value)        _PrintHFSTimestamp(#value, record->value)
 
 
 
-void PrintVolumeInfo                (const HFSVolume* hfs);
+void PrintVolumeInfo                (const HFS* hfs);
 void PrintHFSMasterDirectoryBlock   (const HFSMasterDirectoryBlock* vcb);
 void PrintVolumeHeader              (const HFSPlusVolumeHeader *vh);
 void PrintExtentList                (const ExtentList* list, uint32_t totalBlocks);
@@ -50,6 +51,7 @@ void PrintHFSPlusFolderThreadRecord (const HFSPlusCatalogThread *record);
 void PrintHFSPlusFileThreadRecord   (const HFSPlusCatalogThread *record);
 void PrintHFSPlusCatalogThread      (const HFSPlusCatalogThread *record);
 void PrintJournalInfoBlock          (const JournalInfoBlock *record);
+void PrintJournalHeader             (const journal_header *record);
 
 void PrintVolumeSummary             (const VolumeSummary *summary);
 void PrintForkSummary               (const ForkSummary *summary);
@@ -57,13 +59,16 @@ void PrintForkSummary               (const ForkSummary *summary);
 void VisualizeHFSPlusExtentKey      (const HFSPlusExtentKey *record, const char* label, bool oneLine);
 void VisualizeHFSPlusCatalogKey     (const HFSPlusCatalogKey *record, const char* label, bool oneLine);
 void VisualizeHFSPlusAttrKey        (const HFSPlusAttrKey *record, const char* label, bool oneLine);
-void VisualizeHFSBTreeNodeRecord    (const HFSBTreeNodeRecord* record, const char* label);
+void VisualizeHFSBTreeNodeRecord    (const BTreeRecord* record, const char* label);
 
-void PrintTreeNode                  (const HFSBTree *tree, uint32_t nodeID);
-void PrintNode                      (const HFSBTreeNode* node);
+void PrintTreeNode                  (const BTree *tree, uint32_t nodeID);
+void PrintNode                      (const BTreeNode* node);
 void PrintFolderListing             (uint32_t folderID);
-void PrintNodeRecord                (const HFSBTreeNode* node, int recordNumber);
+void PrintNodeRecord                (const BTreeNode* node, int recordNumber);
 
 void PrintHFSPlusExtentRecord       (const HFSPlusExtentRecord* record);
+
+int format_hfs_timestamp(char* out, uint32_t timestamp, size_t length);
+int format_hfs_chars(char* out, const char* value, size_t nbytes, size_t length);
 
 #endif

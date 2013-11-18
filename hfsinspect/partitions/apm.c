@@ -35,7 +35,7 @@ void swap_APMHeader(APMHeader* record)
 //    char            processor_type[16];
 }
 
-int apm_get_header(HFSVolume* hfs, APMHeader* header, unsigned partition_number)
+int apm_get_header(HFS* hfs, APMHeader* header, unsigned partition_number)
 {
     char* buf = valloc(4096);
     if ( buf == NULL ) {
@@ -43,7 +43,7 @@ int apm_get_header(HFSVolume* hfs, APMHeader* header, unsigned partition_number)
         return -1;
     }
     
-    ssize_t bytes = hfs_read_range(buf, hfs, hfs->block_size, (hfs->block_size * partition_number));
+    ssize_t bytes = hfs_read(buf, hfs, hfs->block_size, (hfs->block_size * partition_number));
     if (bytes < 0) {
         perror("read");
         return -1;
@@ -57,12 +57,12 @@ int apm_get_header(HFSVolume* hfs, APMHeader* header, unsigned partition_number)
     return 0;
 }
 
-int apm_get_volume_header(HFSVolume* hfs, APMHeader* header)
+int apm_get_volume_header(HFS* hfs, APMHeader* header)
 {
     return apm_get_header(hfs, header, 1);
 }
 
-bool apm_sniff(HFSVolume* hfs)
+bool apm_sniff(HFS* hfs)
 {
     APMHeader header;
     int result = apm_get_volume_header(hfs, &header);
@@ -74,13 +74,13 @@ bool apm_sniff(HFSVolume* hfs)
     return false;
 }
 
-void apm_print(HFSVolume* hfs)
+void apm_print(HFS* hfs)
 {
     unsigned partitionID = 1;
     
     APMHeader* header = malloc(sizeof(APMHeader));
     
-    PrintHeaderString("Apple Partition Map");
+    BeginSection("Apple Partition Map");
     
     while (1) {
         int result = apm_get_header(hfs, header, partitionID);
@@ -88,20 +88,20 @@ void apm_print(HFSVolume* hfs)
         
         char str[33]; memset(str, '\0', 33);
         
-        PrintHeaderString("Partition %d", partitionID);
+        BeginSection("Partition %d", partitionID);
         PrintHFSChar        (header, signature);
         PrintUI             (header, partition_count);
         PrintUI             (header, partition_start);
         PrintDataLength     (header, partition_length*hfs->block_size);
         
         memcpy(str, &header->name, 32); str[32] = '\0';
-        PrintAttributeString("name", "%s", str);
+        PrintAttribute("name", "%s", str);
         
         memcpy(str, &header->type, 32); str[32] = '\0';
         for (int i = 0; APMPartitionIdentifers[i].type[0] != '\0'; i++) {
             APMPartitionIdentifer identifier = APMPartitionIdentifers[i];
             if ( (strncasecmp((char*)&header->type, identifier.type, 32) == 0) ) {
-                PrintAttributeString("type", "%s (%s)", identifier.name, identifier.type);
+                PrintAttribute("type", "%s (%s)", identifier.name, identifier.type);
             }
         }
         
@@ -129,8 +129,11 @@ void apm_print(HFSVolume* hfs)
         PrintUI             (header, boot_code_checksum);
         
         memcpy(str, &header->processor_type, 16); str[16] = '\0';
-        PrintAttributeString("processor_type", "'%s'", str);
+        PrintAttribute("processor_type", "'%s'", str);
+        EndSection();
         
         if (partitionID >= header->partition_count) break; else partitionID++;
     }
+    
+    EndSection();
 }

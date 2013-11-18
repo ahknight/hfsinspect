@@ -15,13 +15,15 @@
 #include <signal.h>     //raise
 
 #define print(...)        PrintLine(stderr, L_STANDARD, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-#define critical(...)   { PrintLine(stderr, L_CRITICAL, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); if (getenv("DEBUG")) { print_trace(NULL); raise(SIGTRAP); } else { exit(1); }; }
-#define error(...)      { PrintLine(stderr, L_ERROR, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); if (getenv("DEBUG")) { print_trace(NULL); } }
-#define warning(...)    { PrintLine(stderr, L_WARNING, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); if (getenv("DEBUG")) { print_trace(NULL); } }
-#define info(...)       if (getenv("DEBUG")) { PrintLine(stderr, L_INFO, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); }
-#define debug(...)      if (getenv("DEBUG")) { PrintLine(stderr, L_DEBUG, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); }
+#define critical(...)   { PrintLine(stderr, L_CRITICAL, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); if (DEBUG) { print_trace(NULL); raise(SIGTRAP); } exit(1); }
+#define error(...)      { PrintLine(stderr, L_ERROR, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); if (DEBUG) { print_trace(NULL); raise(SIGTRAP); } exit(1); }
+#define warning(...)    { PrintLine(stderr, L_WARNING, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); if (DEBUG) { print_trace(NULL); } }
+#define info(...)       if (DEBUG) { PrintLine(stderr, L_INFO, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); }
+#define debug(...)      if (DEBUG) { PrintLine(stderr, L_DEBUG, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); }
 
 #define fatal(...)      { fprintf(stderr, __VA_ARGS__); fputc('\n', stdout); usage(1); }
+
+extern bool DEBUG;
 
 enum LogLevel {
     L_CRITICAL = 0,

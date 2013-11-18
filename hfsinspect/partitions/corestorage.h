@@ -92,9 +92,9 @@ struct CSMetadataBlockType11
 
 #pragma mark - Functions
 
-int         cs_get_volume_header    (HFSVolume* hfs, CSVolumeHeader* header);
-bool        cs_sniff                (HFSVolume* hfs);
+int         cs_get_volume_header    (HFS* hfs, CSVolumeHeader* header);
+bool        cs_sniff                (HFS* hfs);
 void        cs_print_block_header   (CSBlockHeader* header);
-void        cs_print                (HFSVolume* hfs);
+void        cs_print                (HFS* hfs);
 
 #endif

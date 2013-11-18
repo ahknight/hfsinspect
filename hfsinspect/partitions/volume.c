@@ -24,13 +24,8 @@ Volume* vol_open(const char* path, int mode, off_t offset, size_t length, size_t
     struct stat s;
     Volume* vol = NULL;
     
-//    if (mode & O_RDONLY) {
-        mode = O_RDONLY;
-        modestr = "r";
-//    } else if (mode & O_RDWR) {
-//        mode = O_RDWR;
-//        modestr = "r+";
-//    }
+    mode = O_RDONLY;
+    modestr = "r";
     
     fd = open(path, mode);
     if (fd < 0)
@@ -71,8 +66,10 @@ Volume* vol_qopen(const char* path)
     return vol;
 }
 
-ssize_t vol_read (Volume *vol, void* buf, size_t size, size_t offset)
+ssize_t vol_read (const Volume *vol, void* buf, size_t size, size_t offset)
 {
+    VALID_DESCRIPTOR(vol);
+    
     debug("Reading from volume at (%d, %d)", offset, size);
     
     // Range check.
@@ -118,9 +115,11 @@ ssize_t vol_read (Volume *vol, void* buf, size_t size, size_t offset)
     return size;
 }
 
-ssize_t vol_read_blocks (Volume *vol, void* buf, size_t block_count, size_t start_block)
+ssize_t vol_read_blocks (const Volume *vol, void* buf, size_t block_count, size_t start_block)
 {
-    debug("Reading %u blocks starting at block %u", block_count, start_block);
+    VALID_DESCRIPTOR(vol);
+    
+//    debug("Reading %u blocks starting at block %u", block_count, start_block);
     if (vol->block_count && start_block > vol->block_count) {
         error("Request for a block past the end of the volume (%d, %d)", start_block, vol->block_count);
         errno = ESPIPE; // Illegal seek
@@ -136,14 +135,14 @@ ssize_t vol_read_blocks (Volume *vol, void* buf, size_t block_count, size_t star
     size_t  offset  = start_block * vol->block_size;
     size_t  size    = block_count * vol->block_size;
     
-    debug("Reading %zd bytes at volume offset %zd.", size, offset);
+//    debug("Reading %zd bytes at volume offset %zd.", size, offset);
     
     if ( (bytes_read = vol_read_raw(vol, buf, size, offset)) < 0) {
         perror("vol_read_raw");
         return bytes_read;
     }
 
-    debug("read %zd bytes", bytes_read);
+//    debug("read %zd bytes", bytes_read);
     
     // This function measures in blocks. Blocks in, blocks out.
     ssize_t blocks_read = 0;
@@ -153,7 +152,7 @@ ssize_t vol_read_blocks (Volume *vol, void* buf, size_t block_count, size_t star
     return blocks_read;
 }
 
-ssize_t vol_read_raw (Volume *vol, void* buf, size_t nbyte, off_t offset)
+ssize_t vol_read_raw (const Volume *vol, void* buf, size_t nbyte, off_t offset)
 {
     VALID_DESCRIPTOR(vol);
     
@@ -202,6 +201,8 @@ int vol_close(Volume *vol)
 
 Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t length)
 {
+    VALID_DESCRIPTOR(vol);
+    
     Volume* newvol = malloc(sizeof(Volume));
     
     newvol->fd = dup(vol->fd);
@@ -255,7 +256,7 @@ void vol_dump(Volume* vol)
             v = v->parent_partition;
         }
     }
-    PrintString("device", "%s", vol->device);
+    Print("device", "%s", vol->device);
     PrintUI(vol, type);
     PrintConstIfEqual(vol->type, kVolumeTypeUnknown);
     PrintConstIfEqual(vol->type, kVolumeTypePartitionMap);
@@ -268,8 +269,9 @@ void vol_dump(Volume* vol)
     if (vol->partition_count) {
         FOR_UNTIL(i, vol->partition_count) {
             if (vol->partitions[i] != NULL) {
-                PrintHeaderString("Partition %u:", i+1);
+                BeginSection("Partition %u:", i+1);
                 vol_dump(vol->partitions[i]);
+                EndSection();
             }
         }
     }

@@ -9,7 +9,7 @@
 #include "range.h"
 #include "hfs_extentlist.h"
 
-ExtentList* extentlist_alloc(void)
+ExtentList* extentlist_make(void)
 {
     ExtentList *retval;
     INIT_BUFFER(retval, sizeof(ExtentList));
@@ -52,6 +52,8 @@ void extentlist_add(ExtentList *list, size_t startBlock, size_t blockCount)
         
         int block = 0;
         Extent *extent = NULL;
+        
+        // For large files, this takes a LONG time. Optimize to only do this when inserting in the middle.
         TAILQ_FOREACH(extent, list, extents) {
             extent->logicalStart = block;
             block += extent->blockCount;
@@ -95,8 +97,8 @@ bool extentlist_find(ExtentList* list, size_t logical_block, size_t* offset, siz
         return false;
     }
     
-    *offset = extent->startBlock + extentOffset;
-    *length = extent->blockCount - extentOffset;
+    if (offset != NULL) *offset = extent->startBlock + extentOffset;
+    if (length != NULL) *length = extent->blockCount - extentOffset;
     return true;
 }
 
@@ -107,4 +109,5 @@ void extentlist_free(ExtentList* list)
         TAILQ_REMOVE(list, e, extents);
         FREE_BUFFER(e);
     }
+    FREE_BUFFER(list);
 }

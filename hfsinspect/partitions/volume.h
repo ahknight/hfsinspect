@@ -83,9 +83,9 @@ Volume* vol_qopen(const char* path);
  @param offset The offset within the volume to read from. Do not compensate for the volume's physical location or block size -- that's what this function is for.
  @see read(2)
  */
-ssize_t vol_read        (Volume *vol, void* buf, size_t size, size_t offset);
-ssize_t vol_read_blocks (Volume *vol, void* buf, size_t block_count, size_t start_block);
-ssize_t vol_read_raw    (Volume *vol, void* buf, size_t nbyte, off_t offset);
+ssize_t vol_read        (const Volume *vol, void* buf, size_t size, size_t offset);
+ssize_t vol_read_blocks (const Volume *vol, void* buf, size_t block_count, size_t start_block);
+ssize_t vol_read_raw    (const Volume *vol, void* buf, size_t nbyte, off_t offset);
 
 /**
  Write to a volume, adjusting for the volume's device offset and length.

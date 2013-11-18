@@ -10,48 +10,65 @@
 
 #include "hfs_io.h"
 #include "hfs_btree.h"
+#include "output_hfs.h"
 
-HFSBTree hfs_get_extents_btree(const HFSVolume *hfs)
+int hfs_get_extents_btree(BTree* tree, const HFS *hfs)
 {
     debug("Get extents B-Tree");
     
-    static HFSBTree tree;
-    if (tree.fork.cnid == 0) {
+    static BTree* cachedTree;
+    
+    if (cachedTree == NULL) {
         debug("Creating extents B-Tree");
-        HFSFork fork = hfsfork_get_special(hfs, kHFSExtentsFileID);
         
-        hfs_btree_init(&tree, &fork);
+        INIT_BUFFER(cachedTree, sizeof(BTree));
         
-        tree.keyCompare = (hfs_compare_keys)hfs_extents_compare_keys;
+        HFSFork *fork;
+        if ( hfsfork_get_special(&fork, hfs, kHFSExtentsFileID) < 0 ) {
+            critical("Could not create fork for Extents BTree!");
+            return -1;
+        }
+        
+        btree_init(cachedTree, fork);
+        
+        cachedTree->keyCompare = (hfs_compare_keys)hfs_extents_compare_keys;
     }
     
-    return tree;
+    // Copy the cached tree out.
+    // Note this copies a reference to the same extent list in the HFSFork struct so NEVER free that fork.
+    *tree = *cachedTree;
+    
+    return 0;
 }
 
-int8_t hfs_extents_find_record(HFSPlusExtentRecord *record, hfs_block *record_start_block, const HFSFork *fork, size_t startBlock)
+int hfs_extents_find_record(HFSPlusExtentRecord *record, hfs_block_t *record_start_block, const HFSFork *fork, size_t startBlock)
 {
     debug("Finding extents record for CNID %d with start block %d", fork->cnid, startBlock);
     
-    HFSVolume hfs = fork->hfs;
-    hfs_node_id fileID = fork->cnid;
-    hfs_fork_type forkType = fork->forkType;
+    int result;
     
-    HFSBTree extentsTree = hfs_get_extents_btree(&hfs);
-    HFSBTreeNode node;
-    hfs_record_id index = 0;
+    HFS *hfs = fork->hfs;
+    bt_nodeid_t fileID = fork->cnid;
+    hfs_forktype_t forkType = fork->forkType;
+    
+    BTree extentsTree;
+    hfs_get_extents_btree(&extentsTree, hfs);
+    BTreeNode* node = NULL;
+    bt_recordid_t index = 0;
     
     if (extentsTree.headerRecord.rootNode == 0) {
         //Empty tree; no extents
-        return false;
+        result = false;
+        goto RETURN;
     }
     
     HFSPlusExtentKey extentKey;
     extentKey.keyLength = kHFSPlusExtentKeyMaximumLength;
     extentKey.fileID = fileID;
     extentKey.forkType = forkType;
-    extentKey.startBlock = (hfs_block)startBlock;
+    extentKey.startBlock = (hfs_block_t)startBlock;
     
-    bool result = hfs_btree_search_tree(&node, &index, &extentsTree, &extentKey);
+    result = btree_search_tree(&node, &index, &extentsTree, &extentKey);
     
     /*
      The result returned is mostly irrelevant as this function can be used to find the record that contains the
@@ -59,47 +76,53 @@ int8_t hfs_extents_find_record(HFSPlusExtentRecord *record, hfs_block *record_st
      produce a return value based on that.
      */
     
-    if (node.buffer.size == 0) {
+    if (node->dataLen == 0) {
         debug("No extent record returned for %d:%d:%d", extentKey.fileID, extentKey.forkType, extentKey.startBlock);
-        if (result == true)
-            return -1;      // Told we had a record and did not, that's an error.
-        else
-            return false;   // Not promised a result, so this is fine.
+        if (result == true) {
+            // Told we had a record and did not, that's an error.
+            result = -1;
+            goto RETURN;
+            
+        } else {
+            // Not promised a result, so this is fine.
+            result = false;
+            goto RETURN;
+        }
     }
     
     // Buffer has some data, so validate it.
-    const HFSBTreeNodeRecord *returnedRecord    = &node.records[index];
+    const BTreeRecord *returnedRecord    = &node->records[index];
     HFSPlusExtentKey* returnedExtentKey         = (HFSPlusExtentKey*)returnedRecord->key;
     HFSPlusExtentRecord* returnedExtentRecord   = (HFSPlusExtentRecord*)returnedRecord->value;
     
     if (returnedExtentKey->fileID != fileID || returnedExtentKey->forkType != forkType || returnedExtentKey->startBlock > startBlock) {
-        debug("Returned key is not valid for the request (requested %d:%d:%d; received %d:%d:%d)", fileID, forkType, startBlock, returnedExtentKey->fileID, returnedExtentKey->forkType, returnedExtentKey->startBlock);
-        return false;
+        warning("Returned key is not valid for the request (requested %d:%d:%d; received %d:%d:%d)", fileID, forkType, startBlock, returnedExtentKey->fileID, returnedExtentKey->forkType, returnedExtentKey->startBlock);
+        result = false;
+        goto RETURN;
     }
     
     // At ths point the record looks like it should be valid, so pass it along.
     memcpy(*record, returnedExtentRecord, returnedRecord->valueLength);
     *record_start_block = returnedExtentKey->startBlock;
     
-    return true;
+RETURN:
+    btree_free_node(node);
+    return result;
 }
 
 int hfs_extents_compare_keys(const HFSPlusExtentKey *key1, const HFSPlusExtentKey *key2)
 {
-//    if (getenv("DEBUG")) {
+//    if (DEBUG) {
 //        debug("compare extent keys");
 //        VisualizeHFSPlusExtentKey(key1, "Search Key", 1);
 //        VisualizeHFSPlusExtentKey(key2, "Test Key  ", 1);
 //    }
-    if (key1->fileID == key2->fileID) {
-        if (key1->forkType == key2->forkType) {
-            if (key1->startBlock == key2->startBlock) {
-                return 0; // equality
-            } else if (key1->startBlock > key2->startBlock) return 1;
-        } else if (key1->forkType > key2->forkType) return 1;
-    } else if (key1->fileID > key2->fileID) return 1;
     
-    return -1;
+    int result;
+    if ( (result = cmp(key1->fileID, key2->fileID)) != 0) return result;
+    if ( (result = cmp(key1->forkType, key2->forkType)) != 0) return result;
+    if ( (result = cmp(key1->startBlock, key2->startBlock)) != 0) return result;
+    return 0;
 }
 
 bool hfs_extents_get_extentlist_for_fork(ExtentList* list, const HFSFork* fork)
@@ -111,25 +134,30 @@ bool hfs_extents_get_extentlist_for_fork(ExtentList* list, const HFSFork* fork)
     while (blocks < fork->totalBlocks) {
         debug("Fetching more extents");
         HFSPlusExtentRecord record;
-        hfs_block startBlock = 0;
+        hfs_block_t startBlock = 0;
+        
         int found = hfs_extents_find_record(&record, &startBlock, fork, blocks);
+        
         if (found < 0) {
             error("Error while searching extent B-Tree for additional extents.");
             return false;
-        } else if (found > 0) {
-            if (startBlock > blocks) {
-                critical("Bad extent.");
-            }
-            size_t offset=0, length=0;
-            if (extentlist_find(list, startBlock, &offset, &length)) {
-                critical("We already have this record.");
-            }
-            extentlist_add_record(list, record);
-            for (int i = 0; i < kHFSPlusExtentDensity; i++) blocks += record[i].blockCount;
-            if (record[7].blockCount == 0) break;
-        } else {
-            break;
         }
+        
+        if (found == 0) break;
+        
+        if (startBlock > blocks)
+            critical("Bad extent.");
+        
+        if ( extentlist_find(list, startBlock, NULL, NULL) == true )
+            critical("We already have this record.");
+        
+        extentlist_add_record(list, record);
+        
+        FOR_UNTIL(i, kHFSPlusExtentDensity)
+            blocks += record[i].blockCount;
+        
+        if (record[7].blockCount == 0)
+            break;
     }
     
     return true;

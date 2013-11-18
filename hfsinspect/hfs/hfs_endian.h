@@ -35,6 +35,6 @@ void swap_FndrFileInfo              (FndrFileInfo *record);
 void swap_FndrOpaqueInfo            (FndrOpaqueInfo *record);
 void swap_HFSPlusCatalogFile        (HFSPlusCatalogFile *record);
 void swap_HFSPlusCatalogThread      (HFSPlusCatalogThread *record);
-int  swap_BTreeNode                 (HFSBTreeNode *node);
+int  swap_BTreeNode                 (BTreeNode *node);
 
 #endif
