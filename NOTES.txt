@@ -1,62 +1,15 @@
-Determine source file.
-Open source file.
-Detect type:
-    Read first 4k into a Buffer.
-    Pass buffer to a list of detectors, partition detectors first.
-    Partition detectors may recursively check each partition for a readable filesystem and update the offset as needed.
-    Filesystem detectors may update the offset (say, HFS-wrapped HFS+).
-Using the first valid volume, branch on FS type (HFS or HFS+).
-Load FS metadata, init b-trees, etc.
+CoreStorage notes
 
-Add FS type to HFSVolume.
-Attach metadata file forks to HFSVolume.
-Allow for multiply-nested HFSVolumes (wrapped filesystems) to expose all layers for inspection.
+Block-based design. Sometimes 4K, sometimes 8K. Depends on size of disk and the media it's on.
 
-Device struct
-    char* source[PATH_MAX];
-    int fd;
-    FILE fp;
-    stat stat_struct;
-    fsstat fsstat_struct;
-    ...?
+Every block has a header of 64 bytes and then a data section specific to the block type identified in the header record.
 
-Source struct
-    Device device;
-    size_t size;
-    size_t block_size; //bytes
-    ExtentList extents; //all measures in blocks of block_size
+Every header record has a CRC-32C checksum for the block. The volume header block's checksum validates if you treat it like it's 512 bytes long (the length of the record / a traditional sector).  The others don't seem to validate yet (tried 512, 4096, and 8192). Might be block-type specific (size of the struct?).
 
-device_read_raw(void*, Device, size_t, off_t) //bytes
-device_read_blocks(void*, Device, size_t, off_t) //blocks
-device_read(void*, Device, size_t, off_t) //bytes
+The metadata blocks live in a band of blocks at the end of the partition, usually 4-8MB in length (vh->md_size).
 
-source_read_blocks(void*, Source, size_t, off_t) //source blocks
-source_read(void*, Source, size_t, off_t) //bytes
+The 0x11 master metadata blocks appear to be written often as the generation field increases rather highly (my boot disk is 6000+).  The records at the end appear to be a version history of the block and the four slots given by the volume header appear to form a circular buffer for this block as the current generation order for me is -93, -90, -91, -92.  The version history at the end confirms this.
 
-PartitionMap struct
-    uint16_t type; //enum
-    uint16_t partition_count;
-    SourceList partitions;
+What the other values in the version history are eludes me. There are two values with different patterns.  The first appears to change slowly, but always increase (23 -> 27 -> 29).  The other ranges from 0 to at least 0x26 and goes up and down.  I'd guess the second value to be a set of change flags (presuming this is a revision history) and the first to be a sort of change marker to indicate significant changes (a major version?).
 
----
-Output
-
-OutputGroup
-    char* title[50]
-    AttributeList attributes
-    OutputGroupList groups
-
-Attribute
-    char* name[100]
-    uint16_t input_type
-    uint16_t output_type
-    size_t size
-    void* data
-
-From there, make JSON or nested ASCII.
-
-Types (all with formats):
-Header
-Subheader w/level
-attribute
-subattribute
+The block size in the volume header lies. In my test image it says 4K, but the checksums later on are only accurate if I re-read the blocks as whatever the block header says they are, even if it overlaps another block.  Which is to say, the checksum can -- indeed - be the checksum of that block and the following one if the VH's block size is 4K.  It is NOT lying about the position of the blocks, however.  They really are 4K apart if it says so.  But trust the block's opinion of its size when calculating the checksum.

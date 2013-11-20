@@ -17,8 +17,8 @@ void VisualizeData      (const char* data, size_t length);
 
 
 #define PrintUI(record, value)                  PrintAttribute(#value, "%llu", (uint64_t)record->value)
-#define PrintUIOct(record, value)               PrintAttribute(#value, "0%06o", record->value)
-#define PrintUIHex(record, value)               PrintAttribute(#value, "%#x", record->value)
+#define PrintUIOct(record, value)               PrintAttribute(#value, "0%06o (%u)", record->value, record->value)
+#define PrintUIHex(record, value)               PrintAttribute(#value, "%#x (%u)", record->value, record->value)
 
 #define PrintRawAttribute(record, value, base)  _PrintRawAttribute(#value, &(record->value), sizeof(record->value), base)
 
@@ -56,5 +56,6 @@ int format_uint_oct (char* out, uint64_t value, uint8_t padding, size_t length);
 int format_uint_dec (char* out, uint64_t value, uint8_t padding, size_t length);
 int format_uint_hex (char* out, uint64_t value, uint8_t padding, size_t length);
 int format_uuid     (char* out, const unsigned char value[16]);
+int format_uint_chars(char* out, const char* value, size_t nbytes, size_t length);
 
 #endif

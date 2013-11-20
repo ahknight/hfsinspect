@@ -100,11 +100,30 @@ void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t 
         // Starting position for the line
         const char* line = &data[offset];
         
+        if ( (offset - line_width) > 0 && (offset + line_width) < length) {
+            const char* prevLine = &data[offset - line_width];
+            const char* nextLine = &data[offset + line_width];
+            
+            // Do we match the previous line?
+            if (memcmp(prevLine, line, line_width) == 0) {
+                // How about the next one?
+                if (memcmp(nextLine, line, line_width) == 0) {
+                    // Great! Are we the first one to do this?
+                    if (memcmp((prevLine - line_width), line, line_width) != 0) {
+                        if (mode & DUMP_ADDRESS) fprintf(file, "%12s", "");
+                        if (mode & DUMP_OFFSET)  fprintf(file, "%8s", "");
+                        fprintf(file, "  ...\n");
+                    }
+                    goto NEXT;
+                }
+            }
+        }
+        
         // Length of this line (considering the last line may not be a full line)
         size_t lineMax = MIN((length - offset), line_width);
         
         // Line header/prefix
-        if (mode & DUMP_ADDRESS) fprintf(file, "%p", &line[0]);
+        if (mode & DUMP_ADDRESS) fprintf(file, "%12p", &line[0]);
         if (mode & DUMP_OFFSET)  fprintf(file, "%8lld", offset);
         
         // Print numeric representation
@@ -114,10 +133,13 @@ void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t 
                 size_t size = memstr(NULL, base, &line[c], 1, 0);
                 if (size) {
                     if ((c % width) == 0) fprintf(file, " ");
-                    char* group = malloc(size); memset(group, '0', size);
-                    memstr(group, base, &line[c], 1, size);
+                    char group[100] = "";
+                    if (line[c] == 0)
+                        memset(group, '-', size);
+                    else
+                        memstr(group, base, &line[c], 1, size);
+                    
                     fprintf(file, "%s%s", group, ((mode & DUMP_PADDING) ? " " : ""));
-                    free(group);
                 } else {
                     break; // for - clearly we've run out of input.
                 }
@@ -142,6 +164,7 @@ void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t 
         
         fprintf(file, "\n");
         
+    NEXT:
         offset += line_width;
     }
 }

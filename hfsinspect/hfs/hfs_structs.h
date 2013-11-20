@@ -11,7 +11,6 @@
 
 #include "cache.h"
 #include "volume.h"
-#include "buffer.h"
 #include "hfs_macos_defs.h"
 
 #include <hfs/hfs_format.h>     //duh

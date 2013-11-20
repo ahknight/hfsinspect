@@ -8,8 +8,8 @@
 
 #include "gpt.h"
 #include "_endian.h"
-#include "hfs_structs.h"
 #include "output.h"
+#include "stringtools.h"
 
 uuid_t* gpt_swap_uuid(uuid_t* uuid)
 {
@@ -37,73 +37,6 @@ const char* gpt_partition_type_str(uuid_t uuid, PartitionHint* hint)
     static uuid_string_t string;
     uuid_unparse(uuid, string);
     return string;
-}
-
-void gpt_print(HFS* hfs)
-{
-    Volume *vol = hfs->vol;
-    uuid_t* uuid_ptr;       // packed
-    uuid_string_t uuid_str; // string
-    
-    GPTHeader header; ZERO_STRUCT(header);
-    GPTPartitionRecord entries; ZERO_STRUCT(entries);
-    
-    if ( gpt_load_header(vol, &header, &entries) < 0) {
-        perror("gpt_load_header");
-        return;
-    }
-    
-    uuid_ptr = gpt_swap_uuid(&header.uuid);
-    uuid_unparse(*uuid_ptr, uuid_str);
-    
-    GPTHeader *header_p = &header;
-    
-    BeginSection("GPT Partition Map");
-    PrintUIHex              (header_p, revision);
-    PrintDataLength         (header_p, header_size);
-    PrintUIHex              (header_p, header_crc32);
-    PrintUIHex              (header_p, reserved);
-    PrintUI                 (header_p, current_lba);
-    PrintUI                 (header_p, backup_lba);
-    PrintUI                 (header_p, first_lba);
-    PrintUI                 (header_p, last_lba);
-    _PrintDataLength        ("(size)", (header.last_lba * vol->block_size) - (header.first_lba * vol->block_size) );
-    PrintAttribute    ("uuid", uuid_str);
-    PrintUI                 (header_p, partition_start_lba);
-    PrintUI                 (header_p, partition_entry_count);
-    PrintDataLength         (header_p, partition_entry_size);
-    PrintUIHex              (header_p, partition_crc32);
-    
-    FOR_UNTIL(i, header.partition_entry_count) {
-        const char* type = NULL;
-        
-        GPTPartitionEntry partition = entries[i];
-        
-        if (partition.first_lba == 0 && partition.last_lba == 0) break;
-        
-        BeginSection("Partition: %d (%llu)", i + 1, (partition.first_lba * vol->block_size));
-        
-        uuid_ptr = gpt_swap_uuid(&partition.type_uuid);
-        uuid_unparse(*uuid_ptr, uuid_str);
-        type = gpt_partition_type_str(*uuid_ptr, NULL);
-        PrintAttribute("type", "%s (%s)", type, uuid_str);
-        
-        uuid_ptr = gpt_swap_uuid(&partition.uuid);
-        uuid_unparse(*uuid_ptr, uuid_str);
-        PrintAttribute("uuid", "%s", uuid_str);
-        
-        PrintAttribute("first_lba", "%llu", partition.first_lba);
-        PrintAttribute("last_lba", "%llu", partition.last_lba);
-        _PrintDataLength("(size)", (partition.last_lba * hfs->block_size) - (partition.first_lba * hfs->block_size) );
-        _PrintRawAttribute("attributes", &partition.attributes, sizeof(partition.attributes), 2);
-        wchar_t name[37] = {0};
-        for(int c = 0; c < 37; c++) name[c] = partition.name[c];
-        name[36] = '\0';
-        PrintAttribute("name", "%ls", name);
-        EndSection();
-    }
-    
-    EndSection();
 }
 
 int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entries_out)
@@ -173,13 +106,15 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
  */
 int gpt_test(Volume *vol)
 {
-    GPTHeader header; ZERO_STRUCT(header);
+    debug("GPT test");
+    
+    GPTHeader header = {0};
     if ( gpt_load_header(vol, &header, NULL) < 0 )
         return -1;
     
-    int result = ( memcmp(&header.signature, "EFI PART", 8) == 0);
+    if (memcmp(&header.signature, "EFI PART", 8) == 0) { debug("Found a GPT pmap."); return 1; }
     
-    return result;
+    return 0;
 }
 
 /**
@@ -188,6 +123,11 @@ int gpt_test(Volume *vol)
  */
 int gpt_load(Volume *vol)
 {
+    debug("GPT load");
+    
+    vol->type = kVolTypePartitionMap;
+    vol->subtype = kPMTypeGPT;
+    
     GPTHeader header; ZERO_STRUCT(header);
     GPTPartitionRecord entries; ZERO_STRUCT(entries);
     off_t offset = 0;
@@ -220,8 +160,19 @@ int gpt_load(Volume *vol)
         uuid_ptr = gpt_swap_uuid(&partition.type_uuid);
         uuid_unparse(*uuid_ptr, uuid_str);
         PartitionHint type;
-        (void)gpt_partition_type_str(*uuid_ptr, &type);
+        const char * desc = gpt_partition_type_str(*uuid_ptr, &type);
         p->type = type;
+        
+        wchar_t wcname[100] = {'\0'};
+        int i = 0;
+        while (i < 36 && partition.name[i] != '\0') {
+            wcname[i] = partition.name[i]; i++;
+        }
+        char name[100] = {'\0'};
+        wcstombs(name, wcname, 100);
+        strlcpy(p->desc, name, 36);
+        strlcpy(p->native_desc, desc, 100);
+//        strlcpy(p->native_desc, uuid_str, 100);
     }
     
     return 0;
@@ -233,6 +184,8 @@ int gpt_load(Volume *vol)
  */
 int gpt_dump(Volume *vol)
 {
+    debug("GPT dump");
+    
     uuid_string_t uuid_str;
     uuid_t* uuid_ptr;
     
@@ -296,3 +249,9 @@ int gpt_dump(Volume *vol)
     
     return 0;
 }
+
+PartitionOps gpt_ops = {
+    .test = gpt_test,
+    .dump = gpt_dump,
+    .load = gpt_load,
+};

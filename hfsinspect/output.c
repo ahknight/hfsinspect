@@ -69,12 +69,13 @@ int PrintAttribute(const char* label, const char* format, ...)
     va_list argp;
     va_start(argp, format);
     
-    int bytes;
+    int bytes = 0;
     char str[255]; vsprintf(str, format, argp);
-
+    char spc[2] = {' ', '\0'};
+    
     if (label == NULL)
         bytes = Print("%-23s. %s", "", str);
-    else if ( strncmp(label, " ", strlen(label)) == 0 )
+    else if ( memcmp(label, spc, 2) == 0 )
         bytes = Print("%-23s  %s", "", str);
     else
         bytes = Print("%-23s= %s", label, str);
@@ -204,3 +205,14 @@ int format_uuid(char* out, const unsigned char value[16])
     return strlen(out);
 }
 
+int format_uint_chars(char* out, const char* value, size_t nbytes, size_t length)
+{
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    while (nbytes--) *out++ = value[nbytes];
+    *out++ = '\0';
+#else
+    memcpy(out, value, nbytes);
+    out[nbytes] = '\0';
+#endif
+    return strlen(out);
+}

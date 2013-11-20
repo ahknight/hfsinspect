@@ -22,26 +22,28 @@ int mbr_load_header(Volume *vol, MBR *mbr)
 
 int mbr_test(Volume *vol)
 {
-    char mbr_sig[2] = { 0x55, 0xaa };
+    debug("MBR test");
     
-    MBR mbr = { .signature = {'\0', '\0'} };
+    MBR mbr = {{0}};
+    
+    char mbr_sig[2] = { 0x55, 0xaa };
     
     if ( mbr_load_header(vol, &mbr) < 0 )
         return -1;
     
-    if (memcmp(&mbr_sig, &mbr.signature, 2) == 0) {
-        vol->type = kVolumeTypePartitionMap;
-        vol->subtype = kPartitionTypeMBR;
-        return 1;
-    } else {
-        return 0;
-    }
+    if (memcmp(&mbr_sig, &mbr.signature, 2) == 0) { debug("Found an MBR pmap."); return 1; }
+    
+    return 0;
 }
 
 int mbr_load(Volume *vol)
 {
-    MBR mbr;
-    memset(&mbr, 0, sizeof(MBR));
+    debug("MBR load");
+    
+    vol->type = kVolTypePartitionMap;
+    vol->subtype = kPMTypeMBR;
+    
+    MBR mbr = {{0}};
     
     if ( mbr_load_header(vol, &mbr) < 0)
         return -1;
@@ -89,6 +91,8 @@ const char* mbr_partition_type_str(uint16_t type, PartitionHint* hint)
 
 int mbr_dump(Volume *vol)
 {
+    debug("MBR dump");
+    
     const char* type_str = NULL;
     MBR *mbr = NULL;
     INIT_BUFFER(mbr, sizeof(MBR));
@@ -124,3 +128,9 @@ int mbr_dump(Volume *vol)
     
     return 0;
 }
+
+PartitionOps mbr_ops = {
+    .test = mbr_test,
+    .dump = mbr_dump,
+    .load = mbr_load,
+};

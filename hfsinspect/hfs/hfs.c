@@ -43,7 +43,7 @@ int hfs_attach(HFS* hfs, Volume *vol)
     
     type = (unsigned)result;
     
-    if (type == kVolumeSubtypeUnknown || type == kFilesystemTypeHFS) {
+    if (type == kTypeUnknown || type == kFSTypeHFS) {
         errno = EINVAL;
         return -1;
     }
@@ -52,7 +52,7 @@ int hfs_attach(HFS* hfs, Volume *vol)
     ZERO_STRUCT(*hfs);
     
     // Handle wrapped volumes.
-    if (type == kFilesystemTypeWrappedHFSPlus) {
+    if (type == kFSTypeWrappedHFSPlus) {
         HFSMasterDirectoryBlock mdb; ZERO_STRUCT(mdb);
         if ( hfs_load_mbd(vol, &mdb) < 0) return -1;
         
@@ -88,10 +88,10 @@ int hfs_test(Volume *vol)
     
     if (mdb.drSigWord == kHFSSigWord && mdb.drEmbedSigWord == kHFSPlusSigWord) {
         info("Found a wrapped HFS+ volume");
-        return kFilesystemTypeWrappedHFSPlus;
+        return kFSTypeWrappedHFSPlus;
     } else if (mdb.drSigWord == kHFSSigWord) {
         info("Found an HFS volume");
-        return kFilesystemTypeHFS;
+        return kFSTypeHFS;
     }
     
     // Now test for a modern HFS+ volume.
@@ -102,11 +102,11 @@ int hfs_test(Volume *vol)
     
     if (vh.signature == kHFSPlusSigWord || vh.signature == kHFSXSigWord) {
         info("Found an HFS+ volume");
-        return kFilesystemTypeHFSPlus;
+        return kFSTypeHFSPlus;
     }
     
     info("Unknown volume type");
-    return kVolumeSubtypeUnknown;
+    return kTypeUnknown;
 }
 
 /** returns the first HFS+ volume in a tree of volumes */
@@ -114,7 +114,7 @@ Volume* hfs_find(Volume* vol)
 {
     Volume *result = NULL;
     
-    if (hfs_test(vol) & (kFilesystemTypeHFSPlus | kFilesystemTypeWrappedHFSPlus)) {
+    if (hfs_test(vol) & (kFSTypeHFSPlus | kFSTypeWrappedHFSPlus)) {
         result = vol;
     } else if (vol->partition_count) {
         FOR_UNTIL(i, vol->partition_count) {

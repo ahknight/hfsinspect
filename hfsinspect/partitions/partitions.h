@@ -19,7 +19,7 @@
 
 #pragma mark - Functions
 
-int     partition_load  (Volume *vol);
-void    partition_dump  (Volume *vol);
+int partition_load (Volume *vol);
+int partition_dump (Volume *vol);
 
 #endif

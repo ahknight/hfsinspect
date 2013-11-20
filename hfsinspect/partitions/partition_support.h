@@ -9,14 +9,12 @@
 #ifndef hfsinspect_partition_support_h
 #define hfsinspect_partition_support_h
 
-//#include <sys/types.h>
-
 #pragma mark - Structures
 
 typedef enum PartitionHint {
-    kHintIgnore         = 0x01,             // Do not look at this partition (reserved space, etc.)
-    kHintFilesystem     = 0x02,             // May have a filesystem
-    kHintPartitionMap   = 0x04,             // May have a partition map
+    kHintIgnore         = 'IGNR',             // Do not look at this partition (reserved space, etc.)
+    kHintFilesystem     = 'FS  ',             // May have a filesystem
+    kHintPartitionMap   = 'PM  ',             // May have a partition map
 } PartitionHint;
 
 typedef struct Partition {

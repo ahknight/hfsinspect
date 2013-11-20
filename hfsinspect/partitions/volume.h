@@ -14,25 +14,25 @@
 
 #pragma mark - Structures
 
-typedef enum VolumeType {
-    kVolumeTypeUnknown = kHintIgnore,
-    kVolumeTypeFilesystem = kHintFilesystem,
-    kVolumeTypePartitionMap = kHintPartitionMap,
-} VolumeType;
+typedef uint32_t VolType;
 
-typedef enum VolumeSubtype {
-    kVolumeSubtypeUnknown       = 0x000,
+enum {
+    kTypeUnknown                = '\?\?\?\?',
     
-    kPartitionTypeAPM           = 0x001,
-    kPartitionTypeMBR           = 0x002,
-    kPartitionTypeGPT           = 0x003,
-    kPartitionTypeCoreStorage   = 0x004,
-    
-    kFilesystemTypeHFSPlus          = 0x101,
-    kFilesystemTypeWrappedHFSPlus   = 0x102,
-    kFilesystemTypeHFS              = 0x103,
+    kVolTypePartitionMap        = 'PM  ',
+    kVolTypeFileSystem          = 'FS  ',
 
-} VolumeSubtype;
+    kPMTypeAPM                  = 'MP  ',
+    kPMTypeMBR                  = '55aa',
+    kPMTypeGPT                  = 'EFIP',
+    kPMCoreStorage              = 'CS  ',
+
+    kFSTypeMFS                  = 'MFMa',
+    kFSTypeHFS                  = 'BD  ',
+    kFSTypeHFSPlus              = 'H+  ',
+    kFSTypeWrappedHFSPlus       = 'BDH+',
+    kFSTypeHFSX                 = 'HX  ',
+};
 
 typedef struct Volume Volume;
 struct Volume {
@@ -46,13 +46,26 @@ struct Volume {
     off_t               offset;             // offset in bytes on device
     size_t              length;             // length in bytes
     
-    VolumeType          type;               // Major type of volume (partition map or filesystem)
-    VolumeSubtype       subtype;            // Minor type of volume (style of pmap or fs (eg. GPT or HFSPlus)
+    VolType             type;               // Major type of volume (partition map or filesystem)
+    VolType             subtype;            // Minor type of volume (style of pmap or fs (eg. GPT or HFSPlus)
+    char                desc[100];          // Human-readable description of the volume format.
+    char                native_desc[100];   // Native description of the volume format, if any.
+    
+    uint32_t            depth;              // How many containers deep this volue is found (0 = root)
+    Volume*             parent_partition;   // the enclosing partition; NULL if the root partition map
     
     unsigned            partition_count;    // total count of sub-partitions; 0 if this is a data partition
     Volume*             partitions[128];    // partition records
-    Volume*             parent_partition;   // the enclosing partition; NULL if the root partition map
 };
+
+// For partition/filesytem-specific volume load/modify operations.
+typedef int (*volop) (Volume* vol);
+
+typedef struct PartitionOps {
+    volop   test;
+    volop   load;
+    volop   dump;
+} PartitionOps;
 
 #pragma mark - Functions
 
@@ -83,7 +96,7 @@ Volume* vol_qopen(const char* path);
  @param offset The offset within the volume to read from. Do not compensate for the volume's physical location or block size -- that's what this function is for.
  @see read(2)
  */
-ssize_t vol_read        (const Volume *vol, void* buf, size_t size, size_t offset);
+ssize_t vol_read        (const Volume *vol, void* buf, size_t size, off_t offset);
 ssize_t vol_read_blocks (const Volume *vol, void* buf, size_t block_count, size_t start_block);
 ssize_t vol_read_raw    (const Volume *vol, void* buf, size_t nbyte, off_t offset);
 

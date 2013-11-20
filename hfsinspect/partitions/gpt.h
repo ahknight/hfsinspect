@@ -70,7 +70,7 @@ static GPTPartitionName gpt_partition_types[] __attribute__((unused)) = {
     {"D3BFE2DE-3DAF-11DF-BA40-E3A556D89593", "Intel Fast Flash",                kHintIgnore},
     
     {"48465300-0000-11AA-AA11-00306543ECAC", "Mac OS Extended (HFS+)",          kHintFilesystem},
-    {"55465300-0000-11AA-AA11-00306543ECAC", "Apple UFS",                       kHintIgnore},
+    {"55465300-0000-11AA-AA11-00306543ECAC", "Apple UFS",                       kHintFilesystem},
     {"6A898CC3-1DD2-11B2-99A6-080020736631", "Apple ZFS",                       kHintIgnore},
     {"52414944-0000-11AA-AA11-00306543ECAC", "Apple RAID Partition",            kHintIgnore},
     {"52414944-5F4F-11AA-AA11-00306543ECAC", "Apple RAID Partition (offline)",  kHintIgnore},
@@ -92,6 +92,8 @@ static uint64_t kGPTMSNoAutomount       __attribute__((unused)) = 0x800000000000
 
 
 #pragma mark - Functions
+
+extern PartitionOps gpt_ops;
 
 uuid_t*     gpt_swap_uuid           (uuid_t* uuid);
 const char* gpt_partition_type_str  (uuid_t uuid, PartitionHint* hint);

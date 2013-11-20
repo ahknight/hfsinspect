@@ -96,7 +96,7 @@ static MBRPartitionName mbr_partition_types[] __attribute__((unused)) = {
     {0xaf, 1, "Apple HFS",                      kHintFilesystem},
     
     {0xee, 1, "GPT Protective MBR",             kHintPartitionMap},
-    {0xef, 1, "EFI system partition",           kHintPartitionMap},
+    {0xef, 1, "EFI system partition",           kHintIgnore},
     {0, 0, {'\0'}, 0},
 };
 
@@ -104,7 +104,7 @@ static MBRPartitionName mbr_partition_types[] __attribute__((unused)) = {
 
 #pragma mark - Functions
 
-//void mbr_print(HFSVolume* hfs, MBR* mbr);
+extern PartitionOps mbr_ops;
 
 /**
  Tests a volume to see if it contains an MBR partition map.

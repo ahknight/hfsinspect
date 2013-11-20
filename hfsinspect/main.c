@@ -819,7 +819,7 @@ int main (int argc, char* const *argv)
             case 'n':
                 set_mode(HIModeShowBTreeNode);
                 
-                int count = sscanf(optarg, "%d", &HIOptions.node_id);
+                int count = sscanf(optarg, "%u", &HIOptions.node_id);
                 if (count == 0) fatal("option -n/--node requires a numeric argument\n");
                 
                 break;
@@ -828,7 +828,7 @@ int main (int argc, char* const *argv)
             {
                 set_mode(HIModeShowCNID);
                 
-                int count = sscanf(optarg, "%d", &HIOptions.cnid);
+                int count = sscanf(optarg, "%u", &HIOptions.cnid);
                 if (count == 0) fatal("option -c/--cnid requires a numeric argument\n");
                 
                 break;
@@ -846,8 +846,8 @@ int main (int argc, char* const *argv)
     if ( EMPTY_STRING(HIOptions.device_path) ) {
         info("No device specified. Trying to use the root device.");
         
-        char* device = NULL;
-        device = deviceAtPath(".");
+        char device[PATH_MAX];
+        strlcpy(device, deviceAtPath("."), PATH_MAX);
         if (device != NULL)
             strlcpy(HIOptions.device_path, device, PATH_MAX);
         
@@ -884,12 +884,12 @@ OPEN:
         }
     }
     
-    (void)partition_load(vol);
-    
 #pragma mark Disk Summary
     
     if (check_mode(HIModeShowDiskInfo)) {
         partition_dump(vol);
+    } else {
+        partition_load(vol);
     }
 
 #pragma mark Find HFS Volume

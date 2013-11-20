@@ -9,42 +9,57 @@
 #include "partitions.h"
 #include "output.h"
 
+PartitionOps* partops[] = {
+    &gpt_ops,
+    &apm_ops,
+    &mbr_ops,
+    &cs_ops,
+    &((PartitionOps){NULL, NULL, NULL})
+};
+
 int partition_load(Volume *vol)
 {
-    if (gpt_test(vol)) {
-        if (gpt_load(vol) < 0) {
-            perror("gpt_load");
-            return -1;
-        }
+    info("Loading partitions.");
     
-    } else if (mbr_test(vol)) {
-        if (mbr_load(vol) < 0) {
-            perror("mbr_load");
-            return -1;
+    PartitionOps** ops = (PartitionOps**)&partops;
+    while ((*ops)->test != NULL) {
+        if ((*ops)->test(vol) == 1) {
+            if ((*ops)->load != NULL) {
+                if (DEBUG && (*ops)->dump != NULL) {
+                    (*ops)->dump(vol);
+                }
+                if ( (*ops)->load(vol) < 0) {
+                    (ops)++;
+                    continue; // try another
+                } else {
+                    break;
+                }
+            }
         }
+        (ops)++;
+    }
     
-    } else {
-        return -1;
+    // Recursive load
+    FOR_UNTIL(i, vol->partition_count) {
+        info("Looking for nested partitions on partition %u", i);
+        if (vol->partitions[i]->type == kVolTypePartitionMap) {
+            debug("Trying to load nested partitions on partition %u", i);
+            if (partition_load(vol->partitions[i]) < 0) {
+                error("error loading partition %u", i);
+            }
+        }
     }
     
     return 0;
 }
 
-void partition_dump(Volume *vol)
+int partition_dump(Volume *vol)
 {
-    if (gpt_test(vol)) {
-        gpt_load(vol);
-        gpt_dump(vol);
-        
-    } else if (mbr_test(vol)) {
-        mbr_load(vol);
-        mbr_dump(vol);
-    } else {
-        warning("Unknown disk or partition type.");
-        return;
-    }
+    partition_load(vol);
     
-    BeginSection("Parsed Volume");
+    BeginSection("Parsed Volumes");
     vol_dump(vol);
     EndSection();
+    
+    return 0;
 }

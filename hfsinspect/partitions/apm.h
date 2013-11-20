@@ -49,21 +49,21 @@ static APMPartitionIdentifer APMPartitionIdentifers[] __attribute__((unused)) = 
     {"Apple_Driver_ATAPI",          "ATAPI device driver",              kHintIgnore},
     {"Apple_Driver_IOKit",          "IOKit device driver",              kHintIgnore},
     {"Apple_Driver_OpenFirmware",   "Open Firmware device driver",      kHintIgnore},
-    {"Apple_Extra",                 "unused",                           kHintIgnore},
-    {"Apple_Free",                  "free space",                       kHintIgnore},
+    {"Apple_Extra",                 "unused",                           kHintFilesystem},
+    {"Apple_Free",                  "free space",                       kHintFilesystem},
     {"Apple_FWDriver",              "FireWire device driver",           kHintIgnore},
     {"Apple_HFS",                   "HFS/HFS+",                         kHintFilesystem},
-    {"Apple_HFSX",                  "HFS+/HFSX",                        kHintFilesystem},
+    {"Apple_HFSX",                  "HFSX",                             kHintFilesystem},
     {"Apple_Loader",                "secondary loader",                 kHintIgnore},
-    {"Apple_MFS",                   "Macintosh File System",            kHintIgnore},
-    {"Apple_Partition_Map",         "partition map",                    kHintPartitionMap},
+    {"Apple_MFS",                   "Macintosh File System",            kHintFilesystem},
+    {"Apple_Partition_Map",         "partition map",                    kHintIgnore},
     {"Apple_Patches",               "patch partition",                  kHintIgnore},
-    {"Apple_PRODOS",                "ProDOS",                           kHintIgnore},
-    {"Apple_Rhapsody_UFS",          "UFS",                              kHintIgnore},
-    {"Apple_Scratch",               "empty",                            kHintIgnore},
+    {"Apple_PRODOS",                "ProDOS",                           kHintFilesystem},
+    {"Apple_Rhapsody_UFS",          "UFS",                              kHintFilesystem},
+    {"Apple_Scratch",               "empty",                            kHintFilesystem},
     {"Apple_Second",                "secondary loader",                 kHintIgnore},
-    {"Apple_UFS",                   "UFS",                              kHintIgnore},
-    {"Apple_UNIX_SVR2",             "UNIX file system",                 kHintIgnore},
+    {"Apple_UFS",                   "UFS",                              kHintFilesystem},
+    {"Apple_UNIX_SVR2",             "UNIX file system",                 kHintFilesystem},
     {"Apple_Void",                  "dummy partition (empty)",          kHintIgnore},
     {"Be_BFS",                      "BeOS BFS",                         kHintIgnore},
     
@@ -86,9 +86,31 @@ static uint32_t kAPMStatusIsStartup            __attribute__((unused)) = 0x80000
 
 #pragma mark - Functions
 
+extern PartitionOps apm_ops;
+
 void        swap_APMHeader          (APMHeader* record);
 
 bool        apm_sniff               (HFS* hfs);
 void        apm_print               (HFS* hfs);
+
+/**
+ Tests a volume to see if it contains an APM partition map.
+ @return Returns -1 on error (check errno), 0 for NO, 1 for YES.
+ */
+int apm_test(Volume *vol);
+
+int apm_load_header(Volume *vol, APMHeader* apm);
+
+/**
+ Updates a volume with sub-volumes for any defined partitions.
+ @return Returns -1 on error (check errno), 0 for success.
+ */
+int apm_load(Volume *vol);
+
+/**
+ Prints a description of the APM structure and partition information to stdout.
+ @return Returns -1 on error (check errno), 0 for success.
+ */
+int apm_dump(Volume *vol);
 
 #endif

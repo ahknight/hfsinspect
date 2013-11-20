@@ -66,28 +66,30 @@ Volume* vol_qopen(const char* path)
     return vol;
 }
 
-ssize_t vol_read (const Volume *vol, void* buf, size_t size, size_t offset)
+ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
 {
     VALID_DESCRIPTOR(vol);
-    
-    debug("Reading from volume at (%d, %d)", offset, size);
+
+    debug("Reading from volume at (%lld, %lu)", offset, size);
     
     // Range check.
     if (vol->length && offset > vol->length) {
-        error("Request for logical offset larger than the size of the volume (%d, %d)", offset, vol->length);
-        errno = ESPIPE; // Illegal seek
-        return -1;
+        return 0;
+//        error("Request for logical offset larger than the size of the volume (%d, %d)", offset, vol->length);
+//        errno = ESPIPE; // Illegal seek
+//        return -1;
     }
     
     if ( vol->length && (offset + size) > vol->length ) {
         size = vol->length - offset;
-        debug("Adjusted read to (%d, %d)", offset, size);
+        debug("Adjusted read to (%lld, %lu)", offset, size);
     }
     
     if (size < 1) {
-        error("Zero-size request.");
-        errno = EINVAL;
-        return -1;
+        return 0;
+//        error("Zero-size request.");
+//        errno = EINVAL;
+//        return -1;
     }
     
     // The range starts somewhere in this block.
@@ -121,7 +123,7 @@ ssize_t vol_read_blocks (const Volume *vol, void* buf, size_t block_count, size_
     
 //    debug("Reading %u blocks starting at block %u", block_count, start_block);
     if (vol->block_count && start_block > vol->block_count) {
-        error("Request for a block past the end of the volume (%d, %d)", start_block, vol->block_count);
+        error("Request for a block past the end of the volume (%lu, %u)", start_block, vol->block_count);
         errno = ESPIPE; // Illegal seek
         return -1;
     }
@@ -215,11 +217,13 @@ Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t lengt
     newvol->block_size = vol->block_size;
     newvol->block_count = length / vol->block_size;
     
-    newvol->type = kVolumeTypeUnknown;
-    newvol->subtype = kVolumeSubtypeUnknown;
+    newvol->type = kTypeUnknown;
+    newvol->subtype = kTypeUnknown;
     
     // Link the two together
     newvol->parent_partition = vol;
+    newvol->depth = vol->depth + 1;
+    
     vol->partition_count++;
     vol->partitions[pos] = newvol;
     
@@ -228,43 +232,42 @@ Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t lengt
 
 void vol_dump(Volume* vol)
 {
-    /*
-     Device: /dev/disk9
-     Offset: 0
-     Length: 1000000
-     Block Size: 512
-     Block Count: 1010101
-     Type: kWhatever
-     Subtype: kWhatever
-     Partition Count: 2
-     Partition 1:
-        Device: /dev/disk9
-        Offset: 100
-        ...
-     Partition 2:
-         Device: /dev/disk9
-         Offset: 1000
-         ...
-     */
-    
-    // Indent if we're a sub-partition.
-    char indent[20] = {'\0'};
-    if (vol->parent_partition != NULL) {
-        Volume *v = vol->parent_partition;
-        while (v != NULL) {
-            strlcat(indent, "  ", 20);
-            v = v->parent_partition;
-        }
+    if (vol == NULL) {
+        error("Volume must not be NULL");
+        return;
     }
+    
+    BeginSection("Volume '%s' (%s)", vol->desc, vol->native_desc);
+    
     Print("device", "%s", vol->device);
     PrintUI(vol, type);
-    PrintConstIfEqual(vol->type, kVolumeTypeUnknown);
-    PrintConstIfEqual(vol->type, kVolumeTypePartitionMap);
-    PrintConstIfEqual(vol->type, kVolumeTypeFilesystem);
+    
+#define PrintUICharsIfEqual(var, val) if (var == val) { char type[5]; uint64_t i = val; format_uint_chars(type, (const char*)&i, 4, 5); PrintAttribute(#var, "'%s' (%s)", type, #val); }
+
+    PrintUICharsIfEqual(vol->type, kTypeUnknown);
+    PrintUICharsIfEqual(vol->type, kHintIgnore);
+    PrintUICharsIfEqual(vol->type, kVolTypePartitionMap);
+    PrintUICharsIfEqual(vol->type, kVolTypeFileSystem);
+
+    PrintUICharsIfEqual(vol->subtype, kTypeUnknown);
+    
+    PrintUICharsIfEqual(vol->subtype, kPMTypeMBR);
+    PrintUICharsIfEqual(vol->subtype, kPMTypeGPT);
+    PrintUICharsIfEqual(vol->subtype, kPMTypeAPM);
+    PrintUICharsIfEqual(vol->subtype, kPMCoreStorage);
+
+    PrintUICharsIfEqual(vol->subtype, kFSTypeMFS);
+    PrintUICharsIfEqual(vol->subtype, kFSTypeHFS);
+    PrintUICharsIfEqual(vol->subtype, kFSTypeHFSPlus);
+    PrintUICharsIfEqual(vol->subtype, kFSTypeHFSX);
+    PrintUICharsIfEqual(vol->subtype, kFSTypeWrappedHFSPlus);
+
     PrintDataLength(vol, offset);
     PrintDataLength(vol, length);
+    
     PrintDataLength(vol, block_size);
     PrintUI(vol, block_count);
+    
     PrintUI(vol, partition_count);
     if (vol->partition_count) {
         FOR_UNTIL(i, vol->partition_count) {
@@ -275,4 +278,5 @@ void vol_dump(Volume* vol)
             }
         }
     }
+    EndSection();
 }
