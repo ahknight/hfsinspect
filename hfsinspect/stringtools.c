@@ -135,11 +135,14 @@ void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t 
                     if ((c % width) == 0) fprintf(file, " ");
                     char group[100] = "";
                     if (line[c] == 0)
-                        memset(group, '-', size);
+                    { memset(group, '0', size); _print_gray(file, 5, 0); }
                     else
-                        memstr(group, base, &line[c], 1, size);
+                    { memstr(group, base, &line[c], 1, size); _print_color(file, 2, 3, 5, 0); }
                     
                     fprintf(file, "%s%s", group, ((mode & DUMP_PADDING) ? " " : ""));
+                    
+                    _print_reset(file);
+
                 } else {
                     break; // for - clearly we've run out of input.
                 }

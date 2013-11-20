@@ -35,6 +35,7 @@ enum LogLevel {
 };
 
 void _print_reset(FILE* f);
+void _print_gray(FILE* f, uint8_t gray, bool background);
 void _print_color(FILE* f, uint8_t red, uint8_t green, uint8_t blue, bool background);
 
 void PrintLine(FILE* f, enum LogLevel level, const char* file, const char* function, unsigned int line, const char* format, ...);
