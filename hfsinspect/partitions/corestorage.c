@@ -98,7 +98,7 @@ int cs_test(Volume* vol)
     
     if ( cs_get_volume_header(vol, &header) < 0) { perror("get cs header"); return -1; }
     
-    if ( memcmp(&header.signature, "CS", 2) == 0 ) { debug("Found a CS pmap."); cs_dump(vol); return 1; }
+    if ( memcmp(&header.signature, "CS", 2) == 0 ) { debug("Found a CS pmap."); /* cs_dump(vol); */ return 1; }
     
     return 0;
 }
@@ -226,7 +226,7 @@ int cs_dump(Volume* vol)
         
         CSBlockHeader *block_header = (CSBlockHeader *)buf;
         
-        BeginSection("CS Metadata Block %d (block %#llx)", i, block_number);
+        BeginSection("CS Metadata Block %d (block %#llx; offset %#llx)", i, block_number, block_number * header->md_block_size);
         
         switch (block_header->block_type) {
             case kCSVolumeHeaderBlock:
@@ -235,13 +235,22 @@ int cs_dump(Volume* vol)
                 
             case kCSDiskLabelBlock:
                 cs_print_block_11((void*)buf);
-                VisualizeData((void*)buf, header->md_block_size);
+//                VisualizeData((void*)buf, header->md_block_size);
                 break;
                 
             default:
                 cs_print_block_header(block_header);
-                VisualizeData((void*)buf, header->md_block_size);
+//                VisualizeData((void*)buf, header->md_block_size);
                 break;
+        }
+        
+        {
+            size_t size = header->md_size;
+            Byte* block = valloc(size);
+            ssize_t nbytes = vol_read(vol, block, size, block_number * header->md_block_size);
+            if (nbytes) {
+                VisualizeData((char*)block, size);
+            }
         }
         
         EndSection();

@@ -9,23 +9,21 @@
 // http://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Backtraces.html
 
 #include "debug.h"
-#include <stdarg.h>
 #include <execinfo.h>
-#include <unistd.h>
 
-/* Obtain a backtrace and print it to stdout. */
-void print_trace (char* comment, ...)
+int print_trace(FILE* fp, unsigned offset)
 {
-    va_list args;
-    va_start(args, comment);
+    int nbytes = 0;
+    offset += 1; // Omit this function.
     
-    if (comment != NULL) { vfprintf(stderr, comment, args); }
-    
-    void* stack[100];
-    int size = backtrace(stack, 100);
-    backtrace_symbols_fd(&stack[1], size - 1, STDERR_FILENO);
-    
-    va_end(args);
+    void* stack[128];
+    int i, size = backtrace(stack, 128);
+    char** lines = backtrace_symbols(&stack[offset], size - offset);
+    for (i = 0; i < (size - offset); i++) {
+        nbytes += fprintf(fp, "%s\n", lines[i]);
+    }
+    free(lines);
+    return nbytes;
 }
 
 int stack_depth(int max)

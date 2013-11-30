@@ -111,7 +111,7 @@ void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t 
                     // Great! Are we the first one to do this?
                     if (memcmp((prevLine - line_width), line, line_width) != 0) {
                         if (mode & DUMP_ADDRESS) fprintf(file, "%12s", "");
-                        if (mode & DUMP_OFFSET)  fprintf(file, "%8s", "");
+                        if (mode & DUMP_OFFSET)  fprintf(file, "%10s", "");
                         fprintf(file, "  ...\n");
                     }
                     goto NEXT;
@@ -124,7 +124,7 @@ void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t 
         
         // Line header/prefix
         if (mode & DUMP_ADDRESS) fprintf(file, "%12p", &line[0]);
-        if (mode & DUMP_OFFSET)  fprintf(file, "%8lld", offset);
+        if (mode & DUMP_OFFSET)  fprintf(file, "%#10llx", offset);
         
         // Print numeric representation
         if (mode & DUMP_ENCODED) {

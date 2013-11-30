@@ -14,15 +14,6 @@
 
 #define ASSERT_PTR(st) if (st == NULL) { errno = EINVAL; return -1; }
 
-#pragma mark stdio helper
-
-ssize_t fpread(FILE* f, void* buf, size_t nbytes, off_t offset)
-{
-    if ( fseeko(f, offset, SEEK_SET) == 0 )
-        return fread(buf, 1, nbytes, f);
-    else
-        return -1;
-}
 
 #pragma mark HFS Volume
 

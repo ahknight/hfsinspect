@@ -11,7 +11,6 @@
 
 #include "hfs_structs.h"
 
-ssize_t fpread                  (FILE* f, void* buf, size_t nbytes, off_t offset);
 
 #pragma mark HFS Volume
 

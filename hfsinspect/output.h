@@ -11,9 +11,10 @@
 
 #define MEMBER_LABEL(s, m) #m, s->m
 
+void PrintAttributeDump (const char* label, const void* map, size_t nbytes, char base);
 void _PrintRawAttribute (const char* label, const void* map, size_t size, char base);
 void _PrintDataLength   (const char* label, uint64_t size);
-void VisualizeData      (const char* data, size_t length);
+void VisualizeData      (const void* data, size_t length);
 
 
 #define PrintUI(record, value)                  PrintAttribute(#value, "%llu", (uint64_t)record->value)

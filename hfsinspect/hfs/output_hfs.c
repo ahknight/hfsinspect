@@ -328,37 +328,22 @@ void PrintHFSPlusForkData(const HFSPlusForkData *fork, uint32_t cnid, uint8_t fo
 
 void PrintBTNodeDescriptor(const BTNodeDescriptor *node)
 {
-//    BeginSection("B-Tree Node Descriptor");
+    BeginSection("Node Descriptor");
     PrintUI(node, fLink);
     PrintUI(node, bLink);
-    {
-        uint64_t attributes = node->kind;
-        int att_values[4] = {
-            kBTLeafNode,
-            kBTIndexNode,
-            kBTHeaderNode,
-            kBTMapNode
-        };
-        char* att_names[4] = {
-            "kBTLeafNode",
-            "kBTIndexNode",
-            "kBTHeaderNode",
-            "kBTMapNode"
-        };
-        for (int i = 0; i < 4; i++) {
-            if (attributes == att_values[i])
-                PrintAttribute("kind", "%s (%u)", att_names[i], att_values[i]);
-        }
-    }
+    PrintConstIfEqual(node->kind, kBTLeafNode);
+    PrintConstIfEqual(node->kind, kBTIndexNode);
+    PrintConstIfEqual(node->kind, kBTHeaderNode);
+    PrintConstIfEqual(node->kind, kBTMapNode);
     PrintUI(node, height);
     PrintUI(node, numRecords);
     PrintUI(node, reserved);
-//    EndSection();
+    EndSection();
 }
 
 void PrintBTHeaderRecord(const BTHeaderRec *hr)
 {
-    BeginSection("B-Tree Header Record");
+    BeginSection("Header Record");
     PrintUI         (hr, treeDepth);
 	PrintUI         (hr, rootNode);
 	PrintUI         (hr, leafRecords);
@@ -382,9 +367,7 @@ void PrintBTHeaderRecord(const BTHeaderRec *hr)
     PrintUIFlagIfMatch(hr->attributes, kBTBadCloseMask);
     PrintUIFlagIfMatch(hr->attributes, kBTBigKeysMask);
     PrintUIFlagIfMatch(hr->attributes, kBTVariableIndexKeysMask);
-    
-    //	printf("Reserved3:        %u\n",    hr->reserved3[16]);
-    
+        
     EndSection();
 }
 
@@ -1053,11 +1036,10 @@ void PrintFolderListing(uint32_t folderID)
         size_t      dataForkSize;
         unsigned    rsrcForkCount;
         size_t      rsrcForkSize;
-    } folderStats;
-    memset(&folderStats, 0, sizeof(folderStats));
-
-    BeginSection("Listing for %ls", name);
+    } folderStats = {0};
     
+    // Start output
+    BeginSection("Listing for %ls", name);
     Print(headerFormat, "CNID", "kind", "mode", "user", "group", "data", "rsrc", "name");
 
     // Loop over siblings until NULL

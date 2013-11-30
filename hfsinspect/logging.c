@@ -12,6 +12,9 @@
 #include <libgen.h>
 #include <sys/param.h>  //MIN/MAX
 
+#include "prefixstream.h"
+#include "nullstream.h"
+
 bool DEBUG = false;
 
 struct _colorState {
@@ -144,75 +147,97 @@ void _printColor(FILE* f, unsigned level)
     }
 }
 
-void PrintLine(FILE* f, enum LogLevel level, const char* file, const char* function, unsigned int line, const char* format, ...)
+int LogLine(enum LogLevel level, const char* format, ...)
+{
+    va_list argp;
+    va_start(argp, format);
+
+    int nchars = 0;
+    
+    static FILE* streams[6] = {0};
+    
+    if (streams[0] == NULL) {
+        streams[L_CRITICAL] = prefixstream(stderr, "❕ ");
+        streams[L_ERROR]    = prefixstream(stderr, "⛔️ ");
+        streams[L_WARNING]  = prefixstream(stderr, "🚸 ");
+        streams[L_STANDARD] = prefixstream(stdout, "🆗 ");
+        
+        if (DEBUG) {
+            streams[L_INFO]     = prefixstream(stderr, "ℹ️ ");
+            streams[L_DEBUG]    = prefixstream(stderr, "🐞 ");
+        } else {
+            streams[L_INFO]     = nullstream();
+            streams[L_DEBUG]    = nullstream();
+        }
+    }
+    
+    FILE* fp = stdout;
+    
+    if (level <= L_DEBUG)
+        fp = streams[level];
+    
+    _printColor(fp, level);
+    nchars += vfprintf(fp, format, argp);
+    fputc('\n', fp);
+    _print_reset(fp);
+//    fflush(fp);
+
+    va_end(argp);
+    
+    if ( DEBUG && (level <= L_WARNING) ) {
+        print_trace(fp, 2);
+    }
+    
+    fflush(fp);
+    
+    if (DEBUG && level <= L_ERROR) {
+        raise(SIGTRAP);
+    }
+    
+    if (level == L_CRITICAL)
+        exit(1);
+    
+    return nchars;
+}
+
+#define PrintLine_MAX_LINE_LEN 1024
+#define PrintLine_MAX_DEPTH    40
+int PrintLine(enum LogLevel level, const char* file, const char* function, unsigned int line, const char* format, ...)
 {
     va_list argp;
     va_start(argp, format);
     
+    int out_bytes = 0;
+    
     // "Print" the input format string to a string.
-    char inputstr[1024];
+    char inputstr[PrintLine_MAX_LINE_LEN];
     if (argp != NULL)
-        vsnprintf((char*)&inputstr, 1024, format, argp);
+        vsnprintf((char*)&inputstr, PrintLine_MAX_LINE_LEN, format, argp);
     else
-        strlcpy(inputstr, format, 1024);
+        strlcpy(inputstr, format, PrintLine_MAX_LINE_LEN);
     
     // Indent the string with the call depth.
-    unsigned int depth = stack_depth(40) - 1; // remove our frame
-    depth = MIN(depth, 40);
-    char indent[1024];
+    unsigned int depth = stack_depth(PrintLine_MAX_DEPTH) - 1; // remove our frame
+    depth = MIN(depth, PrintLine_MAX_DEPTH);
+    char indent[PrintLine_MAX_LINE_LEN];
     
     // Fill the indent string with spaces.
-    memset(indent, ' ', 1024);
+    memset(indent, ' ', depth);
     
     // Mark the current depth.
     indent[depth] = '\0';
     
     // Append the text after the indentation.
-    strlcat(indent, inputstr, 1024);
-    
-    bool showLineInfo = (DEBUG != 0);
-    char* levelName;
-    
-    // Emoji: because why not?
-    switch (level) {
-        case L_CRITICAL:
-            levelName = "❕";
-            break;
-
-        case L_ERROR:
-            levelName = "⛔️";
-            break;
-
-        case L_WARNING:
-            levelName = "🚸";
-            break;
-
-        case L_STANDARD:
-            levelName = "🆗";
-            break;
-
-        case L_INFO:
-            levelName = "ℹ️";
-            break;
-
-        case L_DEBUG:
-            levelName = "🐞";
-            break;
-
-        default:
-            break;
-    }
+    strlcat(indent, inputstr, PrintLine_MAX_LINE_LEN);
     
     // Now add our format to that string and print to stdout.
-    _printColor(f, level);
-    if (file != NULL && showLineInfo)
-        fprintf(f, "%s %-80s [%s:%u %s()]", levelName, indent, basename((char*)file), line, function);
-//        fprintf(f, "[%2d] %s %-80s [%s:%u %s()]\n", depth, levelName, indent, basename((char*)file), line, function);
+    if (DEBUG && level != L_STANDARD)
+        out_bytes += LogLine(level, "%-80s [%s:%u %s()]", indent, basename((char*)file), line, function);
     else
-        fprintf(f, "%s   %s", levelName, inputstr);
-    _print_reset(f);
-    fprintf(f, "\n");
+        out_bytes += LogLine(level, "%s", inputstr);
     
     // Clean up.
     va_end(argp);
+    
+    return out_bytes;
 }

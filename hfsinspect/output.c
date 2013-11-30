@@ -58,7 +58,7 @@ int Print(const char* format, ...)
     va_start(argp, format);
     
     char str[255]; vsprintf(str, format, argp);
-    int bytes = fprintf(stdout, "➡️ %s%s\n", _indent_string, str);
+    int bytes = print("%s%s", _indent_string, str);
     
     va_end(argp);
     return bytes;
@@ -102,6 +102,12 @@ void _PrintDataLength(const char *label, uint64_t size)
     }
 }
 
+void PrintAttributeDump(const char* label, const void* map, size_t nbytes, char base)
+{
+    PrintAttribute(label, "");
+    VisualizeData(map, nbytes);
+}
+
 void _PrintRawAttribute(const char* label, const void* map, size_t nbytes, char base)
 {
     unsigned segmentLength = 32;
@@ -127,9 +133,9 @@ void _PrintRawAttribute(const char* label, const void* map, size_t nbytes, char 
     FREE_BUFFER(str);
 }
 
-void VisualizeData(const char* data, size_t length)
+void VisualizeData(const void* data, size_t length)
 {
-    memdump(stdout, data, length, 16, 4, 8, DUMP_ENCODED | DUMP_OFFSET | DUMP_ASCII | DUMP_PADDING);
+    memdump(stdout, data, length, 16, 4, 8, DUMP_ADDRESS | DUMP_ENCODED | DUMP_OFFSET | DUMP_ASCII | DUMP_PADDING);
 }
 
 
