@@ -1,30 +1,43 @@
-CFLAGS += -std=c11 -msse4.2 -Isrc -include src/hfsinspect-Prefix.pch
-CFLAGS += -g -O0 -Wall
+CFLAGS += -msse4.2 -Isrc -include src/hfsinspect-Prefix.pch
+CFLAGS += -g -O0 -Wall #debug
+
+UNAME := $(shell uname -s)
 
 SOURCEDIRS := src src/crc32c src/hfs src/hfs/Apple src/hfs/btree src/hfs/hfsplus src/logging src/misc src/volumes
 SOURCES := $(foreach dir,$(SOURCEDIRS),$(wildcard $(dir)/*.c))
 OBJECTS = $(SOURCES:.c=.o)
 
-UNAME := $(shell uname)
 include Makefile.$(UNAME)
+BINPATH = bin/$(UNAME)
+BINARY = hfsinspect
 
-.PHONY: all
+.PHONY: all test docs clean distclean
+.NOTPARALLEL:
+
 all: hfsinspect
+	@echo "make all"
+
+test: all
+	@echo "make test"
+	./"$(BINPATH)/$(BINARY)" --help
+	cp images/test.img.gz images/test.img.1.gz
+	gunzip -qNf images/test.img.1.gz
+	./"$(BINPATH)/$(BINARY)" -d images/test.img -v
 
 hfsinspect: $(OBJECTS)
-	$(LINK.c) -o "$(BINARY)" $^ $(LIBS)
+	@echo "make hfsinspect"
+	mkdir -p "$(BINPATH)"
+	$(LINK.c) -o "$(BINPATH)/$(BINARY)" $^ $(LIBS)
 
-.PHONY: clean
-clean: $(BINDIR)
-	$(RM) "$(BINARY)" $(OBJECTS)
+docs:
+	@echo "make docs"
+	doxygen doxygen.config
 
-.PHONY: distclean
+clean:
+	@echo "make clean"
+	$(RM) "$(BINPATH)/$(BINARY)" $(OBJECTS)
+
 distclean: clean
+	@echo "make distclean"
 	$(RM) "images/test.img" "images/MBR.dmg"
-	
-.PHONY: test
-test: hfsinspect
-	./$(BINARY) --help
-	gunzip -dq images/test.img.gz
-	./$(BINARY) -d images/test.img -v
-	
+	$(RM) -r docs/*

@@ -1,4 +1,3 @@
 # Presumes GNU GCC
+CFLAGS += -std=gnu1x -I/usr/include -Wno-multichar -Wno-unknown-pragmas
 LIBS   += -luuid -lm
-CFLAGS += -I/usr/include -Wno-multichar -Wno-unknown-pragmas
-BINARY = bin/linux/hfsinspect

@@ -1,3 +1,2 @@
 # Presumes LLVM/Clang
-CFLAGS += -Wno-four-char-constants
-BINARY = bin/osx/hfsinspect
+CFLAGS += -std=c11 -Wno-four-char-constants

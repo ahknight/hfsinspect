@@ -2,5 +2,5 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "raring64"
+  config.vm.box = "precise32"
 end
