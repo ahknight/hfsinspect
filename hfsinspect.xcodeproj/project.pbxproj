@@ -8,11 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		9B066F1A17622BCD00D84F55 /* stringtools.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B066F1917622BCD00D84F55 /* stringtools.c */; };
-		9B112988176E1D74009BC4D4 /* hfs_attribute_ops.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B112987176E1D74009BC4D4 /* hfs_attribute_ops.c */; };
+		9B112988176E1D74009BC4D4 /* attributes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B112987176E1D74009BC4D4 /* attributes.c */; };
 		9B2EE368174D1BD6008A0C54 /* debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B2EE367174D1BD6008A0C54 /* debug.c */; };
-		9B52B5B91774E6890084A735 /* partition_support.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B52B5B81774E6890084A735 /* partition_support.c */; };
 		9B5DB77F1830736C000179FD /* output.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B5DB77E1830736C000179FD /* output.c */; };
-		9B5DB786183177D2000179FD /* libicucore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9B5DB785183177D2000179FD /* libicucore.dylib */; };
 		9B63C6C117614F92005E1411 /* hfs_extentlist.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B63C6C017614F92005E1411 /* hfs_extentlist.c */; };
 		9B70C50F1845219600E90B19 /* btree.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B70C50D1845219600E90B19 /* btree.c */; };
 		9B70C512184526E400E90B19 /* btree_endian.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B70C511184526E400E90B19 /* btree_endian.c */; };
@@ -20,13 +18,12 @@
 		9B7637F4175785E5000620CE /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637F3175785E5000620CE /* logging.c */; };
 		9B7637F7175E3BEF000620CE /* hfs_btree.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637F6175E3BEF000620CE /* hfs_btree.c */; };
 		9B7637FA175E3C13000620CE /* hfs_io.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637F9175E3C13000620CE /* hfs_io.c */; };
-		9B7637FD175E3D7D000620CE /* hfs_extent_ops.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637FC175E3D7D000620CE /* hfs_extent_ops.c */; };
-		9B763800175E3ED4000620CE /* hfs_catalog_ops.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637FF175E3ED4000620CE /* hfs_catalog_ops.c */; };
+		9B7637FD175E3D7D000620CE /* extents.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637FC175E3D7D000620CE /* extents.c */; };
+		9B763800175E3ED4000620CE /* catalog.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B7637FF175E3ED4000620CE /* catalog.c */; };
 		9B9589FF18399F650031C89A /* cache.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B9589FE18399F650031C89A /* cache.c */; };
 		9BA332B5183C6EC600F55322 /* crc32c_tables.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BA332B1183C6EC600F55322 /* crc32c_tables.c */; };
 		9BA332B6183C6EC600F55322 /* crc32c.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BA332B3183C6EC600F55322 /* crc32c.c */; };
 		9BB1A65E17628DD900202643 /* range.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BB1A65D17628DD900202643 /* range.c */; };
-		9BBA85071735AFD400273AE9 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9BBA85061735AFD400273AE9 /* Foundation.framework */; };
 		9BBA850A1735AFD400273AE9 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BBA85091735AFD400273AE9 /* main.c */; };
 		9BBA850E1735AFD400273AE9 /* hfsinspect.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9BBA850D1735AFD400273AE9 /* hfsinspect.1 */; };
 		9BC1D085182BE8D200D9B301 /* mbr.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BC1D084182BE8D200D9B301 /* mbr.c */; };
@@ -59,16 +56,13 @@
 /* Begin PBXFileReference section */
 		9B066F1817622BC900D84F55 /* stringtools.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stringtools.h; sourceTree = "<group>"; };
 		9B066F1917622BCD00D84F55 /* stringtools.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stringtools.c; sourceTree = "<group>"; };
-		9B112986176E1D63009BC4D4 /* hfs_attribute_ops.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = hfs_attribute_ops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		9B112987176E1D74009BC4D4 /* hfs_attribute_ops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs_attribute_ops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		9B112986176E1D63009BC4D4 /* attributes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = attributes.h; path = hfsplus/attributes.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		9B112987176E1D74009BC4D4 /* attributes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = attributes.c; path = hfsplus/attributes.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9B2EE367174D1BD6008A0C54 /* debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = debug.c; sourceTree = "<group>"; };
 		9B2EE369174D1BDB008A0C54 /* debug.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = debug.h; sourceTree = "<group>"; };
-		9B52B5B81774E6890084A735 /* partition_support.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = partition_support.c; sourceTree = "<group>"; };
-		9B52B5BA1774E68E0084A735 /* partition_support.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = partition_support.h; sourceTree = "<group>"; };
 		9B5DB77B18305D9B000179FD /* _endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = _endian.h; sourceTree = "<group>"; };
 		9B5DB77E1830736C000179FD /* output.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = output.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9B5DB78018307370000179FD /* output.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = output.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		9B5DB785183177D2000179FD /* libicucore.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libicucore.dylib; path = usr/lib/libicucore.dylib; sourceTree = SDKROOT; };
 		9B63C6BF17614F89005E1411 /* hfs_extentlist.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_extentlist.h; sourceTree = "<group>"; };
 		9B63C6C017614F92005E1411 /* hfs_extentlist.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_extentlist.c; sourceTree = "<group>"; };
 		9B70C50D1845219600E90B19 /* btree.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = btree.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -83,10 +77,10 @@
 		9B7637F6175E3BEF000620CE /* hfs_btree.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs_btree.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9B7637F8175E3C0E000620CE /* hfs_io.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_io.h; sourceTree = "<group>"; };
 		9B7637F9175E3C13000620CE /* hfs_io.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs_io.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		9B7637FB175E3D78000620CE /* hfs_extent_ops.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = hfs_extent_ops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		9B7637FC175E3D7D000620CE /* hfs_extent_ops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs_extent_ops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		9B7637FE175E3ECE000620CE /* hfs_catalog_ops.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = hfs_catalog_ops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		9B7637FF175E3ED4000620CE /* hfs_catalog_ops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs_catalog_ops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		9B7637FB175E3D78000620CE /* extents.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = extents.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		9B7637FC175E3D7D000620CE /* extents.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = extents.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		9B7637FE175E3ECE000620CE /* catalog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = catalog.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		9B7637FF175E3ED4000620CE /* catalog.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = catalog.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9B9589FD18399F650031C89A /* cache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cache.h; sourceTree = "<group>"; };
 		9B9589FE18399F650031C89A /* cache.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cache.c; sourceTree = "<group>"; };
 		9B9686501737774B00F31063 /* hfs_structs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = hfs_structs.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -95,13 +89,12 @@
 		9BA332B3183C6EC600F55322 /* crc32c.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = crc32c.c; sourceTree = "<group>"; };
 		9BA332B4183C6EC600F55322 /* crc32c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crc32c.h; sourceTree = "<group>"; };
 		9BAC71EF182D48F80001A1A3 /* doxygen.config */ = {isa = PBXFileReference; lastKnownFileType = text; path = doxygen.config; sourceTree = SOURCE_ROOT; };
-		9BAC71F0182D48F80001A1A3 /* NOTES.txt */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; path = NOTES.txt; sourceTree = SOURCE_ROOT; };
+		9BAC71F0182D48F80001A1A3 /* NOTES.txt */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = NOTES.txt; path = notes/NOTES.txt; sourceTree = SOURCE_ROOT; };
 		9BAC71F1182D48F80001A1A3 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = SOURCE_ROOT; };
 		9BB1A65B17625DC800202643 /* vfs_journal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = vfs_journal.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		9BB1A65C17628DD500202643 /* range.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = range.h; sourceTree = "<group>"; };
 		9BB1A65D17628DD900202643 /* range.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = range.c; sourceTree = "<group>"; };
 		9BBA85031735AFD400273AE9 /* hfsinspect */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = hfsinspect; sourceTree = BUILT_PRODUCTS_DIR; };
-		9BBA85061735AFD400273AE9 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		9BBA85091735AFD400273AE9 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = main.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		9BBA850C1735AFD400273AE9 /* hfsinspect-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = "hfsinspect-Prefix.pch"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		9BBA850D1735AFD400273AE9 /* hfsinspect.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = hfsinspect.1; sourceTree = "<group>"; };
@@ -123,16 +116,13 @@
 		9BC2C0A5184A4A0800738BB2 /* prefixstream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = prefixstream.c; sourceTree = "<group>"; };
 		9BCD796E17457F1800CB9BC4 /* hfs_unicode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_unicode.h; sourceTree = "<group>"; };
 		9BCD796F17457F2000CB9BC4 /* hfs_unicode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs_unicode.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		9BDF325D1736D27500F60671 /* output_hfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = output_hfs.c; path = hfs/output_hfs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		9BDF325F1736D28300F60671 /* output_hfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = output_hfs.h; path = hfs/output_hfs.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		9BDF325D1736D27500F60671 /* output_hfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = output_hfs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		9BDF325F1736D28300F60671 /* output_hfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = output_hfs.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		9BDF32601736D30700F60671 /* hfs_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = hfs_endian.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		9BDF32611736D30E00F60671 /* hfs_endian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs_endian.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BDF32641737307700F60671 /* hfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs.h; sourceTree = "<group>"; };
 		9BDF32651737307D00F60671 /* hfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hfs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BDF326817375A2400F60671 /* hfs_macos_defs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_macos_defs.h; sourceTree = "<group>"; };
-		9BFF0B6A183C17060001601C /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
-		9BFF0B6C183C27810001601C /* libcommonCrypto.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcommonCrypto.dylib; path = usr/lib/system/libcommonCrypto.dylib; sourceTree = SDKROOT; };
-		9BFF0B6E183C28C80001601C /* libmathCommon.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmathCommon.dylib; path = usr/lib/system/libmathCommon.dylib; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -140,24 +130,28 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9B5DB786183177D2000179FD /* libicucore.dylib in Frameworks */,
-				9BBA85071735AFD400273AE9 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		9B5DB78718318AC7000179FD /* output */ = {
+		9B5DB78718318AC7000179FD /* misc */ = {
 			isa = PBXGroup;
 			children = (
 				9B5DB78018307370000179FD /* output.h */,
 				9B5DB77E1830736C000179FD /* output.c */,
-				9BDF325F1736D28300F60671 /* output_hfs.h */,
-				9BDF325D1736D27500F60671 /* output_hfs.c */,
+				9B9589FD18399F650031C89A /* cache.h */,
+				9B9589FE18399F650031C89A /* cache.c */,
+				9B5DB77B18305D9B000179FD /* _endian.h */,
+				9B70C5131845291200E90B19 /* utilities.h */,
+				9B70C5141845291800E90B19 /* utilities.c */,
+				9BB1A65C17628DD500202643 /* range.h */,
+				9BB1A65D17628DD900202643 /* range.c */,
+				9B066F1817622BC900D84F55 /* stringtools.h */,
+				9B066F1917622BCD00D84F55 /* stringtools.c */,
 			);
-			name = output;
-			path = hfsinspect;
+			path = misc;
 			sourceTree = "<group>";
 		};
 		9B70C50C1845219600E90B19 /* btree */ = {
@@ -171,6 +165,15 @@
 			path = btree;
 			sourceTree = "<group>";
 		};
+		9B9F1FFA184AB7E2005D7271 /* hfsplus */ = {
+			isa = PBXGroup;
+			children = (
+				9B112986176E1D63009BC4D4 /* attributes.h */,
+				9B112987176E1D74009BC4D4 /* attributes.c */,
+			);
+			name = hfsplus;
+			sourceTree = "<group>";
+		};
 		9BA332AF183C6E7700F55322 /* crc32c */ = {
 			isa = PBXGroup;
 			children = (
@@ -182,18 +185,11 @@
 			path = crc32c;
 			sourceTree = "<group>";
 		};
-		9BB1A68817682DBF00202643 /* debug */ = {
+		9BB1A68917682DC700202643 /* logging */ = {
 			isa = PBXGroup;
 			children = (
 				9B2EE369174D1BDB008A0C54 /* debug.h */,
 				9B2EE367174D1BD6008A0C54 /* debug.c */,
-			);
-			name = debug;
-			sourceTree = "<group>";
-		};
-		9BB1A68917682DC700202643 /* logging */ = {
-			isa = PBXGroup;
-			children = (
 				9B7637F2175785E0000620CE /* logging.h */,
 				9B7637F3175785E5000620CE /* logging.c */,
 				9BC2C0A2184A497400738BB2 /* nullstream.h */,
@@ -201,25 +197,7 @@
 				9BC2C0A4184A4A0100738BB2 /* prefixstream.h */,
 				9BC2C0A5184A4A0800738BB2 /* prefixstream.c */,
 			);
-			name = logging;
-			sourceTree = "<group>";
-		};
-		9BB1A68A17682DCF00202643 /* range */ = {
-			isa = PBXGroup;
-			children = (
-				9BB1A65C17628DD500202643 /* range.h */,
-				9BB1A65D17628DD900202643 /* range.c */,
-			);
-			name = range;
-			sourceTree = "<group>";
-		};
-		9BB1A68B17682DD500202643 /* stringtools */ = {
-			isa = PBXGroup;
-			children = (
-				9B066F1817622BC900D84F55 /* stringtools.h */,
-				9B066F1917622BCD00D84F55 /* stringtools.c */,
-			);
-			name = stringtools;
+			path = logging;
 			sourceTree = "<group>";
 		};
 		9BBA84FA1735AFD400273AE9 = {
@@ -228,13 +206,7 @@
 				9BAC71F1182D48F80001A1A3 /* README.md */,
 				9BAC71F0182D48F80001A1A3 /* NOTES.txt */,
 				9BAC71EF182D48F80001A1A3 /* doxygen.config */,
-				9BBA85081735AFD400273AE9 /* hfsinspect */,
-				9B5DB78718318AC7000179FD /* output */,
-				9BC1D07F182BE84900D9B301 /* partitions */,
-				9BDF32631736D34500F60671 /* hfs */,
-				9BDF3267173759B900F60671 /* Apple */,
-				9BBA850B1735AFD400273AE9 /* Supporting Files */,
-				9BBA85051735AFD400273AE9 /* Frameworks */,
+				9BBA85081735AFD400273AE9 /* src */,
 				9BBA85041735AFD400273AE9 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -247,55 +219,28 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		9BBA85051735AFD400273AE9 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				9BFF0B6E183C28C80001601C /* libmathCommon.dylib */,
-				9BFF0B6C183C27810001601C /* libcommonCrypto.dylib */,
-				9BFF0B6A183C17060001601C /* libz.dylib */,
-				9B5DB785183177D2000179FD /* libicucore.dylib */,
-				9BBA85061735AFD400273AE9 /* Foundation.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		9BBA85081735AFD400273AE9 /* hfsinspect */ = {
-			isa = PBXGroup;
-			children = (
-				9BBA85091735AFD400273AE9 /* main.c */,
-				9BBA850D1735AFD400273AE9 /* hfsinspect.1 */,
-			);
-			path = hfsinspect;
-			sourceTree = "<group>";
-		};
-		9BBA850B1735AFD400273AE9 /* Supporting Files */ = {
+		9BBA85081735AFD400273AE9 /* src */ = {
 			isa = PBXGroup;
 			children = (
 				9BBA850C1735AFD400273AE9 /* hfsinspect-Prefix.pch */,
-				9B9589FD18399F650031C89A /* cache.h */,
-				9B9589FE18399F650031C89A /* cache.c */,
-				9B5DB77B18305D9B000179FD /* _endian.h */,
-				9B70C5131845291200E90B19 /* utilities.h */,
-				9B70C5141845291800E90B19 /* utilities.c */,
+				9BBA85091735AFD400273AE9 /* main.c */,
+				9BBA850D1735AFD400273AE9 /* hfsinspect.1 */,
+				9BDF32631736D34500F60671 /* hfs */,
+				9BC1D07F182BE84900D9B301 /* volumes */,
+				9B5DB78718318AC7000179FD /* misc */,
 				9BA332AF183C6E7700F55322 /* crc32c */,
-				9BB1A68817682DBF00202643 /* debug */,
 				9BB1A68917682DC700202643 /* logging */,
-				9BB1A68A17682DCF00202643 /* range */,
-				9BB1A68B17682DD500202643 /* stringtools */,
 			);
-			name = "Supporting Files";
-			path = hfsinspect;
+			path = src;
 			sourceTree = "<group>";
 		};
-		9BC1D07F182BE84900D9B301 /* partitions */ = {
+		9BC1D07F182BE84900D9B301 /* volumes */ = {
 			isa = PBXGroup;
 			children = (
 				9BC1D08F182BFF5E00D9B301 /* volume.h */,
 				9BC1D090182BFF6200D9B301 /* volume.c */,
 				9BC1D08C182BE93F00D9B301 /* partitions.h */,
 				9BC1D08D182BE94400D9B301 /* partitions.c */,
-				9B52B5BA1774E68E0084A735 /* partition_support.h */,
-				9B52B5B81774E6890084A735 /* partition_support.c */,
 				9BC1D080182BE8B800D9B301 /* mbr.h */,
 				9BC1D084182BE8D200D9B301 /* mbr.c */,
 				9BC1D081182BE8BD00D9B301 /* gpt.h */,
@@ -305,14 +250,17 @@
 				9BC1D083182BE8C900D9B301 /* corestorage.h */,
 				9BC1D08A182BE8E200D9B301 /* corestorage.c */,
 			);
-			name = partitions;
-			path = hfsinspect/partitions;
+			path = volumes;
 			sourceTree = "<group>";
 		};
 		9BDF32631736D34500F60671 /* hfs */ = {
 			isa = PBXGroup;
 			children = (
+				9BDF3267173759B900F60671 /* Apple */,
 				9B70C50C1845219600E90B19 /* btree */,
+				9B9F1FFA184AB7E2005D7271 /* hfsplus */,
+				9BDF325F1736D28300F60671 /* output_hfs.h */,
+				9BDF325D1736D27500F60671 /* output_hfs.c */,
 				9B9686501737774B00F31063 /* hfs_structs.h */,
 				9BDF32641737307700F60671 /* hfs.h */,
 				9BDF32651737307D00F60671 /* hfs.c */,
@@ -320,19 +268,16 @@
 				9B7637F9175E3C13000620CE /* hfs_io.c */,
 				9B7637F5175E3BEA000620CE /* hfs_btree.h */,
 				9B7637F6175E3BEF000620CE /* hfs_btree.c */,
-				9B112986176E1D63009BC4D4 /* hfs_attribute_ops.h */,
-				9B112987176E1D74009BC4D4 /* hfs_attribute_ops.c */,
-				9B7637FE175E3ECE000620CE /* hfs_catalog_ops.h */,
-				9B7637FF175E3ED4000620CE /* hfs_catalog_ops.c */,
-				9B7637FB175E3D78000620CE /* hfs_extent_ops.h */,
-				9B7637FC175E3D7D000620CE /* hfs_extent_ops.c */,
+				9B7637FE175E3ECE000620CE /* catalog.h */,
+				9B7637FF175E3ED4000620CE /* catalog.c */,
+				9B7637FB175E3D78000620CE /* extents.h */,
+				9B7637FC175E3D7D000620CE /* extents.c */,
 				9B63C6BF17614F89005E1411 /* hfs_extentlist.h */,
 				9B63C6C017614F92005E1411 /* hfs_extentlist.c */,
 				9BDF32601736D30700F60671 /* hfs_endian.h */,
 				9BDF32611736D30E00F60671 /* hfs_endian.c */,
 			);
-			name = hfs;
-			path = hfsinspect/hfs;
+			path = hfs;
 			sourceTree = "<group>";
 		};
 		9BDF3267173759B900F60671 /* Apple */ = {
@@ -343,8 +288,7 @@
 				9BCD796E17457F1800CB9BC4 /* hfs_unicode.h */,
 				9BCD796F17457F2000CB9BC4 /* hfs_unicode.c */,
 			);
-			name = Apple;
-			path = hfsinspect/Apple;
+			path = Apple;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -416,16 +360,15 @@
 				9BA332B5183C6EC600F55322 /* crc32c_tables.c in Sources */,
 				9BC1D08B182BE8E200D9B301 /* corestorage.c in Sources */,
 				9B70C50F1845219600E90B19 /* btree.c in Sources */,
-				9B7637FD175E3D7D000620CE /* hfs_extent_ops.c in Sources */,
-				9B763800175E3ED4000620CE /* hfs_catalog_ops.c in Sources */,
+				9B7637FD175E3D7D000620CE /* extents.c in Sources */,
+				9B763800175E3ED4000620CE /* catalog.c in Sources */,
 				9B70C5151845291800E90B19 /* utilities.c in Sources */,
 				9B63C6C117614F92005E1411 /* hfs_extentlist.c in Sources */,
 				9B066F1A17622BCD00D84F55 /* stringtools.c in Sources */,
 				9BB1A65E17628DD900202643 /* range.c in Sources */,
 				9B5DB77F1830736C000179FD /* output.c in Sources */,
 				9BC1D085182BE8D200D9B301 /* mbr.c in Sources */,
-				9B112988176E1D74009BC4D4 /* hfs_attribute_ops.c in Sources */,
-				9B52B5B91774E6890084A735 /* partition_support.c in Sources */,
+				9B112988176E1D74009BC4D4 /* attributes.c in Sources */,
 				9BC1D087182BE8D700D9B301 /* gpt.c in Sources */,
 				9BA332B6183C6EC600F55322 /* crc32c.c in Sources */,
 				9B70C512184526E400E90B19 /* btree_endian.c in Sources */,
@@ -476,6 +419,7 @@
 		9BBA85121735AFD400273AE9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_STRCPY = YES;
@@ -483,7 +427,7 @@
 				DEPLOYMENT_LOCATION = YES;
 				DSTROOT = $HOME;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "hfsinspect/hfsinspect-Prefix.pch";
+				GCC_PREFIX_HEADER = "src/hfsinspect-Prefix.pch";
 				INSTALL_PATH = /bin;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -491,13 +435,14 @@
 				);
 				PRODUCT_NAME = hfsinspect;
 				STRIP_INSTALLED_PRODUCT = NO;
-				USER_HEADER_SEARCH_PATHS = hfsinspect;
+				USER_HEADER_SEARCH_PATHS = src;
 			};
 			name = Debug;
 		};
 		9BBA85131735AFD400273AE9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_STRCPY = YES;
@@ -505,14 +450,14 @@
 				DEPLOYMENT_LOCATION = YES;
 				DSTROOT = $HOME;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "hfsinspect/hfsinspect-Prefix.pch";
+				GCC_PREFIX_HEADER = "src/hfsinspect-Prefix.pch";
 				INSTALL_PATH = /bin;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SDKROOT)/usr/lib/system",
 				);
 				PRODUCT_NAME = hfsinspect;
-				USER_HEADER_SEARCH_PATHS = hfsinspect;
+				USER_HEADER_SEARCH_PATHS = src;
 			};
 			name = Release;
 		};

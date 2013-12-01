@@ -1,0 +1,30 @@
+//
+// Prefix header for all source files of the 'hfsinspect' target in the 'hfsinspect' project
+//
+
+#include <stdlib.h>             // ANSI C
+#include <errno.h>              // errno/perror
+#include <assert.h>             // assert()
+#include <strings.h>            // memcpy, strXXX, etc.
+#include <malloc/malloc.h>      // malloc_size
+
+#include "logging/logging.h"    // console printing routines
+#include "misc/utilities.h"     // commonly-used utility functions
+
+// Tired of typing this? Me too.
+#define FOR_UNTIL(var, end) for(int var = 0; var < end; var++)
+
+// This, too.
+#ifndef ZERO_STRUCT
+#define ZERO_STRUCT(name) memset(&(name), 0, sizeof((name)))
+#endif
+
+// And this.
+#ifndef INIT_BUFFER
+#define INIT_BUFFER(name, size) { (name) = calloc(1, (size)); if ((name) == NULL) { exit(errno); }; }
+#endif
+
+// Also this.
+#ifndef FREE_BUFFER
+#define FREE_BUFFER(name) { if (malloc_size((name))) memset((name), 'Z', malloc_size((name))); free((name)); (name) = NULL; }
+#endif

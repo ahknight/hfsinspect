@@ -1,2 +1,5 @@
+syntax: glob
 docs
 doxygen.log
+hfsinspect
+*.o
