@@ -1,5 +1,10 @@
 syntax: glob
+.vagrant
+Makefile
+bin
 docs
 doxygen.log
-hfsinspect
+hfsinspect\.?*
+images/*.dmg
+images/*.img
 *.o

@@ -6,18 +6,31 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include <getopt.h>         //getopt_long
 #include <libgen.h>         //basename
 #include <locale.h>         //setlocale
 #include <sys/param.h>      //MIN/MAX
+
+#if defined(__APPLE__)
 #include <sys/mount.h>      //statfs
+#endif
+
+#include <sys/types.h>      //stat
 #include <sys/stat.h>       //stat
+#include <string.h>
+#include <stdarg.h>
+#include <xlocale.h>
 
 #include "misc/output.h"
 #include "misc/stringtools.h"
 #include "hfs/hfs.h"
 #include "hfs/output_hfs.h"
-#include "volumes/partitions.h"
+#include "volumes/volumes.h"
 
 #pragma mark - Function Declarations
 
@@ -519,7 +532,7 @@ ssize_t extractFork(const HFSFork* fork, const char* extractPath)
     
     off_t offset        = 0;
     size_t chunkSize    = fork->hfs->block_size*1024;
-    char* chunk         = malloc(chunkSize);
+    char* chunk         = calloc(1, chunkSize);
     ssize_t nbytes      = 0;
     
     size_t totalBytes, bytes;
@@ -590,6 +603,7 @@ void extractHFSPlusCatalogFile(const HFS *hfs, const HFSPlusCatalogFile* file, c
 
 char* deviceAtPath(char* path)
 {
+#if defined(__APPLE__)
     static struct statfs stats;
     int result = statfs(path, &stats);
     if (result < 0) {
@@ -600,10 +614,15 @@ char* deviceAtPath(char* path)
     debug("statfs: from %s to %s", stats.f_mntfromname, stats.f_mntonname);
     
     return stats.f_mntfromname;
+#else
+    warning("%s: not supported on this platform", __FUNCTION__);
+    return NULL;
+#endif
 }
 
 bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
 {
+#if defined(__APPLE__)
     char* path = realpath(path_in, NULL);
     if (path == NULL) {
         perror("realpath");
@@ -646,6 +665,10 @@ bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
     debug("Path out: %s", path_out);
     
     return true;
+#else
+    warning("%s: not supported on this platform", __FUNCTION__);
+    return false;
+#endif
 }
 
 void die(int val, char* format, ...)
@@ -718,6 +741,12 @@ int main (int argc, char* const *argv)
     strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
     
     if (argc == 1) usage(1);
+    
+    if (DEBUG) {
+        // Ruin some memory so we crash more predictably.
+        void* m = malloc(16*1024*1024);
+        FREE_BUFFER(m);
+    }
     
     setlocale(LC_ALL, "");
     
@@ -908,9 +937,9 @@ OPEN:
 #pragma mark Disk Summary
     
     if (check_mode(HIModeShowDiskInfo)) {
-        partition_dump(vol);
+        volumes_dump(vol);
     } else {
-        partition_load(vol);
+        volumes_load(vol);
     }
 
 #pragma mark Find HFS Volume
@@ -1082,7 +1111,7 @@ OPEN:
         if (showHex) {
             size_t length = HIOptions.tree->headerRecord.nodeSize;
             off_t offset = length * HIOptions.node_id;
-            char* buf = malloc(length);
+            char* buf = calloc(1, length);
             fpread(HIOptions.tree->fp, buf, length, offset);
             VisualizeData(buf, length);
             

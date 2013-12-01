@@ -9,6 +9,24 @@
 #include "misc/range.h"
 #include "hfs/hfs_extentlist.h"
 
+#if defined(__linux__) //sucks
+
+// Copied from OS X's sys/queue.h. Covered by the APSL 2.0 and/or the original BSD license (ie. "Copyright (c) 1991, 1993 The Regents of the University of California.  All rights reserved." etc.)
+
+#define	TAILQ_EMPTY(head)	((head)->tqh_first == NULL)
+#define	TAILQ_FIRST(head)	((head)->tqh_first)
+#define	TAILQ_FOREACH_REVERSE_SAFE(var, head, headname, field, tvar)	\
+	for ((var) = TAILQ_LAST((head), headname);			\
+	    (var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);	\
+	    (var) = (tvar))
+#define	TAILQ_LAST(head, headname)					\
+	(*(((struct headname *)((head)->tqh_last))->tqh_last))
+#define	TAILQ_NEXT(elm, field) ((elm)->field.tqe_next)
+#define	TAILQ_PREV(elm, headname, field)				\
+	(*(((struct headname *)((elm)->field.tqe_prev))->tqh_last))
+
+#endif
+
 ExtentList* extentlist_make(void)
 {
     ExtentList *retval;

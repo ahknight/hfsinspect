@@ -2,11 +2,42 @@
 // Prefix header for all source files of the 'hfsinspect' target in the 'hfsinspect' project
 //
 
+// Can Linux make this more complicated?
+#if defined(__linux__)
+
+#ifdef __STRICT_ANSI__
+#undef __STRICT_ANSI__
+#endif
+#define _BSD_SOURCE
+#define _GNU_SOURCE //fopencookie
+#define _POSIX_C_SOURCE 200809L
+#define _ISOC11_SOURCE
+#define _FILE_OFFSET_BITS 64
+
+#ifndef _UUID_STRING_T
+#define _UUID_STRING_T
+typedef char	uuid_string_t[37];
+#endif /* _UUID_STRING_T */
+
+// Because fuck you, that's why.
+#define strlcpy(dst, src, len) ( strncpy((dst), (src), (len)) != NULL)
+#define strlcat(dst, src, len) ( strncat((dst), (src), (len)) != NULL)
+
+#endif // linux
+
+
 #include <stdlib.h>             // ANSI C
 #include <errno.h>              // errno/perror
 #include <assert.h>             // assert()
+#include <string.h>
 #include <strings.h>            // memcpy, strXXX, etc.
+
+#if defined(__APPLE__)
 #include <malloc/malloc.h>      // malloc_size
+#elif defined(__linux__)
+#include <malloc.h>
+#define malloc_size malloc_usable_size
+#endif
 
 #include "logging/logging.h"    // console printing routines
 #include "misc/utilities.h"     // commonly-used utility functions

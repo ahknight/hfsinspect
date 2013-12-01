@@ -14,8 +14,8 @@
 
 void swap_BTNodeDescriptor(BTNodeDescriptor *record)
 {
-    Convert32(record->fLink);
-    Convert32(record->bLink);
+    Swap32(record->fLink);
+    Swap32(record->bLink);
     
     // noswap: record->kind is a short
     if (record->kind < kBTLeafNode || record->kind > kBTMapNode)
@@ -25,27 +25,27 @@ void swap_BTNodeDescriptor(BTNodeDescriptor *record)
     if (record->height > 16)
         warning("invalid node height: %d", record->kind);
     
-    Convert16(record->numRecords);
+    Swap16(record->numRecords);
     
     // noswap: record->reserved is reserved
 }
 
 void swap_BTHeaderRec(BTHeaderRec *record)
 {
-    Convert16(record->treeDepth);
-    Convert32(record->rootNode);
-    Convert32(record->leafRecords);
-    Convert32(record->firstLeafNode);
-    Convert32(record->lastLeafNode);
-    Convert16(record->nodeSize);
-    Convert16(record->maxKeyLength);
-    Convert32(record->totalNodes);
-    Convert32(record->freeNodes);
+    Swap16(record->treeDepth);
+    Swap32(record->rootNode);
+    Swap32(record->leafRecords);
+    Swap32(record->firstLeafNode);
+    Swap32(record->lastLeafNode);
+    Swap16(record->nodeSize);
+    Swap16(record->maxKeyLength);
+    Swap32(record->totalNodes);
+    Swap32(record->freeNodes);
     // noswap: record->reserved1
-    Convert32(record->clumpSize);
+    Swap32(record->clumpSize);
     // noswap: record->btreeType is a short
     // noswap: record->keyCompareType is a short
-    Convert32(record->attributes);
+    Swap32(record->attributes);
     // noswap: header->reserved3
 }
 
@@ -84,7 +84,7 @@ int swap_BTreeNode(BTreeNodePtr node)
     
     uint16_t numRecords = nodeDescriptor->numRecords;
     BTRecOffsetPtr offsets = ((BTRecOffsetPtr)(node->data + node->nodeSize)) - numRecords - 1;
-    FOR_UNTIL(i, numRecords+1) Convert16(offsets[i]);
+    FOR_UNTIL(i, numRecords+1) Swap16(offsets[i]);
     
     // Validate offsets
     off_t record_min = sizeof(BTNodeDescriptor);
@@ -119,7 +119,7 @@ int swap_BTreeNode(BTreeNodePtr node)
         Bytes record = BTGetRecord(node, recordNum);
         BTreeKeyPtr key = (BTreeKey*)(record);
         if (swapKeys) {
-            Convert16( key->length16 );
+            Swap( key->length16 );
         }
         
         switch (nodeDescriptor->kind) {
@@ -132,7 +132,7 @@ int swap_BTreeNode(BTreeNodePtr node)
                 // Swap the node pointers.
                 BTRecOffset keyLen = BTGetRecordKeyLength(node, recordNum);
                 uint32_t *childPointer = (uint32_t*)(record + keyLen);
-                Convert32(*childPointer);
+                Swap32(*childPointer);
             }
             
             default:

@@ -8,6 +8,7 @@
 
 #include "prefixstream.h"
 #include "string.h"
+#include <sys/param.h>
 
 struct prefixstream_context {
     FILE*   fp;
@@ -21,7 +22,11 @@ int prefixstream_close(void * context)
     return 0;
 }
 
+#if defined (BSD)
 int prefixstream_write(void * c, const char * buf, int nbytes)
+#else
+ssize_t prefixstream_write(void * c, const char * buf, size_t nbytes)
+#endif
 {
     struct prefixstream_context *context = c;
     
@@ -59,5 +64,15 @@ FILE* prefixstream(FILE* fp, char* prefix)
     context->newline = 1;
     strlcpy(context->prefix, prefix, 80);
     
+#if defined(BSD)
     return funopen(context, NULL, prefixstream_write, NULL, prefixstream_close);
+#else
+    cookie_io_functions_t prefix_funcs = {
+        NULL,
+        prefixstream_write,
+        NULL,
+        prefixstream_close
+    };
+    return fopencookie(context, "w", prefix_funcs);
+#endif
 }

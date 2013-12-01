@@ -16,8 +16,8 @@
 
 void swap_HFSExtentDescriptor(HFSExtentDescriptor* record)
 {
-    Convert16(record->startBlock);
-    Convert16(record->blockCount);
+    Swap16(record->startBlock);
+    Swap16(record->blockCount);
 }
 
 void swap_HFSExtentRecord(HFSExtentRecord* record)
@@ -27,72 +27,72 @@ void swap_HFSExtentRecord(HFSExtentRecord* record)
 
 void swap_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* record)
 {
-    Convert16(record->drSigWord);	/* == kHFSSigWord */
-	Convert32(record->drCrDate);	/* date and time of volume creation */
-	Convert32(record->drLsMod);	/* date and time of last modification */
-	Convert16(record->drAtrb);		/* volume attributes */
-	Convert16(record->drNmFls);	/* number of files in root folder */
-	Convert16(record->drVBMSt);	/* first block of volume bitmap */
-	Convert16(record->drAllocPtr);	/* start of next allocation search */
-	Convert16(record->drNmAlBlks);	/* number of allocation blocks in volume */
-	Convert32(record->drAlBlkSiz);	/* size (in bytes) of allocation blocks */
-	Convert32(record->drClpSiz);	/* default clump size */
-	Convert16(record->drAlBlSt);	/* first allocation block in volume */
-	Convert32(record->drNxtCNID);	/* next unused catalog node ID */
-	Convert16(record->drFreeBks);	/* number of unused allocation blocks */
-	Convert32(record->drVolBkUp);	/* date and time of last backup */
-	Convert16(record->drVSeqNum);	/* volume backup sequence number */
-	Convert32(record->drWrCnt);	/* volume write count */
-	Convert32(record->drXTClpSiz);	/* clump size for extents overflow file */
-	Convert32(record->drCTClpSiz);	/* clump size for catalog file */
-	Convert16(record->drNmRtDirs);	/* number of directories in root folder */
-	Convert32(record->drFilCnt);	/* number of files in volume */
-	Convert32(record->drDirCnt);	/* number of directories in volume */
-    // noswap: Convert32(record->drFndrInfo[8]);	/* information used by the Finder */
-	Convert16(record->drEmbedSigWord);	/* embedded volume signature (formerly drVCSize) */
+    Swap16(record->drSigWord);	/* == kHFSSigWord */
+	Swap32(record->drCrDate);	/* date and time of volume creation */
+	Swap32(record->drLsMod);	/* date and time of last modification */
+	Swap16(record->drAtrb);		/* volume attributes */
+	Swap16(record->drNmFls);	/* number of files in root folder */
+	Swap16(record->drVBMSt);	/* first block of volume bitmap */
+	Swap16(record->drAllocPtr);	/* start of next allocation search */
+	Swap16(record->drNmAlBlks);	/* number of allocation blocks in volume */
+	Swap32(record->drAlBlkSiz);	/* size (in bytes) of allocation blocks */
+	Swap32(record->drClpSiz);	/* default clump size */
+	Swap16(record->drAlBlSt);	/* first allocation block in volume */
+	Swap32(record->drNxtCNID);	/* next unused catalog node ID */
+	Swap16(record->drFreeBks);	/* number of unused allocation blocks */
+	Swap32(record->drVolBkUp);	/* date and time of last backup */
+	Swap16(record->drVSeqNum);	/* volume backup sequence number */
+	Swap32(record->drWrCnt);	/* volume write count */
+	Swap32(record->drXTClpSiz);	/* clump size for extents overflow file */
+	Swap32(record->drCTClpSiz);	/* clump size for catalog file */
+	Swap16(record->drNmRtDirs);	/* number of directories in root folder */
+	Swap32(record->drFilCnt);	/* number of files in volume */
+	Swap32(record->drDirCnt);	/* number of directories in volume */
+    // noswap: Swap32(record->drFndrInfo[8]);	/* information used by the Finder */
+	Swap16(record->drEmbedSigWord);	/* embedded volume signature (formerly drVCSize) */
 	swap_HFSExtentDescriptor(&record->drEmbedExtent);	/* embedded volume location and size (formerly drVBMCSize and drCtlCSize) */
-	Convert32(record->drXTFlSize);	/* size of extents overflow file */
+	Swap32(record->drXTFlSize);	/* size of extents overflow file */
 	swap_HFSExtentRecord(&record->drXTExtRec);	/* extent record for extents overflow file */
-	Convert32(record->drCTFlSize);	/* size of catalog file */
+	Swap32(record->drCTFlSize);	/* size of catalog file */
 	swap_HFSExtentRecord(&record->drCTExtRec);	/* extent record for catalog file */
 }
 
 void swap_HFSPlusVolumeHeader(HFSPlusVolumeHeader *record)
 {
-    Convert16(record->signature);
-    Convert16(record->version);
-    Convert32(record->attributes);
-    Convert32(record->lastMountedVersion);
-    Convert32(record->journalInfoBlock);
+    Swap16(record->signature);
+    Swap16(record->version);
+    Swap32(record->attributes);
+    Swap32(record->lastMountedVersion);
+    Swap32(record->journalInfoBlock);
     
-    Convert32(record->createDate);
-    Convert32(record->modifyDate);
-    Convert32(record->backupDate);
-    Convert32(record->checkedDate);
+    Swap32(record->createDate);
+    Swap32(record->modifyDate);
+    Swap32(record->backupDate);
+    Swap32(record->checkedDate);
     
-    Convert32(record->fileCount);
-    Convert32(record->folderCount);
+    Swap32(record->fileCount);
+    Swap32(record->folderCount);
     
-    Convert32(record->blockSize);
-    Convert32(record->totalBlocks);
-    Convert32(record->freeBlocks);
+    Swap32(record->blockSize);
+    Swap32(record->totalBlocks);
+    Swap32(record->freeBlocks);
     
-    Convert32(record->nextAllocation);
-    Convert32(record->rsrcClumpSize);
-    Convert32(record->dataClumpSize);
-    Convert32(record->nextCatalogID);
+    Swap32(record->nextAllocation);
+    Swap32(record->rsrcClumpSize);
+    Swap32(record->dataClumpSize);
+    Swap32(record->nextCatalogID);
     
-    Convert32(record->writeCount);
-    Convert64(record->encodingsBitmap);
+    Swap32(record->writeCount);
+    Swap64(record->encodingsBitmap);
     
     HFSPlusVolumeFinderInfo* finderInfo = (HFSPlusVolumeFinderInfo*)&record->finderInfo;
-    Convert32(finderInfo->bootDirID);
-    Convert32(finderInfo->bootParentID);
-    Convert32(finderInfo->openWindowDirID);
-    Convert32(finderInfo->os9DirID);
+    Swap32(finderInfo->bootDirID);
+    Swap32(finderInfo->bootParentID);
+    Swap32(finderInfo->openWindowDirID);
+    Swap32(finderInfo->os9DirID);
     // noswap: reserved is reserved (uint32)
-    Convert32(finderInfo->osXDirID);
-    Convert64(finderInfo->volID);
+    Swap32(finderInfo->osXDirID);
+    Swap64(finderInfo->volID);
     
     swap_HFSPlusForkData(&record->allocationFile);
     swap_HFSPlusForkData(&record->extentsFile);
@@ -115,10 +115,10 @@ void swap_JournalInfoBlock(JournalInfoBlock* record)
      } __attribute__((aligned(2), packed));
      typedef struct JournalInfoBlock JournalInfoBlock;
      */
-    Convert32(record->flags);
-    FOR_UNTIL(i, 8) Convert32(record->device_signature[i]);
-    Convert64(record->offset);
-    Convert64(record->size);
+    Swap32(record->flags);
+    FOR_UNTIL(i, 8) Swap32(record->device_signature[i]);
+    Swap64(record->offset);
+    Swap64(record->size);
     // noswap: uuid_string_t is a series of char
     // noswap: machine_serial_num is a series of char
     // noswap: reserved is reserved
@@ -126,9 +126,9 @@ void swap_JournalInfoBlock(JournalInfoBlock* record)
 
 void swap_HFSPlusForkData(HFSPlusForkData *record)
 {
-    Convert64(record->logicalSize);
-    Convert32(record->totalBlocks);
-    Convert32(record->clumpSize);
+    Swap64(record->logicalSize);
+    Swap32(record->totalBlocks);
+    Swap32(record->clumpSize);
     swap_HFSPlusExtentRecord(record->extents);
 }
 
@@ -139,52 +139,52 @@ void swap_HFSPlusExtentRecord(HFSPlusExtentDescriptor record[])
 
 void swap_HFSPlusExtentDescriptor(HFSPlusExtentDescriptor *record)
 {
-    Convert32(record->startBlock);
-    Convert32(record->blockCount);
+    Swap32(record->startBlock);
+    Swap32(record->blockCount);
 }
 
 void swap_HFSPlusExtentKey(HFSPlusExtentKey *record)
 {
 //    noswap: keyLength; swapped in swap_BTNode
-    Convert32(record->fileID);
-    Convert32(record->startBlock);
+    Swap32(record->fileID);
+    Swap32(record->startBlock);
 }
 
 void swap_HFSUniStr255(HFSUniStr255 *unistr)
 {
-    Convert16(unistr->length);
-    FOR_UNTIL(i, unistr->length) Convert16(unistr->unicode[i]);
+    Swap16(unistr->length);
+    FOR_UNTIL(i, unistr->length) Swap16(unistr->unicode[i]);
 }
 
 void swap_HFSPlusAttrKey(HFSPlusAttrKey *record)
 {
 //    noswap: keyLength; swapped in swap_BTNode
-    Convert16(record->pad);
-    Convert32(record->fileID);
-    Convert32(record->startBlock);
-    Convert16(record->attrNameLen);
-    FOR_UNTIL(i, record->attrNameLen) Convert16(record->attrName[i]);
+    Swap16(record->pad);
+    Swap32(record->fileID);
+    Swap32(record->startBlock);
+    Swap16(record->attrNameLen);
+    FOR_UNTIL(i, record->attrNameLen) Swap16(record->attrName[i]);
 }
 
 void swap_HFSPlusAttrData(HFSPlusAttrData* record)
 {
-    // noswap: Convert32(record->recordType); (previously swapped)
-    // noswap: Convert32(record->reserved[0]);
-    // noswap: Convert32(record->reserved[1]);
-    Convert32(record->attrSize);
+    // noswap: Swap32(record->recordType); (previously swapped)
+    // noswap: Swap32(record->reserved[0]);
+    // noswap: Swap32(record->reserved[1]);
+    Swap32(record->attrSize);
 }
 
 void swap_HFSPlusAttrForkData(HFSPlusAttrForkData* record)
 {
-    // noswap: Convert32(record->recordType); (previously swapped)
-    // noswap: Convert32(record->reserved);
+    // noswap: Swap32(record->recordType); (previously swapped)
+    // noswap: Swap32(record->reserved);
     swap_HFSPlusForkData(&record->theFork);
 }
 
 void swap_HFSPlusAttrExtents(HFSPlusAttrExtents* record)
 {
-    // noswap: Convert32(record->recordType); (previously swapped)
-    // noswap: Convert32(record->reserved);
+    // noswap: Swap32(record->recordType); (previously swapped)
+    // noswap: Swap32(record->reserved);
     swap_HFSPlusExtentRecord(record->extents);
 }
 
@@ -283,7 +283,7 @@ void swap_HFSPlusAttrRecord(HFSPlusAttrRecord* record)
 //                
 //                BTreeKey *keyPtr = (BTreeKey*)record;
 //                if (bTree->headerRecord.attributes & kBTBigKeysMask) {
-//                    Convert16(keyPtr->length16);
+//                    Swap16(keyPtr->length16);
 //                }
 //            }
 //            

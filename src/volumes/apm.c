@@ -15,29 +15,29 @@
 
 void swap_APMHeader(APMHeader* record)
 {
-    Convert16(record->signature);
-    Convert16(record->reserved1);
-	Convert32(record->partition_count);
-	Convert32(record->partition_start);
-	Convert32(record->partition_length);
+    Swap16(record->signature);
+    Swap16(record->reserved1);
+	Swap32(record->partition_count);
+	Swap32(record->partition_start);
+	Swap32(record->partition_length);
 //    char            name[32];
 //    char            type[32];
-	Convert32(record->data_start);
-	Convert32(record->data_length);
-	Convert32(record->status);
-	Convert32(record->boot_code_start);
-	Convert32(record->boot_code_length);
-	Convert32(record->bootloader_address);
-	Convert32(record->reserved2);
-	Convert32(record->boot_code_entry);
-	Convert32(record->reserved3);
-	Convert32(record->boot_code_checksum);
+	Swap32(record->data_start);
+	Swap32(record->data_length);
+	Swap32(record->status);
+	Swap32(record->boot_code_start);
+	Swap32(record->boot_code_length);
+	Swap32(record->bootloader_address);
+	Swap32(record->reserved2);
+	Swap32(record->boot_code_entry);
+	Swap32(record->reserved3);
+	Swap32(record->boot_code_checksum);
 //    char            processor_type[16];
 }
 
 int apm_get_header(Volume* vol, APMHeader* header, unsigned partition_number)
 {
-    size_t block_size = vol->block_size;
+    size_t block_size = vol->sector_size;
     
     ssize_t bytes = vol_read(vol, header, sizeof(APMHeader), (block_size * partition_number));
     if (bytes < 0) {
@@ -81,7 +81,7 @@ int apm_dump(Volume* vol)
     
     unsigned partitionID = 1;
     
-    APMHeader* header = malloc(sizeof(APMHeader));
+    APMHeader* header = calloc(1, sizeof(APMHeader));
     
     BeginSection("Apple Partition Map");
     
@@ -95,7 +95,7 @@ int apm_dump(Volume* vol)
         PrintHFSChar        (header, signature);
         PrintUI             (header, partition_count);
         PrintUI             (header, partition_start);
-        PrintDataLength     (header, partition_length*vol->block_size);
+        PrintDataLength     (header, partition_length*vol->sector_size);
         
         memcpy(str, &header->name, 32); str[32] = '\0';
         PrintAttribute("name", "%s", str);
@@ -109,7 +109,7 @@ int apm_dump(Volume* vol)
         }
         
         PrintUI             (header, data_start);
-        PrintDataLength     (header, data_length*vol->block_size);
+        PrintDataLength     (header, data_length*vol->sector_size);
         
         PrintRawAttribute   (header, status, 2);
         PrintUIFlagIfSet    (header->status, kAPMStatusValid);
@@ -126,7 +126,7 @@ int apm_dump(Volume* vol)
         PrintUIFlagIfSet    (header->status, kAPMStatusIsStartup);
         
         PrintUI             (header, boot_code_start);
-        PrintDataLength     (header, boot_code_length*vol->block_size);
+        PrintDataLength     (header, boot_code_length*vol->sector_size);
         PrintUI             (header, bootloader_address);
         PrintUI             (header, boot_code_entry);
         PrintUI             (header, boot_code_checksum);
@@ -166,8 +166,8 @@ int apm_load(Volume *vol)
         size_t length       = header.partition_length * sector_size;
         
         Volume *partition = vol_make_partition(vol, partitionID - 1, offset, length);
-        partition->block_size = sector_size;
-        partition->block_count = header.partition_length;
+        partition->sector_size = sector_size;
+        partition->sector_count = header.partition_length;
         
         memcpy(partition->desc, &header.name, 32);
         memcpy(partition->native_desc, &header.type, 32);
@@ -175,7 +175,7 @@ int apm_load(Volume *vol)
         for (int i = 0; APMPartitionIdentifers[i].type[0] != '\0'; i++) {
             APMPartitionIdentifer identifier = APMPartitionIdentifers[i];
             if ( (strncasecmp((char*)&header.type, identifier.type, 32) == 0) ) {
-                partition->type = identifier.hints;
+                partition->type = identifier.voltype;
             }
         }
         

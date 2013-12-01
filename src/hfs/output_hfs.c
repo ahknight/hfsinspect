@@ -394,9 +394,11 @@ int _genModeString(char* modeString, uint16_t mode)
     if (S_ISSOCK(mode)) {
         modeString[0] = 's';
     }
+#if defined(BSD)
     if (S_ISWHT(mode)) {
         modeString[0] = 'x';
     }
+#endif
     
     modeString[1] = (mode & S_IRUSR ? 'r' : '-');
     modeString[2] = (mode & S_IWUSR ? 'w' : '-');
@@ -427,11 +429,11 @@ int _genModeString(char* modeString, uint16_t mode)
         modeString[6] = '-';
     }
     
-    if ((mode & S_ISTXT) && !(mode & S_IXOTH)) {
+    if ((mode & S_ISVTX) && !(mode & S_IXOTH)) {
         modeString[9] = 'T';
-    } else if ((mode & S_ISTXT) && (mode & S_IXOTH)) {
+    } else if ((mode & S_ISVTX) && (mode & S_IXOTH)) {
         modeString[9] = 't';
-    } else if (!(mode & S_ISTXT) && (mode & S_IXOTH)) {
+    } else if (!(mode & S_ISVTX) && (mode & S_IXOTH)) {
         modeString[9] = 'x';
     } else {
         modeString[9] = '-';
@@ -505,11 +507,11 @@ void PrintHFSPlusBSDInfo(const HFSPlusBSDInfo *record)
     PrintConstOctIfEqual(mode & S_IFMT, S_IFREG);
     PrintConstOctIfEqual(mode & S_IFMT, S_IFLNK);
     PrintConstOctIfEqual(mode & S_IFMT, S_IFSOCK);
-    PrintConstOctIfEqual(mode & S_IFMT, S_IFWHT);
+//    PrintConstOctIfEqual(mode & S_IFMT, S_IFWHT);
     
     PrintUIOctFlagIfMatch(mode, S_ISUID);
     PrintUIOctFlagIfMatch(mode, S_ISGID);
-    PrintUIOctFlagIfMatch(mode, S_ISTXT);
+    PrintUIOctFlagIfMatch(mode, S_ISVTX);
     
     PrintUIOctFlagIfMatch(mode, S_IRUSR);
     PrintUIOctFlagIfMatch(mode, S_IWUSR);

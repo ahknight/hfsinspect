@@ -34,22 +34,26 @@ ssize_t hfs_read_blocks(void* buffer, const HFS *hfs, size_t block_count, size_t
     ASSERT_PTR(buffer);
     ASSERT_PTR(hfs);
     
-    unsigned ratio = hfs->block_size / hfs->vol->block_size;
+    unsigned ratio = hfs->block_size / hfs->vol->sector_size;
     return vol_read_blocks(hfs->vol, buffer, block_count*ratio, start_block*ratio);
 }
 
 #pragma mark funopen - HFSVolume
 
 typedef struct HFSVolumeCookie {
-    off_t   cursor;
+    off_t  cursor;
     HFS     *hfs;
 } HFSVolumeCookie;
 
+#if defined (BSD)
 int hfs_readfn(void * c, char * buf, int nbytes)
+#else
+ssize_t hfs_readfn(void * c, char * buf, size_t nbytes)
+#endif
 {
     HFSVolumeCookie *cookie = (HFSVolumeCookie*)c;
     off_t offset = cookie->cursor;
-    int bytes = 0;
+    ssize_t bytes = 0;
     
     bytes = hfs_read(buf, cookie->hfs, nbytes, offset);
     if (bytes > 0) cookie->cursor += bytes;
@@ -57,8 +61,14 @@ int hfs_readfn(void * c, char * buf, int nbytes)
     return bytes;
 }
 
+#if defined (BSD)
 fpos_t hfs_seekfn(void * c, fpos_t pos, int mode)
 {
+#else
+int hfs_seekfn(void * c, off_t* p, int mode)
+{
+    off_t pos = *p;
+#endif
     HFSVolumeCookie *cookie = (HFSVolumeCookie*)c;
     
     switch (mode) {
@@ -72,7 +82,12 @@ fpos_t hfs_seekfn(void * c, fpos_t pos, int mode)
             break;
     }
     cookie->cursor = pos;
+#if defined (BSD)
     return pos;
+#else
+    *p = pos;
+    return 0;
+#endif
 }
 
 int hfs_closefn(void * c)
@@ -89,7 +104,26 @@ FILE* fopen_hfs(HFS* hfs)
     cookie->hfs = calloc(1, sizeof(HFS));
     *cookie->hfs = *hfs;
     
+#if defined(BSD)
     return funopen(cookie, hfs_readfn, NULL, hfs_seekfn, hfs_closefn);
+#else
+    /*
+     FILE *fopencookie(void *cookie, const char *mode, cookie_io_functions_t io_funcs);
+     struct cookie_io_functions_t {
+         cookie_read_function_t  *read;
+         cookie_write_function_t *write;
+         cookie_seek_function_t  *seek;
+         cookie_close_function_t *close;
+     };
+     */
+    cookie_io_functions_t fc_hfs_funcs = {
+        hfs_readfn,
+        NULL,
+        hfs_seekfn,
+        hfs_closefn
+    };
+    return fopencookie(cookie, "r", fc_hfs_funcs);
+#endif
 }
 
 #pragma mark HFS Fork
@@ -317,15 +351,19 @@ ssize_t hfs_read_fork_range(void* buffer, const HFSFork *fork, size_t size, size
 #pragma mark funopen - HFSFork
 
 typedef struct HFSForkCookie {
-    off_t     cursor;
-    HFSFork   *fork;
+    off_t      cursor;
+    HFSFork     *fork;
 } HFSForkCookie;
 
+#if defined (BSD)
 int fork_readfn(void * c, char * buf, int nbytes)
+#else
+ssize_t fork_readfn(void * c, char * buf, size_t nbytes)
+#endif
 {
     HFSForkCookie *cookie = (HFSForkCookie*)c;
     off_t offset = cookie->cursor;
-    int bytes = 0;
+    size_t bytes = 0;
     
     bytes = hfs_read_fork_range(buf, cookie->fork, nbytes, offset);
     if (bytes > 0) cookie->cursor += bytes;
@@ -333,8 +371,14 @@ int fork_readfn(void * c, char * buf, int nbytes)
     return bytes;
 }
 
+#if defined (BSD)
 fpos_t fork_seekfn(void * c, fpos_t pos, int mode)
 {
+#else
+int fork_seekfn(void * c, off_t *p, int mode)
+{
+    off_t pos = *p;
+#endif
     HFSForkCookie *cookie = (HFSForkCookie*)c;
     
     switch (mode) {
@@ -348,7 +392,13 @@ fpos_t fork_seekfn(void * c, fpos_t pos, int mode)
             break;
     }
     cookie->cursor = pos;
+    
+#if defined (BSD)
     return pos;
+#else
+    *p = pos;
+    return 0;
+#endif
 }
 
 int fork_closefn(void * c)
@@ -365,5 +415,24 @@ FILE* fopen_hfsfork(HFSFork* fork)
     cookie->fork = calloc(1, sizeof(HFSFork));
     *cookie->fork = *fork;
     
+#if defined(BSD)
     return funopen(cookie, fork_readfn, NULL, fork_seekfn, fork_closefn);
+#else
+    /*
+     FILE *fopencookie(void *cookie, const char *mode, cookie_io_functions_t io_funcs);
+     struct cookie_io_functions_t {
+     cookie_read_function_t  *read;
+     cookie_write_function_t *write;
+     cookie_seek_function_t  *seek;
+     cookie_close_function_t *close;
+     };
+     */
+    cookie_io_functions_t fc_fork_funcs = {
+        fork_readfn,
+        NULL,
+        fork_seekfn,
+        fork_closefn
+    };
+    return fopencookie(cookie, "r", fc_fork_funcs);
+#endif
 }

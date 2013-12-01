@@ -12,7 +12,7 @@
 
 #include <errno.h>      //errno
 #include <sys/param.h>  //MIN/MAX
-#include <hfs/hfs_format.h>
+#include "hfs/Apple/hfs_format.h"
 #include <math.h>
 
 /**
@@ -173,7 +173,7 @@ void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t 
     }
 }
 
-
+#ifndef __GNUC__
 const UTF16 HI_SURROGATE_START = 0xD800;
 const UTF16 LO_SURROGATE_START = 0xDC00;
 
@@ -193,3 +193,4 @@ UChar16 uc32touc16( UChar32 codepoint )
     return u16;
 }
 
+#endif

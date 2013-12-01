@@ -78,7 +78,7 @@ int hfs_extents_get_node(BTreeNodePtr *out_node, const BTreePtr bTree, bt_nodeid
             
             if (node->nodeDescriptor->kind == kBTLeafNode) {
                 swap_HFSPlusExtentRecord(((HFSPlusExtentDescriptor*)record.value));
-                PrintHFSPlusExtentRecord(((HFSPlusExtentRecord*)record.value));
+                PrintHFSPlusExtentRecord(((const HFSPlusExtentRecord*)record.value));
             }
         }
     }

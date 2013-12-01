@@ -10,7 +10,7 @@
 #define hfsinspect_hfs_btree_btree_h
 
 #include "misc/cache.h"
-#include <hfs/hfs_format.h>
+#include "hfs/Apple/hfs_format.h"
 #include <stdint.h>
 
 typedef uint8_t     Byte;
@@ -26,7 +26,7 @@ typedef uint32_t    bt_nodeid_t;
 
 typedef struct _BTree *BTreePtr;
 typedef struct _BTreeNode *BTreeNodePtr;
-typedef struct _BTreeNodeRecord BTreeRecord __deprecated;
+//typedef struct _BTreeNodeRecord BTreeRecord;
 
 typedef int(*btree_key_compare_func)(const BTreeKey *, const BTreeKey *);
 typedef bool(*btree_walk_func)(const BTreePtr tree, const BTreeNodePtr node);
@@ -61,7 +61,7 @@ struct _BTreeNode {
     // Data
     size_t              dataLen;            // Length of buffer (should generally be the node size, but is always the malloc_size)
     uint32_t            recordCount;
-    char                *records __deprecated;
+//    char                *records __deprecated;
 };
 
 typedef struct _BTNodeRecord BTNodeRecord;

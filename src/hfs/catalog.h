@@ -21,7 +21,7 @@ extern wchar_t* HFSPlusDirMetadataFolder;
 
 int             hfs_get_catalog_btree                   (BTreePtr *tree, const HFS *hfs);
 int             hfs_catalog_get_node                    (BTreeNodePtr *node, const BTreePtr bTree, bt_nodeid_t nodeNum);
-uint16_t        hfs_get_catalog_record_type             (const BTreeRecord* catalogRecord) __deprecated;
+//uint16_t        hfs_get_catalog_record_type             (const BTreeRecord* catalogRecord) __deprecated;
 int             hfs_get_catalog_leaf_record             (HFSPlusCatalogKey* const record_key, HFSPlusCatalogRecord* const record_value, const BTreeNodePtr node, BTRecNum recordID);
 
 int8_t          hfs_catalog_find_record                 (BTreeNodePtr* node, BTRecNum *recordID, const HFS *hfs, bt_nodeid_t parentFolder, HFSUniStr255 name);
@@ -36,9 +36,9 @@ bool            hfs_catalog_record_is_file_alias        (const HFSPlusCatalogRec
 bool            hfs_catalog_record_is_directory_alias   (const HFSPlusCatalogRecord* record);
 bool            hfs_catalog_record_is_alias             (const HFSPlusCatalogRecord* record);
 
-int             hfs_catalog_target_of_catalog_record    (bt_nodeid_t* nodeID, BTRecNum* recordID, const BTreeRecord* nodeRecord) __deprecated;
-BTreeRecord*    hfs_catalog_next_in_folder              (const BTreeRecord* catalogRecord) __deprecated;
-wchar_t*        hfs_catalog_record_to_path              (const BTreeRecord* catalogRecord) __deprecated;
+//int             hfs_catalog_target_of_catalog_record    (bt_nodeid_t* nodeID, BTRecNum* recordID, const BTreeRecord* nodeRecord) __deprecated;
+//BTreeRecord*    hfs_catalog_next_in_folder              (const BTreeRecord* catalogRecord) __deprecated;
+//wchar_t*        hfs_catalog_record_to_path              (const BTreeRecord* catalogRecord) __deprecated;
 int             hfs_catalog_get_cnid_name               (hfs_wc_str name, const HFS *hfs, bt_nodeid_t cnid);
 
 int             hfsuctowcs                              (hfs_wc_str output, const HFSUniStr255* input);

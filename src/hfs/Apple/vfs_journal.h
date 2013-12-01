@@ -35,15 +35,19 @@
 #ifndef _SYS_VFS_JOURNAL_H_
 #define _SYS_VFS_JOURNAL_H_
 
-#include <sys/appleapiopts.h>
-#include <sys/cdefs.h>
+//#include <sys/appleapiopts.h>
+//#include <sys/cdefs.h>
 
-#ifdef __APPLE_API_UNSTABLE
+//#ifdef __APPLE_API_UNSTABLE
 
 #include <sys/types.h>
+#include <stdbool.h>
 //#include <kern/locks.h>
-#include <sys/disk.h>
+//#include <sys/disk.h>
 
+#ifndef	_MACH_I386_BOOLEAN_H_
+typedef bool boolean_t;
+#endif
 
 typedef struct _blk_info {
     int32_t    bsize;
@@ -75,6 +79,12 @@ typedef struct block_list_header {
 
 
 struct journal;
+
+typedef struct
+{
+    uint64_t               offset;
+    uint64_t               length;
+} dk_extent_t;
 
 struct jnl_trim_list {
 	uint32_t	allocated_count;
@@ -358,5 +368,5 @@ __BEGIN_DECLS
 
 __END_DECLS
 
-#endif /* __APPLE_API_UNSTABLE */
+//#endif /* __APPLE_API_UNSTABLE */
 #endif /* !_SYS_VFS_JOURNAL_H_ */

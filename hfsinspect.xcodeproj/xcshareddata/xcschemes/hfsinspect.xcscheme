@@ -42,10 +42,9 @@
    <LaunchAction
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      debugAsWhichUser = "root"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/ahknight"
+      customWorkingDirectory = "/Users/ahknight/code/hfsinspect"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "NO"
@@ -67,14 +66,22 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-d /dev/disk7s2"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-d /dev/disk1"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-d test.img"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-D"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-v"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
@@ -91,10 +98,6 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-l -P /"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "-v"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
@@ -127,7 +130,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-b extents -n 1"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
       <EnvironmentVariables>
@@ -143,21 +146,6 @@
          </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>
-         <AdditionalOption
-            key = "MallocScribble"
-            value = ""
-            isEnabled = "YES">
-         </AdditionalOption>
-         <AdditionalOption
-            key = "DYLD_INSERT_LIBRARIES"
-            value = "/usr/lib/libgmalloc.dylib"
-            isEnabled = "YES">
-         </AdditionalOption>
-         <AdditionalOption
-            key = "MallocGuardEdges"
-            value = ""
-            isEnabled = "YES">
-         </AdditionalOption>
       </AdditionalOptions>
    </LaunchAction>
    <ProfileAction

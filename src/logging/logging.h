@@ -11,6 +11,7 @@
 
 #include "debug.h"      //print_trace
 #include <stdio.h>      //FILE*
+#include <stdint.h>     //uint#_t etc.
 #include <stdbool.h>    //bool
 #include <signal.h>     //raise
 

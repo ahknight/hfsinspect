@@ -29,7 +29,7 @@ const char* gpt_partition_type_str(uuid_t uuid, VolType* hint)
         uuid_parse(gpt_partition_types[i].uuid, test);
         int result = uuid_compare(uuid, test);
         if ( result == 0 ) {
-            if (hint != NULL) *hint = gpt_partition_types[i].hints;
+            if (hint != NULL) *hint = gpt_partition_types[i].voltype;
             return gpt_partition_types[i].name;
         }
     }
@@ -50,14 +50,16 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
     
     {
         MBR mbr; ZERO_STRUCT(mbr);
-        offset = vol->block_size;
+        offset = vol->sector_size;
         length = sizeof(GPTHeader);
         
         if ( mbr_load_header(vol, &mbr) < 0 )
             return -1;
         
-        if (mbr.partitions[0].type == kMBRTypeGPTProtective)
-            offset = (mbr.partitions[0].first_sector_lba * vol->block_size);
+        if (mbr.partitions[0].type == kMBRTypeGPTProtective) {
+            vol->sector_size = 512;
+            offset = (mbr.partitions[0].first_sector_lba * vol->sector_size);
+        }
         
         if ( vol_read(vol, &header, length, offset) < 0 )
             return -1;
@@ -68,7 +70,7 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
         GPTPartitionRecord entries; ZERO_STRUCT(entries);
 
         // Determine start of partition array
-        offset = header.partition_start_lba * vol->block_size;
+        offset = header.partition_start_lba * vol->sector_size;
         length = header.partition_entry_count * header.partition_entry_size;
         
         // Read the partition array
@@ -108,13 +110,46 @@ int gpt_test(Volume *vol)
 {
     debug("GPT test");
     
-    GPTHeader header = {0};
-    if ( gpt_load_header(vol, &header, NULL) < 0 )
-        return -1;
+    // Nasty thing, GPT.  See, typically you'd grab the MBR, look for the
+    // protective partition pointer then go get the GPT info.
+    // Then 4k sectors arrived.  Now you have no idea how far in to look.
+    // So, we read 16KB and search.  Upside: if we find it, we update the
+    // sector size to indicate that since it's always at LBA 1. :)
     
-    if (memcmp(&header.signature, "EFI PART", 8) == 0) { debug("Found a GPT pmap."); return 1; }
+    size_t maxLBA = 16*1024;
+    size_t haystackSize = maxLBA + sizeof(GPTHeader);
+    char* haystack = calloc(1, haystackSize);
+    ssize_t nbytes = 0;
+    if ( (nbytes = vol_read(vol, haystack, haystackSize, 0)) < 0)
+        return nbytes;
     
-    return 0;
+    char* needle = "EFI PART";
+    char* found = memmem(haystack, haystackSize, needle, 8);
+    
+    if (found == NULL) return false;
+    
+    // found is a pointer to the location of the string, which starts the block.
+    // Calculate the LBA used to format the drive using this information.
+    // Presume LBAs are in the range 512 to 16K..
+    size_t blockSize = (found - haystack);
+    if (blockSize >= 512 && blockSize <= haystackSize) {
+        debug("Updating volume sector size from %zu to %zu.", vol->sector_size, blockSize);
+        vol->sector_size = blockSize;
+        if (vol->length && vol->sector_count)
+            vol->sector_count = (vol->length / vol->sector_size);
+        info("GPT volume has a sector size of %zu and %zu sectors for a total of %zu bytes.", vol->sector_size, vol->sector_count, vol->length);
+    }
+    
+    return true;
+
+//    // How it SHOULD work.
+//    GPTHeader header = {0};
+//    if ( gpt_load_header(vol, &header, NULL) < 0 )
+//        return -1;
+//    
+//    if (memcmp(&header.signature, "EFI PART", 8) == 0) { debug("Found a GPT pmap."); return 1; }
+//    
+//    return 0;
 }
 
 /**
@@ -150,8 +185,8 @@ int gpt_load(Volume *vol)
             break;
         
         // Calculate the size of the partition
-        offset = partition.first_lba * vol->block_size;
-        length = (partition.last_lba * vol->block_size) - offset;
+        offset = partition.first_lba * vol->sector_size;
+        length = (partition.last_lba * vol->sector_size) - offset;
         
         // Add partition to volume
         Volume *p = vol_make_partition(vol, i, offset, length);
@@ -209,7 +244,7 @@ int gpt_dump(Volume *vol)
     PrintUI                 (header_p, backup_lba);
     PrintUI                 (header_p, first_lba);
     PrintUI                 (header_p, last_lba);
-    _PrintDataLength        ("(size)", (header.last_lba * vol->block_size) - (header.first_lba * vol->block_size) );
+    _PrintDataLength        ("(size)", (header.last_lba * vol->sector_size) - (header.first_lba * vol->sector_size) );
     PrintAttribute    ("uuid", uuid_str);
     PrintUI                 (header_p, partition_start_lba);
     PrintUI                 (header_p, partition_entry_count);
@@ -223,7 +258,7 @@ int gpt_dump(Volume *vol)
         
         if (partition.first_lba == 0 && partition.last_lba == 0) break;
         
-        BeginSection("Partition: %d (%llu)", i + 1, (partition.first_lba * vol->block_size));
+        BeginSection("Partition: %d (%llu)", i + 1, (partition.first_lba * vol->sector_size));
         
         uuid_ptr = gpt_swap_uuid(&partition.type_uuid);
         uuid_unparse(*uuid_ptr, uuid_str);
@@ -236,7 +271,7 @@ int gpt_dump(Volume *vol)
         
         PrintAttribute("first_lba", "%llu", partition.first_lba);
         PrintAttribute("last_lba", "%llu", partition.last_lba);
-        _PrintDataLength("(size)", (partition.last_lba * vol->block_size) - (partition.first_lba * vol->block_size) );
+        _PrintDataLength("(size)", (partition.last_lba * vol->sector_size) - (partition.first_lba * vol->sector_size) );
         _PrintRawAttribute("attributes", &partition.attributes, sizeof(partition.attributes), 2);
         wchar_t name[37] = {0};
         for(int c = 0; c < 37; c++) name[c] = partition.name[c];

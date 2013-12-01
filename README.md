@@ -331,3 +331,8 @@ Once built and the product located, go ahead and hit "hfsinspect --help" for a q
     9   1.21 GiB     128733 [redacted]
 
 Hopefully you get the idea.  Have fun!
+
+
+## Linux
+
+You'll need the @uuid-dev@ package (Ubuntu).

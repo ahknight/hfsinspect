@@ -1,0 +1,5 @@
+include Makefile.common
+
+# Presumes LLVM/Clang
+CFLAGS += -Wno-four-char-constants
+BINDIR = bin/osx

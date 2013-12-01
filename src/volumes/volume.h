@@ -16,22 +16,43 @@
 typedef uint32_t VolType;
 
 enum {
-    kTypeUnknown                = '\?\?\?\?',
+    kTypeUnknown                = 0,
     
-    kVolTypeSystem              = 'IGNR',   // Do not look at this volume (reserved space, etc.)
-    kVolTypePartitionMap        = 'CTNR',   // May contain subvolumes
+    kVolTypePartitionMap        = 'PM  ',   // May contain subvolumes
+    kVolTypeSystem              = 'SYST',   // Do not look at this volume (reserved space, etc.)
     kVolTypeUserData            = 'DATA',   // May contain a filesystem
-
-    kPMTypeAPM                  = 'MP  ',
-    kPMTypeMBR                  = '55aa',
-    kPMTypeGPT                  = 'EFIP',
+    
+    kSysSwapSpace               = 'SWAP',   // Swap space
+    kSysFreeSpace               = 'FREE',   // Free space
+    kSysEFI                     = 'EFI ',   // EFI reserved space
+    kSysRecovery                = 'RCVR',   // Recovery OS installer
+    kSysReserved                = 'RSVD',   // General system reserved space ("other")
+    
+    kPMTypeAPM                  = 'APM ',
+    kPMTypeMBR                  = 'MBR ',
+    kPMTypeGPT                  = 'GPT ',
     kPMCoreStorage              = 'CS  ',
-
-    kFSTypeMFS                  = 'MFMa',
-    kFSTypeHFS                  = 'BD  ',
-    kFSTypeHFSPlus              = 'H+  ',
-    kFSTypeWrappedHFSPlus       = 'BDH+',
-    kFSTypeHFSX                 = 'HX  ',
+    
+    kFSTypeMFS                  = 'MFS ',
+    kFSTypeHFS                  = 'HFS ',
+    kFSTypeHFSPlus              = 'HFS+',
+    kFSTypeWrappedHFSPlus       = 'HFSW',
+    kFSTypeHFSX                 = 'HFSX',
+    
+    kFSTypeUFS                  = 'UFS ',
+    kFSTypeZFS                  = 'ZFS ',
+    kFSTypeBeFS                 = 'BeFS',
+    kFSTypeExt2                 = 'ext2',
+    kFSTypeExt3                 = 'ext3',
+    kFSTypeExt4                 = 'ext4',
+    kFSTypeBTFS                 = 'BTFS',
+    
+    kFSTypeFAT12                = 'FT12',
+    kFSTypeFAT16                = 'FT16',
+    kFSTypeFAT16B               = 'FT17',
+    kFSTypeFAT32                = 'FT32',
+    kFSTypeExFAT                = 'ExFT',
+    kFSTypeNTFS                 = 'NTFS',
 };
 
 typedef struct Volume Volume;
@@ -40,8 +61,8 @@ struct Volume {
     FILE                *fp;                // C file handle
     char                device[PATH_MAX];   // path to device file
     
-    size_t              block_size;         // block size (LBA size if the raw disk; FS blocks if a filesystem)
-    size_t              block_count;        // total blocks in this volume
+    size_t              sector_size;         // block size (LBA size if the raw disk; FS blocks if a filesystem)
+    size_t              sector_count;        // total blocks in this volume
     
     off_t               offset;             // offset in bytes on device
     size_t              length;             // length in bytes

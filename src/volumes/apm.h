@@ -37,37 +37,43 @@ struct APMHeader {
 //    char            reserved4[376];
 };
 
-typedef struct APMPartitionIdentifer { char type[32]; char name[100]; VolType hints; } APMPartitionIdentifer;
+typedef struct APMPartitionIdentifer {
+    char    type[32];
+    char    name[100];
+    VolType voltype;
+    VolType volsubtype;
+} APMPartitionIdentifer;
+
 static APMPartitionIdentifer APMPartitionIdentifers[] __attribute__((unused)) = {
-    {"Apple_Boot",                  "OS X Open Firmware 3.x booter",    kVolTypeSystem},
-    {"Apple_Boot_RAID",             "RAID partition",                   kVolTypeSystem},
-    {"Apple_Bootstrap",             "secondary loader",                 kVolTypeSystem},
-    {"Apple_Driver",                "device driver",                    kVolTypeSystem},
-    {"Apple_Driver43",              "SCSI Manager 4.3 device driver",   kVolTypeSystem},
-    {"Apple_Driver43_CD",           "SCSI CD-ROM device driver",        kVolTypeSystem},
-    {"Apple_Driver_ATA",            "ATA device driver",                kVolTypeSystem},
-    {"Apple_Driver_ATAPI",          "ATAPI device driver",              kVolTypeSystem},
-    {"Apple_Driver_IOKit",          "IOKit device driver",              kVolTypeSystem},
-    {"Apple_Driver_OpenFirmware",   "Open Firmware device driver",      kVolTypeSystem},
-    {"Apple_Extra",                 "unused",                           kVolTypeSystem},
-    {"Apple_Free",                  "free space",                       kVolTypeSystem},
-    {"Apple_FWDriver",              "FireWire device driver",           kVolTypeSystem},
-    {"Apple_HFS",                   "HFS/HFS+",                         kVolTypeUserData},
-    {"Apple_HFSX",                  "HFSX",                             kVolTypeUserData},
-    {"Apple_Loader",                "secondary loader",                 kVolTypeSystem},
-    {"Apple_MFS",                   "Macintosh File System",            kVolTypeUserData},
-    {"Apple_Partition_Map",         "partition map",                    kVolTypeSystem},
-    {"Apple_Patches",               "patch partition",                  kVolTypeSystem},
-    {"Apple_PRODOS",                "ProDOS",                           kVolTypeUserData},
-    {"Apple_Rhapsody_UFS",          "UFS",                              kVolTypeUserData},
-    {"Apple_Scratch",               "empty",                            kVolTypeSystem},
-    {"Apple_Second",                "secondary loader",                 kVolTypeSystem},
-    {"Apple_UFS",                   "UFS",                              kVolTypeUserData},
-    {"Apple_UNIX_SVR2",             "UNIX file system",                 kVolTypeUserData},
-    {"Apple_Void",                  "dummy partition (empty)",          kVolTypeSystem},
-    {"Be_BFS",                      "BeOS BFS",                         kVolTypeUserData},
+    {"Apple_Boot",                  "OS X Open Firmware 3.x booter",    kVolTypeSystem,     kSysReserved},
+    {"Apple_Boot_RAID",             "RAID partition",                   kVolTypeSystem,     kSysReserved},
+    {"Apple_Bootstrap",             "secondary loader",                 kVolTypeSystem,     kSysReserved},
+    {"Apple_Driver",                "device driver",                    kVolTypeSystem,     kSysReserved},
+    {"Apple_Driver43",              "SCSI Manager 4.3 device driver",   kVolTypeSystem,     kSysReserved},
+    {"Apple_Driver43_CD",           "SCSI CD-ROM device driver",        kVolTypeSystem,     kSysReserved},
+    {"Apple_Driver_ATA",            "ATA device driver",                kVolTypeSystem,     kSysReserved},
+    {"Apple_Driver_ATAPI",          "ATAPI device driver",              kVolTypeSystem,     kSysReserved},
+    {"Apple_Driver_IOKit",          "IOKit device driver",              kVolTypeSystem,     kSysReserved},
+    {"Apple_Driver_OpenFirmware",   "Open Firmware device driver",      kVolTypeSystem,     kSysReserved},
+    {"Apple_Extra",                 "unused",                           kVolTypeSystem,     kSysFreeSpace},
+    {"Apple_Free",                  "free space",                       kVolTypeSystem,     kSysFreeSpace},
+    {"Apple_FWDriver",              "FireWire device driver",           kVolTypeSystem,     kSysReserved},
+    {"Apple_HFS",                   "HFS/HFS+",                         kVolTypeUserData,   kFSTypeHFS},
+    {"Apple_HFSX",                  "HFSX",                             kVolTypeUserData,   kFSTypeHFSX},
+    {"Apple_Loader",                "secondary loader",                 kVolTypeSystem,     kSysReserved},
+    {"Apple_MFS",                   "Macintosh File System",            kVolTypeUserData,   kFSTypeMFS},
+    {"Apple_Partition_Map",         "partition map",                    kVolTypeSystem,     kPMTypeAPM},
+    {"Apple_Patches",               "patch partition",                  kVolTypeSystem,     kSysReserved},
+    {"Apple_PRODOS",                "ProDOS",                           kVolTypeUserData,   kTypeUnknown},
+    {"Apple_Rhapsody_UFS",          "UFS",                              kVolTypeUserData,   kFSTypeUFS},
+    {"Apple_Scratch",               "empty",                            kVolTypeSystem,     kSysFreeSpace},
+    {"Apple_Second",                "secondary loader",                 kVolTypeSystem,     kSysReserved},
+    {"Apple_UFS",                   "UFS",                              kVolTypeUserData,   kFSTypeUFS},
+    {"Apple_UNIX_SVR2",             "UNIX file system",                 kVolTypeUserData,   kFSTypeUFS},
+    {"Apple_Void",                  "dummy partition (empty)",          kVolTypeSystem,     kSysFreeSpace},
+    {"Be_BFS",                      "BeOS BFS",                         kVolTypeUserData,   kFSTypeBeFS},
     
-    {"", "", 0}
+    {"", "", 0, 0}
 };
 
 static uint32_t kAPMStatusValid                __attribute__((unused)) = 0x00000001;

@@ -16,7 +16,12 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include <malloc/malloc.h>
+#if defined(__APPLE__)
+#include <malloc/malloc.h>      // malloc_size
+#elif defined(__linux__)
+#include <malloc.h>
+#define malloc_size malloc_usable_size
+#endif
 
 
 typedef struct CacheRecord CacheRecord;

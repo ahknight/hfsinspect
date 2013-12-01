@@ -75,7 +75,7 @@ READ:
     if (bh->block_size > buf_size) {
         buf_size = bh->block_size;
         if (malloc_size(*buf) < buf_size) {
-            *buf = reallocf(*buf, buf_size);
+            *buf = realloc(*buf, buf_size);
             if (*buf == NULL) {
                 perror("realloc");
                 exit(1);
@@ -214,7 +214,7 @@ int cs_dump(Volume* vol)
     cs_print_volume_header(header);
 
     size_t block_size = header->md_block_size;
-    Byte* buf = malloc(block_size*4);
+    Byte* buf = calloc(4, block_size);
     
     FOR_UNTIL(i, header->md_count) {
         uint64_t block_number = header->md_blocks[i];
@@ -271,7 +271,7 @@ int cs_dump(Volume* vol)
 void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh)
 {
     size_t block_size = vh->md_block_size;
-    Byte* buf = malloc(block_size);
+    Byte* buf = calloc(1, block_size);
     uint64_t block_number = vh->md_blocks[0];
     uint64_t total_blocks = (vh->physical_size / vh->md_block_size);
     

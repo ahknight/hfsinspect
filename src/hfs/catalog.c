@@ -383,11 +383,11 @@ bool hfs_catalog_record_is_alias(const HFSPlusCatalogRecord* record)
 //    return NULL;
 //}
 
-wchar_t* hfs_catalog_record_to_path (const BTreeRecord* catalogRecord)
-{
-    // Crawl parent ID up, gathering names along the way. Build path from that.
-    return NULL;
-}
+//wchar_t* hfs_catalog_record_to_path (const BTreeRecord* catalogRecord)
+//{
+//    // Crawl parent ID up, gathering names along the way. Build path from that.
+//    return NULL;
+//}
 
 int hfs_catalog_get_cnid_name(hfs_wc_str name, const HFS *hfs, bt_nodeid_t cnid)
 {
@@ -420,34 +420,34 @@ int hfs_catalog_get_cnid_name(hfs_wc_str name, const HFS *hfs, bt_nodeid_t cnid)
 
 void swap_HFSPlusBSDInfo(HFSPlusBSDInfo *record)
 {
-    Convert32(record->ownerID);
-    Convert32(record->groupID);
+    Swap32(record->ownerID);
+    Swap32(record->groupID);
     // noswap: adminFlags is a short
     // noswap: ownerFlags is a short
-    Convert16(record->fileMode);
-    Convert32(record->special.iNodeNum);
+    Swap16(record->fileMode);
+    Swap32(record->special.iNodeNum);
 }
 
 void swap_FndrDirInfo(FndrDirInfo *record)
 {
-    Convert16(record->frRect.top);
-    Convert16(record->frRect.left);
-    Convert16(record->frRect.bottom);
-    Convert16(record->frRect.right);
+    Swap16(record->frRect.top);
+    Swap16(record->frRect.left);
+    Swap16(record->frRect.bottom);
+    Swap16(record->frRect.right);
     // noswap: frFlags is a short
-    Convert16(record->frLocation.v);
-    Convert16(record->frLocation.h);
-    Convert16(record->opaque);
+    Swap16(record->frLocation.v);
+    Swap16(record->frLocation.h);
+    Swap16(record->opaque);
 }
 
 void swap_FndrFileInfo(FndrFileInfo *record)
 {
-    Convert32(record->fdType);
-    Convert32(record->fdCreator);
-    Convert16(record->fdFlags);
-    Convert16(record->fdLocation.v);
-    Convert16(record->fdLocation.h);
-    Convert16(record->opaque);
+    Swap32(record->fdType);
+    Swap32(record->fdCreator);
+    Swap16(record->fdFlags);
+    Swap16(record->fdLocation.v);
+    Swap16(record->fdLocation.h);
+    Swap16(record->opaque);
 }
 
 void swap_FndrOpaqueInfo(FndrOpaqueInfo *record)
@@ -459,13 +459,13 @@ void swap_FndrOpaqueInfo(FndrOpaqueInfo *record)
 void swap_HFSPlusCatalogKey(HFSPlusCatalogKey *record)
 {
 //    noswap: keyLength; swapped in swap_BTNode
-    Convert32(record->parentID);
+    Swap32(record->parentID);
     swap_HFSUniStr255(&record->nodeName);
 }
 
 void swap_HFSPlusCatalogRecord(HFSPlusCatalogRecord *record)
 {
-    Convert16(record->record_type);
+    Swap16(record->record_type);
     switch (record->record_type) {
         case kHFSPlusFileRecord:
             swap_HFSPlusCatalogFile(&record->catalogFile);
@@ -485,20 +485,20 @@ void swap_HFSPlusCatalogRecord(HFSPlusCatalogRecord *record)
 
 void swap_HFSPlusCatalogFile(HFSPlusCatalogFile *record)
 {
-//    Convert16(record->recordType);
-    Convert16(record->flags);
-    Convert32(record->reserved1);
-    Convert32(record->fileID);
-    Convert32(record->createDate);
-    Convert32(record->contentModDate);
-    Convert32(record->attributeModDate);
-    Convert32(record->accessDate);
-    Convert32(record->backupDate);
+//    Swap16(record->recordType);
+    Swap16(record->flags);
+    Swap32(record->reserved1);
+    Swap32(record->fileID);
+    Swap32(record->createDate);
+    Swap32(record->contentModDate);
+    Swap32(record->attributeModDate);
+    Swap32(record->accessDate);
+    Swap32(record->backupDate);
     swap_HFSPlusBSDInfo(&record->bsdInfo);
     swap_FndrFileInfo(&record->userInfo);
     swap_FndrOpaqueInfo(&record->finderInfo);
-    Convert32(record->textEncoding);
-    Convert32(record->reserved2);
+    Swap32(record->textEncoding);
+    Swap32(record->reserved2);
     
     swap_HFSPlusForkData(&record->dataFork);
     swap_HFSPlusForkData(&record->resourceFork);
@@ -506,27 +506,27 @@ void swap_HFSPlusCatalogFile(HFSPlusCatalogFile *record)
 
 void swap_HFSPlusCatalogFolder(HFSPlusCatalogFolder *record)
 {
-//    Convert16(record->recordType);
-    Convert16(record->flags);
-    Convert32(record->valence);
-    Convert32(record->folderID);
-    Convert32(record->createDate);
-    Convert32(record->contentModDate);
-    Convert32(record->attributeModDate);
-    Convert32(record->accessDate);
-    Convert32(record->backupDate);
+//    Swap16(record->recordType);
+    Swap16(record->flags);
+    Swap32(record->valence);
+    Swap32(record->folderID);
+    Swap32(record->createDate);
+    Swap32(record->contentModDate);
+    Swap32(record->attributeModDate);
+    Swap32(record->accessDate);
+    Swap32(record->backupDate);
     swap_HFSPlusBSDInfo(&record->bsdInfo);
     swap_FndrDirInfo(&record->userInfo);
     swap_FndrOpaqueInfo(&record->finderInfo);
-    Convert32(record->textEncoding);
-    Convert32(record->folderCount);
+    Swap32(record->textEncoding);
+    Swap32(record->folderCount);
 }
 
 void swap_HFSPlusCatalogThread(HFSPlusCatalogThread *record)
 {
-//    Convert16(record->recordType);
-    Convert32(record->reserved);
-    Convert32(record->parentID);
+//    Swap16(record->recordType);
+    Swap32(record->reserved);
+    Swap32(record->parentID);
     swap_HFSUniStr255(&record->nodeName);
 }
 

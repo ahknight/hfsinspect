@@ -57,8 +57,8 @@ int mbr_load(Volume *vol)
             size_t length = 0;
             
             p = mbr.partitions[i];
-            offset = p.first_sector_lba * vol->block_size;
-            length = p.sector_count * vol->block_size;
+            offset = p.first_sector_lba * vol->sector_size;
+            length = p.sector_count * vol->sector_size;
             
             v = vol_make_partition(vol, i, offset, length);
             
@@ -78,7 +78,7 @@ const char* mbr_partition_type_str(uint16_t type, VolType* hint)
     
     FOR_UNTIL(i, 256) {
         if (mbr_partition_types[i].type == type) {
-            if (hint != NULL) *hint = mbr_partition_types[i].hint;
+            if (hint != NULL) *hint = mbr_partition_types[i].voltype;
             strlcpy(type_str, mbr_partition_types[i].name, 99);
         }
     }
@@ -120,7 +120,7 @@ int mbr_dump(Volume *vol)
         PrintUI     (partition, last_sector.sector);
         PrintUI     (partition, first_sector_lba);
         PrintUI     (partition, sector_count);
-        _PrintDataLength("(size)", (partition->sector_count * vol->block_size));
+        _PrintDataLength("(size)", (partition->sector_count * vol->sector_size));
         EndSection();
     }
     

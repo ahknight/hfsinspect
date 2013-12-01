@@ -59,17 +59,15 @@ int BTGetBTNodeRecord(BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum 
     record->valueLen    = record->recordLen - record->keyLen;
     record->valueLen   += (record->valueLen % 2);
     
-    BeginSection("Record %u", record->recNum);
-    PrintUIHex(record, offset);
-    PrintAttributeDump("record", record->record, record->recordLen, 16);
-    PrintUIHex(record, recordLen);
-    PrintAttributeDump("key", record->key, record->keyLen, 16);
-//    PrintUIHex(*record, key);
-    PrintUIHex(record, keyLen);
-    PrintAttributeDump("value", record->value, record->valueLen, 16);
-//    PrintUIHex(*record, value);
-    PrintUIHex(record, valueLen);
-    EndSection();
+    // BeginSection("Record %u", record->recNum);
+    // PrintUIHex(record, offset);
+    // PrintAttributeDump("record", record->record, record->recordLen, 16);
+    // PrintUIHex(record, recordLen);
+    // PrintAttributeDump("key", record->key, record->keyLen, 16);
+    // PrintUIHex(record, keyLen);
+    // PrintAttributeDump("value", record->value, record->valueLen, 16);
+    // PrintUIHex(record, valueLen);
+    // EndSection();
     
     return 0;
 }

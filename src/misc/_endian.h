@@ -47,7 +47,7 @@ static inline uint64_t _bswap64(uint64_t x)
 
 // ... and now the platform and CPU-specific macrofest.
 
-#if __APPLE__
+#if defined(__APPLE__)
 
     // Apple takes care of swapping out native functions for us.
     #include <libkern/OSByteOrder.h>
@@ -64,10 +64,17 @@ static inline uint64_t _bswap64(uint64_t x)
     #define bswap32(__x)   OSSwapInt32(__x)
     #define bswap64(__x)   OSSwapInt64(__x)
 
-#elif __FREEBSD__ || __NETBSD__
+#elif defined(__FreeBSD__) || defined(__NetBSD__)
 
-    // These are all native functions on the BSDs.
     #include <sys/endian.h>
+
+#elif defined(__linux__)
+
+    #include <endian.h>
+
+    #define bswap16(__x)   __bswap_16(__x)
+    #define bswap32(__x)   __bswap_32(__x)
+    #define bswap64(__x)   __bswap_64(__x)
 
 #else /* other platforms */
 
@@ -115,9 +122,22 @@ static inline uint64_t _bswap64(uint64_t x)
 
 #endif /* platforms */
 
-#define Convert16(x)    ( (x) = be16toh( (x) ) )
-#define Convert32(x)    ( (x) = be32toh( (x) ) )
-#define Convert64(x)    ( (x) = be64toh( (x) ) )
+#define Swap16(x)    ( (x) = be16toh( (x) ) )
+#define Swap32(x)    ( (x) = be32toh( (x) ) )
+#define Swap64(x)    ( (x) = be64toh( (x) ) )
+
+#ifdef __clang__
+//#define bswap(x) _Generic( (x), uint16_t:bswap16((x)), uint32_t:bswap32((x)), uint64_t:bswap64((x)) )
+//#define betoh(x) _Generic( (x), uint16_t:be16toh((x)), uint32_t:be32toh((x)), uint64_t:be64toh((x)) )
+#define Swap(x)  _Generic( (x), uint16_t:Swap16((x)),  uint32_t:Swap32((x)),  uint64_t:Swap64((x))  )
+#else
+#define Swap(x) { switch(sizeof((x))) { \
+    case 16:Swap16((x)); break; \
+    case 32:Swap32((x)); break; \
+    case 64:Swap64((x)); break; \
+    default: break; \
+}}
+#endif
 
 #endif
 

@@ -13,7 +13,7 @@
 #include "volumes/volume.h"
 #include "hfs/Apple/hfs_macos_defs.h"
 
-#include <hfs/hfs_format.h>     //duh
+#include "hfs/Apple/hfs_format.h"
 #include "btree/btree.h"
 
 typedef uint8_t     hfs_forktype_t;
