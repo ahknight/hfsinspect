@@ -1,6 +1,4 @@
-include Makefile.common
-
 # Presumes GNU GCC
 LIBS   += -luuid -lm
 CFLAGS += -I/usr/include -Wno-multichar -Wno-unknown-pragmas
-BINDIR = bin/linux
+BINARY = bin/linux/hfsinspect
