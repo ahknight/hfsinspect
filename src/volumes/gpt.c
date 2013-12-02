@@ -205,9 +205,9 @@ int gpt_load(Volume *vol)
         }
         char name[100] = {'\0'};
         wcstombs(name, wcname, 100);
-        strlcpy(p->desc, name, 36);
-        strlcpy(p->native_desc, desc, 100);
-//        strlcpy(p->native_desc, uuid_str, 100);
+        (void)strlcpy(p->desc, name, 36);
+        (void)strlcpy(p->native_desc, desc, 100);
+//        (void)strlcpy(p->native_desc, uuid_str, 100);
     }
     
     return 0;

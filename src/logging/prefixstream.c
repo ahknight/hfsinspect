@@ -62,7 +62,7 @@ FILE* prefixstream(FILE* fp, char* prefix)
     struct prefixstream_context *context = calloc(1, sizeof(struct prefixstream_context));
     context->fp = fp;
     context->newline = 1;
-    strlcpy(context->prefix, prefix, 80);
+    (void)strlcpy(context->prefix, prefix, 80);
     
 #if defined(BSD)
     return funopen(context, NULL, prefixstream_write, NULL, prefixstream_close);

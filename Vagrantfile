@@ -19,22 +19,26 @@ if [ ! -e $SETUPFLAG ]
   aptitude -yq safe-upgrade
 
   # Install developent tools
-  aptitude -yq install build-essential
+  aptitude -yq install build-essential uuid-dev
   
   touch $SETUPFLAG
 fi
 SCRIPT
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "precise32"
-  # config.vm.box = "precise64"
-  # config.vm.box = "raring32"
-  # config.vm.box = "raring64"
-  config.vm.network :private_network, ip: "10.8.8.10"
-  
   # If you aren't already doing this ... why not?
   config.vm.synced_folder "~/.vagrant.d/caches/apt", "/var/cache/apt/archives"
   config.vm.synced_folder "~/.vagrant.d/caches/pip", "/home/vagrant/.pip_download_cache"
 
   config.vm.provision "shell", inline: $provision_script
+  
+  config.vm.define :precise32 do |precise32|
+    precise32.vm.box = "precise32"
+    precise32.vm.network :private_network, ip: "10.8.8.10"
+  end
+
+  config.vm.define :precise64 do |precise64|
+    precise64.vm.box = "precise64"
+    precise64.vm.network :private_network, ip: "10.8.8.11"
+  end
 end

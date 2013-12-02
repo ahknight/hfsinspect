@@ -44,7 +44,7 @@ Volume* vol_open(const char* path, int mode, off_t offset, size_t length, size_t
     
     vol->fd = fd;
     vol->fp = fdopen(fd, modestr);
-    strlcpy(vol->device, path, PATH_MAX);
+    (void)strlcpy(vol->device, path, PATH_MAX);
     vol->offset = offset;
     
     if (length && block_size) {
@@ -82,7 +82,7 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
 {
     VALID_DESCRIPTOR(vol);
 
-    debug("Reading from volume at (%lld, %lu)", offset, size);
+    debug("Reading from volume at (%lld, %zu)", offset, size);
     
     // Range checks
     if (vol->length && offset > vol->length)
@@ -90,7 +90,7 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
     
     if ( vol->length && (offset + size) > vol->length ) {
         size = vol->length - offset;
-        debug("Adjusted read to (%lld, %lu)", offset, size);
+        debug("Adjusted read to (%lld, %zu)", offset, size);
     }
     
     if (size < 1)

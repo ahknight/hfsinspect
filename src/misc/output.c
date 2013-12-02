@@ -19,7 +19,7 @@ static inline const unsigned long indent_level() {
     return strnlen(_indent_string, 50);
 }
 
-static inline const void set_indent_level(unsigned long new_level) {
+static inline void set_indent_level(unsigned long new_level) {
     if (new_level > 49) new_level = 0;
     _indent_string[new_level] = '\0';
     while (new_level) _indent_string[--new_level] = ' ';
@@ -123,7 +123,7 @@ void _PrintRawAttribute(const char* label, const void* map, size_t nbytes, char 
     for (int i = 0; i < len; i += segmentLength) {
         char segment[segmentLength]; memset(segment, '\0', segmentLength);
         
-        strlcpy(segment, &str[i], MIN(segmentLength, len - i));
+        (void)strlcpy(segment, &str[i], MIN(segmentLength, len - i));
         
         PrintAttribute(label, "%s%s", (base==16?"0x":""), segment);
         
@@ -181,7 +181,7 @@ int format_blocks(char* out, size_t blocks, size_t block_size, size_t length)
 int format_time(char* out, time_t gmt_time, size_t length)
 {
     struct tm *t = gmtime(&gmt_time);
-    return (int)strftime(out, length, "%c %Z\0", t);
+    return (int)strftime(out, length, "%c %Z", t);
 }
 
 int format_uint_oct(char* out, uint64_t value, uint8_t padding, size_t length)

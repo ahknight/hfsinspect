@@ -749,11 +749,11 @@ void PrintJournalInfoBlock(const JournalInfoBlock *record)
     PrintDataLength(record, size);
 
     char uuid_str[sizeof(uuid_string_t) + 1];
-    strlcpy(uuid_str, &record->ext_jnl_uuid[0], sizeof(uuid_str));
+    (void)strlcpy(uuid_str, &record->ext_jnl_uuid[0], sizeof(uuid_str));
     PrintAttribute("ext_jnl_uuid", uuid_str);
     
     char serial[49];
-    strlcpy(serial, &record->machine_serial_num[0], 49);
+    (void)strlcpy(serial, &record->machine_serial_num[0], 49);
     PrintAttribute("machine_serial_num", serial);
     
     // (uint32_t) reserved[32]
@@ -1084,19 +1084,19 @@ void PrintFolderListing(uint32_t folderID)
                 
                 if ( hfs_catalog_record_is_hard_link(catalogRecord) && hfs_catalog_record_is_alias(catalogRecord) ) {
                     folderStats.hardLinkCount++;
-                    strlcpy(kind, "dir link", 10);
+                    (void)strlcpy(kind, "dir link", 10);
                 } else if (hfs_catalog_record_is_hard_link(catalogRecord)) {
                     folderStats.hardLinkCount++;
-                    strlcpy(kind, "hard link", 10);
+                    (void)strlcpy(kind, "hard link", 10);
                 } else if (hfs_catalog_record_is_symbolic_link(catalogRecord)) {
                     folderStats.symlinkCount++;
-                    strlcpy(kind, "symlink", 10);
+                    (void)strlcpy(kind, "symlink", 10);
                 } else if (catalogRecord->record_type == kHFSPlusFolderRecord) {
                     folderStats.folderCount++;
-                    strlcpy(kind, "folder", 10);
+                    (void)strlcpy(kind, "folder", 10);
                 } else {
                     folderStats.fileCount++;
-                    strlcpy(kind, "file", 10);
+                    (void)strlcpy(kind, "file", 10);
                 }
                 
                 // Files and folders share these attributes at the same locations.

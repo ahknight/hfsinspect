@@ -220,7 +220,7 @@ void showPathInfo(void)
     
     while ( (segment = strsep(&file_path, "/")) != NULL ) {
         debug("Segment: %d:%s", parentID, segment);
-        strlcpy(last_segment, segment, PATH_MAX);
+        (void)strlcpy(last_segment, segment, PATH_MAX);
         last_parentID = parentID;
         
         BTreeNodePtr node;
@@ -655,8 +655,8 @@ bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
         path[1] = '\0';
     }
     
-    strlcpy(path_out, path, PATH_MAX);
-    strlcpy(device_out, device, PATH_MAX);
+    (void)strlcpy(path_out, path, PATH_MAX);
+    (void)strlcpy(device_out, device, PATH_MAX);
     
     
     debug("Path in: %s", path_in);
@@ -737,7 +737,7 @@ void loadBTree()
 
 int main (int argc, char* const *argv)
 {
-    strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
+    (void)strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
     
     if (argc == 1) usage(1);
     
@@ -799,12 +799,12 @@ int main (int argc, char* const *argv)
             case 'D': set_mode(HIModeShowDiskInfo); break;
                 
                 // Set device with path to file or device
-            case 'd': strlcpy(HIOptions.device_path, optarg, PATH_MAX); break;
+            case 'd': (void)strlcpy(HIOptions.device_path, optarg, PATH_MAX); break;
                 
             case 'V':
             {
                 char* str = deviceAtPath(optarg);
-                strlcpy(HIOptions.device_path, str, PATH_MAX);
+                (void)strlcpy(HIOptions.device_path, str, PATH_MAX);
                 if (HIOptions.device_path == NULL) fatal("Unable to determine device. Does the path exist?");
             }
                 break;
@@ -817,8 +817,8 @@ int main (int argc, char* const *argv)
                 
                 bool success = resolveDeviceAndPath(optarg, device, file);
                 
-                if (device != NULL) strlcpy(HIOptions.device_path, device, PATH_MAX);
-                if (file != NULL)   strlcpy(HIOptions.file_path, file, PATH_MAX);
+                if (device != NULL) (void)strlcpy(HIOptions.device_path, device, PATH_MAX);
+                if (file != NULL)   (void)strlcpy(HIOptions.file_path, file, PATH_MAX);
                 
                 if ( !success || !strlen(HIOptions.device_path ) ) fatal("Device could not be determined. Specify manually with -d/--device.");
                 if ( !strlen(HIOptions.file_path) ) fatal("Path must be an absolute path from the root of the target filesystem.");
@@ -827,7 +827,7 @@ int main (int argc, char* const *argv)
                 
             case 'P':
                 set_mode(HIModeShowPathInfo);
-                strlcpy(HIOptions.file_path, optarg, PATH_MAX);
+                (void)strlcpy(HIOptions.file_path, optarg, PATH_MAX);
                 if (HIOptions.file_path[0] != '/') fatal("Path given to -P/--path_abs must be an absolute path from the root of the target filesystem.");
                 break;
                 
@@ -851,7 +851,7 @@ int main (int argc, char* const *argv)
                 char* filename  = strsep(&option, ":");
                 
                 if (parent && strlen(parent)) sscanf(parent, "%u", &HIOptions.record_parent);
-                if (filename) strlcpy(HIOptions.record_filename, filename, PATH_MAX);
+                if (filename) (void)strlcpy(HIOptions.record_filename, filename, PATH_MAX);
                 
                 FREE_BUFFER(option);
                 
@@ -861,7 +861,7 @@ int main (int argc, char* const *argv)
                 
             case 'o':
                 set_mode(HIModeExtractFile);
-                strlcpy(HIOptions.extract_path, optarg, PATH_MAX);
+                (void)strlcpy(HIOptions.extract_path, optarg, PATH_MAX);
                 break;
                 
             case 'n':
@@ -895,9 +895,9 @@ int main (int argc, char* const *argv)
         info("No device specified. Trying to use the root device.");
         
         char device[PATH_MAX];
-        strlcpy(device, deviceAtPath("."), PATH_MAX);
+        (void)strlcpy(device, deviceAtPath("."), PATH_MAX);
         if (device != NULL)
-            strlcpy(HIOptions.device_path, device, PATH_MAX);
+            (void)strlcpy(HIOptions.device_path, device, PATH_MAX);
         
         if ( EMPTY_STRING(HIOptions.device_path) ) {
             error("Device could not be determined. Specify manually with -d/--device.");
@@ -916,10 +916,10 @@ OPEN:
             if (strstr(HIOptions.device_path, "/dev/disk") != NULL) {
                 char* newDevicePath;
                 INIT_BUFFER(newDevicePath, PATH_MAX + 1);
-                strlcat(newDevicePath, "/dev/rdisk", PATH_MAX);
-                strlcat(newDevicePath, &HIOptions.device_path[9], PATH_MAX);
+                (void)strlcat(newDevicePath, "/dev/rdisk", PATH_MAX);
+                (void)strlcat(newDevicePath, &HIOptions.device_path[9], PATH_MAX);
                 info("Device %s busy. Trying the raw disk instead: %s", HIOptions.device_path, newDevicePath);
-                strlcpy(HIOptions.device_path, newDevicePath, PATH_MAX);
+                (void)strlcpy(HIOptions.device_path, newDevicePath, PATH_MAX);
                 goto OPEN;
             }
             perror("vol_qopen");

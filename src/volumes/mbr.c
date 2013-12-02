@@ -79,12 +79,12 @@ const char* mbr_partition_type_str(uint16_t type, VolType* hint)
     FOR_UNTIL(i, 256) {
         if (mbr_partition_types[i].type == type) {
             if (hint != NULL) *hint = mbr_partition_types[i].voltype;
-            strlcpy(type_str, mbr_partition_types[i].name, 99);
+            (void)strlcpy(type_str, mbr_partition_types[i].name, 99);
         }
     }
     
     if (type_str == NULL)
-        strlcpy(type_str, "unknown", 100);
+        (void)strlcpy(type_str, "unknown", 100);
     
     return type_str;
 }

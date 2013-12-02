@@ -1,12 +1,13 @@
 CFLAGS += -msse4.2 -Isrc -include src/hfsinspect-Prefix.pch
 CFLAGS += -g -O0 -Wall #debug
 
-UNAME := $(shell uname -s)
-include Makefile.$(UNAME)
+OS := $(shell uname -s)
+MACHINE := $(shell uname -m)
+include Makefile.$(OS)
 
 BINARYNAME = hfsinspect
 BINARYPATH = $(BINDIR)/$(BINARYNAME)
-BUILDDIR = build/$(UNAME)
+BUILDDIR = build/$(OS)-$(MACHINE)
 BINDIR = $(BUILDDIR)
 OBJDIR = $(BUILDDIR)/obj
 

@@ -32,6 +32,8 @@
 //#include <sys/appleapiopts.h>
 #include "hfs/Apple/hfs_unistr.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpedantic"
 /*
  * hfs_format.h
  *
@@ -802,5 +804,7 @@ enum {
 #ifdef __cplusplus
 }
 #endif
+
+#pragma clang diagnostic pop
 
 #endif /* __HFS_FORMAT__ */
