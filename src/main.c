@@ -172,12 +172,11 @@ void usage(int status)
     "    By default, hfsinspect will just show you the volume header and quit.  Use the following options to get more specific data.\n"
     "\n"
     "    -h,         --help          Show help and quit. \n"
-    "                --version       Show version information and quit. \n"
+    "    -v,         --version       Show version information and quit. \n"
     "    -b NAME,    --btree NAME    Specify which HFS+ B-Tree to work with. Supported options: attributes, catalog, extents, or hotfile. \n"
-    "    -n,         --node ID       Dump an HFS+ B-Tree node by ID (must specify tree with -b). \n"
-    "    -v,         --volumeheader  Dump the volume header. \n"
-    "    -j,         --journalinfo   Dump the volume's journal info block structure. \n"
-    "    -J,         --journal       Dump information about the journal file. \n"
+    "    -n ID,      --node ID       Dump an HFS+ B-Tree node by ID (must specify tree with -b). \n"
+    "    -r,         --volumeheader  Dump the volume header. \n"
+    "    -j,         --journal       Dump the volume's journal info block structure. \n"
     "    -c CNID,    --cnid CNID     Lookup and display a record by its catalog node ID. \n"
     "    -l,         --list          If the specified FSOB is a folder, list the contents. \n"
     "    -D,         --disk-info     Show any available information about the disk, including partitions and volume headers.\n"
@@ -757,10 +756,10 @@ int main (int argc, char* const *argv)
     /* options descriptor */
     struct option longopts[] = {
         { "help",           no_argument,            NULL,                   'h' },
-        { "version",        no_argument,            NULL,                   'Z' },
+        { "version",        no_argument,            NULL,                   'v' },
         { "device",         required_argument,      NULL,                   'd' },
         { "volume",         required_argument,      NULL,                   'V' },
-        { "volumeheader",   no_argument,            NULL,                   'v' },
+        { "volumeheader",   no_argument,            NULL,                   'r' },
         { "node",           required_argument,      NULL,                   'n' },
         { "btree",          required_argument,      NULL,                   'b' },
         { "output",         required_argument,      NULL,                   'o' },
@@ -769,14 +768,13 @@ int main (int argc, char* const *argv)
         { "path_abs",       required_argument,      NULL,                   'P' },
         { "cnid",           required_argument,      NULL,                   'c' },
         { "list",           no_argument,            NULL,                   'l' },
-        { "journalinfo",    no_argument,            NULL,                   'j' },
-        { "journal",        no_argument,            NULL,                   'J' },
+        { "journal",        no_argument,            NULL,                   'j' },
         { "disk-info",      no_argument,            NULL,                   'D' },
         { NULL,             0,                      NULL,                   0   }
     };
     
     /* short options */
-    char* shortopts = "hvjJlsDd:n:b:p:P:F:V:c:o:";
+    char* shortopts = "hvjlsDd:n:b:p:P:F:V:c:o:";
     
     char opt;
     while ((opt = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -792,7 +790,7 @@ int main (int argc, char* const *argv)
                 
             case 'l': set_mode(HIModeListFolder); break;
                 
-            case 'Z': show_version(); break;       // Exits
+            case 'v': show_version(); break;       // Exits
                 
             case 'h': usage(0); break;                              // Exits
                 
@@ -811,7 +809,7 @@ int main (int argc, char* const *argv)
             }
                 break;
                 
-            case 'v': set_mode(HIModeShowVolumeInfo); break;
+            case 'r': set_mode(HIModeShowVolumeInfo); break;
                 
             case 'p':
                 set_mode(HIModeShowPathInfo);
