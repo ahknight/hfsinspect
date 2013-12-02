@@ -180,7 +180,6 @@ int LogLine(enum LogLevel level, const char* format, ...)
     nchars += vfprintf(fp, format, argp);
     fputc('\n', fp);
     _print_reset(fp);
-//    fflush(fp);
 
     va_end(argp);
     

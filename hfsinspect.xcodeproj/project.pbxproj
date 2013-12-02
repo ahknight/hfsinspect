@@ -91,7 +91,7 @@
 		9BA332B2183C6EC600F55322 /* crc32c_tables.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crc32c_tables.h; sourceTree = "<group>"; };
 		9BA332B3183C6EC600F55322 /* crc32c.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = crc32c.c; sourceTree = "<group>"; };
 		9BA332B4183C6EC600F55322 /* crc32c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crc32c.h; sourceTree = "<group>"; };
-		9BAC71EF182D48F80001A1A3 /* doxygen.config */ = {isa = PBXFileReference; lastKnownFileType = text; path = doxygen.config; sourceTree = SOURCE_ROOT; };
+		9BAC71EF182D48F80001A1A3 /* doxygen.config */ = {isa = PBXFileReference; lastKnownFileType = text; name = doxygen.config; path = docs/doxygen.config; sourceTree = SOURCE_ROOT; };
 		9BAC71F0182D48F80001A1A3 /* NOTES.txt */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = NOTES.txt; path = notes/NOTES.txt; sourceTree = SOURCE_ROOT; };
 		9BAC71F1182D48F80001A1A3 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = SOURCE_ROOT; };
 		9BB1A65B17625DC800202643 /* vfs_journal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = vfs_journal.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -168,6 +168,14 @@
 			path = btree;
 			sourceTree = "<group>";
 		};
+		9B711845184D4166008B9DB2 /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				9BAC71EF182D48F80001A1A3 /* doxygen.config */,
+			);
+			path = docs;
+			sourceTree = "<group>";
+		};
 		9B9F1FFA184AB7E2005D7271 /* hfsplus */ = {
 			isa = PBXGroup;
 			children = (
@@ -208,7 +216,7 @@
 			children = (
 				9BAC71F1182D48F80001A1A3 /* README.md */,
 				9BAC71F0182D48F80001A1A3 /* NOTES.txt */,
-				9BAC71EF182D48F80001A1A3 /* doxygen.config */,
+				9B711845184D4166008B9DB2 /* docs */,
 				9B9F2001184B27AC005D7271 /* Makefile */,
 				9BBA85081735AFD400273AE9 /* src */,
 				9BBA85041735AFD400273AE9 /* Products */,
@@ -512,6 +520,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_STRCPY = YES;
@@ -535,6 +544,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_STRCPY = YES;

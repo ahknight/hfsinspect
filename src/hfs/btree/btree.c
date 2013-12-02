@@ -353,6 +353,7 @@ int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, c
         if (searchNode->nodeDescriptor->height != level) {
             // Nodes have a specific height.  This one fails.
             critical("Node found at unexpected height (got %d; expected %d).", searchNode->nodeDescriptor->height, level);
+            exit(1);
         }
         if (level == 1) {
             if (searchNode->nodeDescriptor->kind != kBTLeafNode) {

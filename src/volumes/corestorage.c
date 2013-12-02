@@ -280,13 +280,13 @@ void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh)
         
         ssize_t bytes = cs_get_metadata_block(&buf, vol, vh, block_number);
         if (bytes < 0) {
-            fprintf(stderr, "Invalid block at %#llx\n", block_number);
+            fprintf(stderr, "Invalid block at %#jx\n", (intmax_t)block_number);
             continue;
         }
         
         CSBlockHeader *block_header = (CSBlockHeader *)buf;
         
-        BeginSection("CS Metadata Block %d (block %#llx)", -1, block_number);
+        BeginSection("CS Metadata Block %d (block %#jx)", -1, (intmax_t)block_number);
         
         switch (block_header->block_type) {
             case kCSVolumeHeaderBlock:

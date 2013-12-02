@@ -99,7 +99,8 @@ int hfs_extents_find_record(HFSPlusExtentRecord *record, hfs_block_t *record_sta
     hfs_forktype_t forkType = fork->forkType;
     
     BTreePtr extentsTree = NULL;
-    hfs_get_extents_btree(&extentsTree, hfs);
+    if ( hfs_get_extents_btree(&extentsTree, hfs) < 0)
+        return -1;
     BTreeNodePtr node = NULL;
     BTRecNum index = 0;
     

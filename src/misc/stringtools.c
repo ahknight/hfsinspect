@@ -125,7 +125,7 @@ void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t 
         
         // Line header/prefix
         if (mode & DUMP_ADDRESS) fprintf(file, "%12p", &line[0]);
-        if (mode & DUMP_OFFSET)  fprintf(file, "%#10llx", offset);
+        if (mode & DUMP_OFFSET)  fprintf(file, "%#10jx", (intmax_t)offset);
         
         // Print numeric representation
         if (mode & DUMP_ENCODED) {

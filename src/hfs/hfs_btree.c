@@ -30,6 +30,7 @@ int hfs_get_btree(BTreePtr *btree, const HFS *hfs, hfs_cnid_t cnid)
     INIT_BUFFER(tree, sizeof(struct _BTree));
     
     if ( hfsfork_get_special(&fork, hfs, cnid) < 0 ) {
+        FREE_BUFFER(tree);
         critical("Could not create fork for Attributes BTreePtr!");
         return -1;
     }

@@ -277,6 +277,8 @@ void showPathInfo(void)
     if (fileRecord != NULL) {
         HIOptions.extract_HFSPlusCatalogFile = *fileRecord;
     }
+    
+    FREE_BUFFER(file_path);
 }
 
 void showCatalogRecord(bt_nodeid_t parent, HFSUniStr255 filename, bool follow)
@@ -462,10 +464,10 @@ VolumeSummary generateVolumeSummary(HFS* hfs)
             char size[128] = {0};
             (void)format_size(size, space, false, 128);
             
-            fprintf(stdout, "\r%0.2f%% (files: %llu; directories: %llu; size: %s)",
+            fprintf(stdout, "\r%0.2f%% (files: %ju; directories: %ju; size: %s)",
                     ((float)count / (float)catalog->headerRecord.leafRecords) * 100.,
-                    summary.fileCount,
-                    summary.folderCount,
+                    (intmax_t)summary.fileCount,
+                    (intmax_t)summary.folderCount,
                     size
                     );
             fflush(stdout);

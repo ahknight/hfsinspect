@@ -32,12 +32,12 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell", inline: $provision_script
   
-  config.vm.define :precise32 do |precise32|
+  config.vm.define :i686 do |precise32|
     precise32.vm.box = "precise32"
     precise32.vm.network :private_network, ip: "10.8.8.10"
   end
 
-  config.vm.define :precise64 do |precise64|
+  config.vm.define :x86_64 do |precise64|
     precise64.vm.box = "precise64"
     precise64.vm.network :private_network, ip: "10.8.8.11"
   end

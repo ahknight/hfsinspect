@@ -82,7 +82,7 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
 {
     VALID_DESCRIPTOR(vol);
 
-    debug("Reading from volume at (%lld, %zu)", offset, size);
+    debug("Reading from volume at (%jd, %zu)", (intmax_t)offset, size);
     
     // Range checks
     if (vol->length && offset > vol->length)
@@ -90,7 +90,7 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
     
     if ( vol->length && (offset + size) > vol->length ) {
         size = vol->length - offset;
-        debug("Adjusted read to (%lld, %zu)", offset, size);
+        debug("Adjusted read to (%jd, %zu)", (intmax_t)offset, size);
     }
     
     if (size < 1)

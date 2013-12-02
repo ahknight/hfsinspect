@@ -95,7 +95,7 @@ int swap_BTreeNode(BTreeNodePtr node)
         FOR_UNTIL(i, numRecords) {
             BTRecOffset recOffset = offsets[i];
             if (recOffset < record_min || recOffset > record_max) {
-                warning("record %u points outside this node: %u (%lld, %lld)", i, recOffset, record_min, record_max);
+                warning("record %u points outside this node: %u (%jd, %jd)", i, recOffset, (intmax_t)record_min, (intmax_t)record_max);
             }
             if (i != 0 && recOffset > prev) {
                 warning("record %u is out of order (%u > %u)", i, offsets[i-1], recOffset);

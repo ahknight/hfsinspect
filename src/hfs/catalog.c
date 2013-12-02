@@ -126,7 +126,8 @@ int hfs_get_catalog_leaf_record(HFSPlusCatalogKey* const record_key, HFSPlusCata
     if (node->nodeDescriptor->kind != kBTLeafNode) return 0;
     
     BTNodeRecordPtr record = NULL;
-    BTGetBTNodeRecord(record, node, recordID);
+    if (BTGetBTNodeRecord(record, node, recordID) < 0)
+        return -1;
     
     uint16_t max_key_length = sizeof(HFSPlusCatalogKey);
     uint16_t max_value_length = sizeof(HFSPlusCatalogRecord) + sizeof(uint16_t);

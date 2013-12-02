@@ -73,7 +73,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-d test.img"
+            argument = "-d images/test.img"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
