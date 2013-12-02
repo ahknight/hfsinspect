@@ -10,6 +10,3 @@ if [[ $UNAME = 'Linux' ]]
     then
     sudo apt-get install uuid-dev
 fi
-
-ls -la /usr/bin/gcc*
-aptitude search gcc
