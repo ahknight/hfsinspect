@@ -120,13 +120,15 @@ int gpt_test(Volume *vol)
     size_t haystackSize = maxLBA + sizeof(GPTHeader);
     char* haystack = calloc(1, haystackSize);
     ssize_t nbytes = 0;
-    if ( (nbytes = vol_read(vol, haystack, haystackSize, 0)) < 0)
-        return nbytes;
+    if ( (nbytes = vol_read(vol, haystack, haystackSize, 0)) < 0) {
+        FREE_BUFFER(haystack);
+        return -1;
+    }
     
     char* needle = "EFI PART";
     char* found = memmem(haystack, haystackSize, needle, 8);
     
-    if (found == NULL) return false;
+    if (found == NULL) { FREE_BUFFER(haystack); return false; }
     
     // found is a pointer to the location of the string, which starts the block.
     // Calculate the LBA used to format the drive using this information.
@@ -139,6 +141,9 @@ int gpt_test(Volume *vol)
             vol->sector_count = (vol->length / vol->sector_size);
         info("GPT volume has a sector size of %zu and %zu sectors for a total of %zu bytes.", vol->sector_size, vol->sector_count, vol->length);
     }
+    
+    FREE_BUFFER(haystack);
+    found = NULL;
     
     return true;
 

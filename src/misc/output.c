@@ -115,7 +115,7 @@ void _PrintRawAttribute(const char* label, const void* map, size_t nbytes, char 
     ssize_t msize = format_dump(NULL, map, base, nbytes, 0);
     if (msize < 0) { perror("format_dump"); return; }
     msize++; // NULL terminator
-    char* str;
+    char* str = NULL;
     INIT_BUFFER(str, msize);
     
     size_t len = format_dump(str, map, base, nbytes, msize);

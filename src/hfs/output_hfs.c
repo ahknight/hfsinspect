@@ -49,8 +49,8 @@ void _PrintHFSTimestamp(const char* label, uint32_t timestamp)
 
 void _PrintHFSChar(const char* label, const char* i, size_t nbytes)
 {
-    char str[50];
-    char hex[50];
+    char str[50] = {0};
+    char hex[50] = {0};
     
     (void)format_hfs_chars(str, i, nbytes, 50);
     (void)format_dump(hex, i, 16, nbytes, 50);
@@ -77,7 +77,7 @@ void PrintVolumeInfo(const HFS* hfs)
     else
         BeginSection("Unknown Volume Format"); // Curious.
     
-    hfs_wc_str volumeName;
+    hfs_wc_str volumeName = {0};
     int success = hfs_catalog_get_cnid_name(volumeName, hfs, kHFSRootFolderID);
     if (success)
         PrintAttribute("volume name", "%ls", volumeName);
@@ -323,6 +323,7 @@ void PrintHFSPlusForkData(const HFSPlusForkData *fork, uint32_t cnid, uint8_t fo
         }
         PrintForkExtentsSummary(hfsfork);
         hfsfork_free(hfsfork);
+        hfsfork = NULL;
     }
 }
 

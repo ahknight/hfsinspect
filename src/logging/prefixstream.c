@@ -36,6 +36,7 @@ ssize_t prefixstream_write(void * c, const char * buf, size_t nbytes)
     memcpy(string, buf, nbytes);
     string[nbytes] = '\0';
     assert(string != NULL);
+    assert(context->fp);
     
     while ( (token = strsep(&string, "\n")) != NULL) {
         

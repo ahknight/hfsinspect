@@ -277,25 +277,23 @@ void showPathInfo(void)
     if (fileRecord != NULL) {
         HIOptions.extract_HFSPlusCatalogFile = *fileRecord;
     }
-    
-    FREE_BUFFER(file_path);
 }
 
 void showCatalogRecord(bt_nodeid_t parent, HFSUniStr255 filename, bool follow)
 {
-    hfs_wc_str filename_str;
+    hfs_wc_str filename_str = {0};
     hfsuctowcs(filename_str, &filename);
     
     debug("Finding catalog record for %d:%ls", parent, filename_str);
     
-    BTreeNodePtr node;
+    BTreeNodePtr node = NULL;
     BTRecNum recordID = 0;
     
     int8_t found = hfs_catalog_find_record(&node, &recordID, &HIOptions.hfs, parent, filename);
     
     if (found) {
-        HFSPlusCatalogKey record_key;
-        HFSPlusCatalogRecord catalogRecord;
+        HFSPlusCatalogKey record_key = {0};
+        HFSPlusCatalogRecord catalogRecord = {0};
         
         int type = hfs_get_catalog_leaf_record(&record_key, &catalogRecord, node, recordID);
         
@@ -776,7 +774,7 @@ int main (int argc, char* const *argv)
     };
     
     /* short options */
-    char* shortopts = "hvjlsDd:n:b:p:P:F:V:c:o:";
+    char* shortopts = "hvjlrsDd:n:b:p:P:F:V:c:o:";
     
     char opt;
     while ((opt = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -945,11 +943,13 @@ OPEN:
 #pragma mark Find HFS Volume
     
     // Device loaded. Find the first HFS+ filesystem.
-    
-    vol = hfs_find(vol);
-    if (vol == NULL) {
+    printf("%p\n", vol);
+    Volume *tmp = hfs_find(vol);
+    if (tmp == NULL) {
         // No HFS Plus volumes found.
         die(1, "No HFS+ filesystems found.");
+    } else {
+        vol = tmp;
     }
     
     if (hfs_attach(&HIOptions.hfs, vol) < 0) {
@@ -1145,7 +1145,7 @@ OPEN:
     }
     
     // Clean up
-    hfs_close(&HIOptions.hfs);
+    hfs_close(&HIOptions.hfs); // also perorms vol_close(vol), though perhaps it shouldn't?
     
     debug("Clean exit.");
     

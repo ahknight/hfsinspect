@@ -125,39 +125,37 @@ int hfs_get_catalog_leaf_record(HFSPlusCatalogKey* const record_key, HFSPlusCata
     
     if (node->nodeDescriptor->kind != kBTLeafNode) return 0;
     
-    BTNodeRecordPtr record = NULL;
-    if (BTGetBTNodeRecord(record, node, recordID) < 0)
+    BTNodeRecord record = {0};
+    if (BTGetBTNodeRecord(&record, node, recordID) < 0)
         return -1;
     
     uint16_t max_key_length = sizeof(HFSPlusCatalogKey);
     uint16_t max_value_length = sizeof(HFSPlusCatalogRecord) + sizeof(uint16_t);
     
-    uint16_t key_length = record->keyLen;
-    uint16_t value_length = record->valueLen;
+    uint16_t key_length = record.keyLen;
+    uint16_t value_length = record.valueLen;
     
     if (key_length > max_key_length) {
         warning("Key length of record %d in node %d is invalid (%d; maximum is %d)", recordID, node->nodeNumber, key_length, max_key_length);
-        key_length = max_key_length;
     }
     if (value_length > max_value_length) {
         warning("Value length of record %d in node %d is invalid (%d; maximum is %d)", recordID, node->nodeNumber, value_length, max_value_length);
-        value_length = max_value_length;
     }
     
-    if (record_key != NULL)     *record_key = *(HFSPlusCatalogKey*)record->key;
-    if (record_value != NULL)   *record_value = *(HFSPlusCatalogRecord*)record->value;
+    if (record_key != NULL)     *record_key = *(HFSPlusCatalogKey*)record.key;
+    if (record_value != NULL)   *record_value = *(HFSPlusCatalogRecord*)record.value;
     
-    return record_value->record_type;
+    return ((HFSPlusCatalogRecord*)record.value)->record_type;
 }
 
 
 int8_t hfs_catalog_find_record(BTreeNodePtr *node, BTRecNum *recordID, const HFS *hfs, bt_nodeid_t parentFolder, HFSUniStr255 name)
 {
-    hfs_wc_str wc_name;
+    hfs_wc_str wc_name = {0};
     hfsuctowcs(wc_name, &name);
     debug("Searching catalog for %d:%ls", parentFolder, wc_name);
     
-    HFSPlusCatalogKey catalogKey;
+    HFSPlusCatalogKey catalogKey = {0};
     catalogKey.parentID = parentFolder;
     catalogKey.nodeName = name;
     catalogKey.keyLength = sizeof(catalogKey.parentID) + catalogKey.nodeName.length;
@@ -181,7 +179,7 @@ int8_t hfs_catalog_find_record(BTreeNodePtr *node, BTRecNum *recordID, const HFS
 
 int hfs_catalog_compare_keys_cf(const HFSPlusCatalogKey *key1, const HFSPlusCatalogKey *key2)
 {
-    int result;
+    int result = 0;
     if ( (result = cmp(key1->parentID, key2->parentID)) != 0) return result;
     
     result = FastUnicodeCompare(key1->nodeName.unicode, key1->nodeName.length, key2->nodeName.unicode, key2->nodeName.length);
@@ -191,7 +189,7 @@ int hfs_catalog_compare_keys_cf(const HFSPlusCatalogKey *key1, const HFSPlusCata
 
 int hfs_catalog_compare_keys_bc(const HFSPlusCatalogKey *key1, const HFSPlusCatalogKey *key2)
 {
-    int result;
+    int result = 0;
     if ( (result = cmp(key1->parentID, key2->parentID)) != 0) return result;
     
     hfs_wc_str key1Name, key2Name;
@@ -226,7 +224,7 @@ int hfsuctowcs(hfs_wc_str output, const HFSUniStr255* input)
 HFSUniStr255 wcstohfsuc(const wchar_t* input)
 {
     // Allocate the return value
-    HFSUniStr255 output;
+    HFSUniStr255 output = {0};
     
     // Get the length of the input
     size_t len = MIN(wcslen(input), 255);
@@ -245,8 +243,8 @@ HFSUniStr255 wcstohfsuc(const wchar_t* input)
 
 HFSUniStr255 strtohfsuc(const char* input)
 {
-    HFSUniStr255 output = {0, {'\0','\0'}};
-    wchar_t* wide;
+    HFSUniStr255 output = {0};
+    wchar_t* wide = NULL;
     INIT_BUFFER(wide, 256 * sizeof(wchar_t));
     
     size_t char_count = strlen(input);
@@ -399,7 +397,8 @@ int hfs_catalog_get_cnid_name(hfs_wc_str name, const HFS *hfs, bt_nodeid_t cnid)
     key.parentID = cnid;
     key.keyLength = kHFSPlusCatalogKeyMinimumLength;
     
-    hfs_get_catalog_btree(&tree, hfs);
+    if (hfs_get_catalog_btree(&tree, hfs) < 0)
+        return -1;
     
     int found = btree_search(&node, &recordID, tree, &key);
     if (found != 1 || node->dataLen == 0) {

@@ -11,7 +11,6 @@
 #include "misc/range.h"
 #include "hfs/extents.h"
 #include "hfs/output_hfs.h"
-#include "hfs/hfs_btree.h"
 
 #define ASSERT_PTR(st) if (st == NULL) { errno = EINVAL; return -1; }
 
@@ -212,6 +211,7 @@ int hfsfork_make (HFSFork** fork, const HFS *hfs, const HFSPlusForkData forkData
 void hfsfork_free(HFSFork *fork)
 {
     extentlist_free(fork->extents);
+    FREE_BUFFER(fork);
 }
 
 ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, size_t start_block)

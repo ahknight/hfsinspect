@@ -22,10 +22,13 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
     BTGetBTNodeRecord(&record, headerNode, 2);
     
     // TODO: Concat all the map blocks and cache them. Until then return true after the first block.
-    if ((nodeNum/8) > record.recordLen)
+    if ((nodeNum/8) > record.recordLen) {
+        BTFreeNode(headerNode);
         return true;
+    }
 
     bool result = BTIsBlockUsed(nodeNum, record.record);
+    BTFreeNode(headerNode);
     return result;
 }
 
@@ -342,6 +345,7 @@ int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, c
         if ( BTGetNode(&searchNode, btree, currentNode) < 0) {
             error("search tree: failed to get node %u!", currentNode);
             perror("search");
+            btree_free_node(searchNode);
             return false;
         }
         

@@ -1,2 +1,3 @@
 # Presumes LLVM/Clang
 CFLAGS += -std=c11 -Wpedantic -Wno-four-char-constants
+CFLAGS += -O0 -g

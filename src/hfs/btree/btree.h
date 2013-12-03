@@ -32,7 +32,15 @@ typedef int(*btree_key_compare_func)(const BTreeKey *, const BTreeKey *);
 typedef bool(*btree_walk_func)(const BTreePtr tree, const BTreeNodePtr node);
 typedef int(*btree_get_node_func)(BTreeNodePtr *node, const BTreePtr bTree, bt_nodeid_t nodeNum);
 
+enum {
+    kBTHFSTreeType = 0,
+    kBTUserTreeType = 128,
+    kBTReservedTreeType = 255,
+};
+
+
 #define BTGetNode(node, tree, nodeNum) (tree)->getNode((node), (tree), (nodeNum))
+#define BTFreeNode(node) btree_free_node(node)
 
 struct _BTree {
     BTNodeDescriptor        nodeDescriptor;     // For the header node

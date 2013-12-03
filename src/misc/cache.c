@@ -209,11 +209,11 @@ int cache_set(Cache cache, const char* buf, size_t len, ckey_t key)
     
     record->key = key;
     record->datalen = len;
-    if ( (record->data = calloc(1, record->datalen)) == NULL) goto ERROR;
+    if ( (record->data = calloc(1, record->datalen)) == NULL) { free(record); goto ERROR; }
     memcpy(record->data, buf, record->datalen);
     
     void* ref = NULL;
-    if ( (ref = tsearch(record, &cache->index, key_compare)) == NULL ) goto ERROR;
+    if ( (ref = tsearch(record, &cache->index, key_compare)) == NULL ) { free(record->data); free(record); goto ERROR; }
     
     return 0;
     

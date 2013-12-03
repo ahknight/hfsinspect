@@ -8,11 +8,10 @@
 
 #include "hfs/extents.h"
 
-#include "hfs/hfs_io.h"
-#include "hfs/hfs_btree.h"
-#include "misc/output.h"
-#include "hfs/output_hfs.h"
 #include "misc/_endian.h"
+#include "misc/output.h"
+#include "hfs/hfs_io.h"
+#include "hfs/output_hfs.h"
 
 int hfs_get_extents_btree(BTreePtr *tree, const HFS *hfs)
 {

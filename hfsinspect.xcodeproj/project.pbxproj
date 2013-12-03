@@ -71,6 +71,8 @@
 		9B70C511184526E400E90B19 /* btree_endian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = btree_endian.c; sourceTree = "<group>"; };
 		9B70C5131845291200E90B19 /* utilities.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = utilities.h; sourceTree = "<group>"; };
 		9B70C5141845291800E90B19 /* utilities.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = utilities.c; sourceTree = "<group>"; };
+		9B711846184D62A8008B9DB2 /* Makefile.Darwin */ = {isa = PBXFileReference; lastKnownFileType = text; path = Makefile.Darwin; sourceTree = "<group>"; };
+		9B711847184D62A8008B9DB2 /* Makefile.Linux */ = {isa = PBXFileReference; lastKnownFileType = text; path = Makefile.Linux; sourceTree = "<group>"; };
 		9B7637F2175785E0000620CE /* logging.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = logging.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		9B7637F3175785E5000620CE /* logging.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = logging.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9B7637F5175E3BEA000620CE /* hfs_btree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = hfs_btree.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -216,8 +218,10 @@
 			children = (
 				9BAC71F1182D48F80001A1A3 /* README.md */,
 				9BAC71F0182D48F80001A1A3 /* NOTES.txt */,
-				9B711845184D4166008B9DB2 /* docs */,
 				9B9F2001184B27AC005D7271 /* Makefile */,
+				9B711846184D62A8008B9DB2 /* Makefile.Darwin */,
+				9B711847184D62A8008B9DB2 /* Makefile.Linux */,
+				9B711845184D4166008B9DB2 /* docs */,
 				9BBA85081735AFD400273AE9 /* src */,
 				9BBA85041735AFD400273AE9 /* Products */,
 			);
@@ -314,7 +318,7 @@
 			buildConfigurationList = 9B9F1FFC184AC1CB005D7271 /* Build configuration list for PBXLegacyTarget "hfsinspect_make" */;
 			buildPhases = (
 			);
-			buildToolPath = "/usr/bin/make -f Makefile.OSX";
+			buildToolPath = /usr/bin/make;
 			buildWorkingDirectory = "";
 			dependencies = (
 			);

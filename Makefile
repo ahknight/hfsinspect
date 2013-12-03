@@ -39,7 +39,7 @@ test: all
 	@./$(BINARYPATH) --help
 	@cp images/test.img.gz images/test.img.1.gz
 	@gunzip -qNf images/test.img.1.gz
-	@./$(BINARYPATH) -d images/test.img -v
+	@./$(BINARYPATH) -d images/test.img -r
 
 clean-test:
 	$(RM) "images/test.img" "images/MBR.dmg"
