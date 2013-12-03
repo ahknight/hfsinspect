@@ -6,3 +6,4 @@ docs/html
 docs/doxygen.log
 images/*.dmg
 images/*.img
+tmp/

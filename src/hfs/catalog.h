@@ -12,6 +12,15 @@
 #include "hfs/btree/btree.h"
 #include "hfs/hfs_structs.h"
 
+// and a hat tip to Carbon ...
+struct FSSpec {
+    Volume          *vol;
+    hfs_cnid_t      parID;
+    HFSUniStr255    name;
+};
+typedef struct FSSpec FSSpec;
+typedef FSSpec * FSSpecPtr;
+
 extern const uint32_t kAliasCreator;
 extern const uint32_t kFileAliasType;
 extern const uint32_t kFolderAliasType;
@@ -40,6 +49,9 @@ bool            hfs_catalog_record_is_alias             (const HFSPlusCatalogRec
 //BTreeRecord*    hfs_catalog_next_in_folder              (const BTreeRecord* catalogRecord) __deprecated;
 //wchar_t*        hfs_catalog_record_to_path              (const BTreeRecord* catalogRecord) __deprecated;
 int             hfs_catalog_get_cnid_name               (hfs_wc_str name, const HFS *hfs, bt_nodeid_t cnid);
+
+int HFSPlusGetCatalogInfo(hfs_cnid_t *parent, HFSUniStr255 *name, HFSPlusCatalogRecord *catalogRecord, const char *path, const HFS *hfs)
+__attribute__((nonnull(4,5)));
 
 int             hfsuctowcs                              (hfs_wc_str output, const HFSUniStr255* input);
 HFSUniStr255    wcstohfsuc                              (const wchar_t* input);

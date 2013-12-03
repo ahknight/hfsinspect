@@ -15,9 +15,9 @@
 #include "hfs/hfs_io.h"
 #include "hfs/hfs_endian.h"
 
-//#include "hfs/hfs_btree.h"
 #include "hfs/extents.h"
 #include "hfs/catalog.h"
+#include "hfs/hfsplus/hotfiles.h"
 #include "hfs/hfsplus/attributes.h"
 #include "hfs/Apple/vfs_journal.h"
 

@@ -36,7 +36,7 @@ int hfs_get_catalog_btree(BTreePtr *tree, const HFS *hfs)
 
         HFSFork *fork;
         if ( hfsfork_get_special(&fork, hfs, kHFSCatalogFileID) < 0 ) {
-            critical("Could not create fork for Catalog BTree!");
+            critical("Could not create fork for Catalog B-Tree!");
             return -1;
         }
         
@@ -387,6 +387,84 @@ bool hfs_catalog_record_is_alias(const HFSPlusCatalogRecord* record)
 //    // Crawl parent ID up, gathering names along the way. Build path from that.
 //    return NULL;
 //}
+
+int HFSPlusGetCatalogInfo(hfs_cnid_t *out_parent, HFSUniStr255 *out_name, HFSPlusCatalogRecord *out_catalogRecord, const char *path, const HFS *hfs)
+{
+    debug("Finding record for path: %s", path);
+    
+    if (strlen(path) == 0) {
+        errno = EINVAL;
+        return -1;
+    }
+    
+    int                 found = 0;
+    HFSPlusCatalogFile  *fileRecord = NULL;
+    hfs_cnid_t          parentID = kHFSRootFolderID, last_parentID = 0;
+    char                *file_path = strdup(path);
+    char                *segment = NULL;
+    char                last_segment[PATH_MAX] = "";
+    
+    BTreeNodePtr node = NULL;
+    BTRecNum recordID = 0;
+    
+    HFSPlusCatalogKey key;
+    HFSPlusCatalogRecord catalogRecord;
+    
+    while ( (segment = strsep(&file_path, "/")) != NULL ) {
+        debug("Segment: %d:%s", parentID, segment);
+        (void)strlcpy(last_segment, segment, PATH_MAX);
+        last_parentID = parentID;
+        
+        HFSUniStr255 search_string = strtohfsuc(segment);
+        found = hfs_catalog_find_record(&node, &recordID, hfs, parentID, search_string);
+        
+        if (found) {
+            debug("Record found:");
+            
+            debug("%s: parent: %d (node %d; record %d)", segment, parentID, node->nodeNumber, recordID);
+            if (strlen(segment) == 0) continue;
+            
+            int kind = hfs_get_catalog_leaf_record(&key, &catalogRecord, node, recordID);
+            switch (kind) {
+                case kHFSPlusFolderRecord:
+                {
+                    parentID = catalogRecord.catalogFolder.folderID;
+                    break;
+                }
+                    
+                case kHFSPlusFileRecord:
+                {
+                    fileRecord = &catalogRecord.catalogFile;
+                    break;
+                }
+                    
+                case kHFSPlusFolderThreadRecord:
+                case kHFSPlusFileThreadRecord:
+                {
+                    parentID = catalogRecord.catalogThread.parentID;
+                    break;
+                }
+                    
+                default:
+                    error("Didn't change the parent (%d).", kind);
+                    break;
+            }
+        } else {
+            // file not found
+            break;
+        }
+    }
+    
+    if (found && last_segment != NULL) {
+        if (out_parent != NULL)         *out_parent = last_parentID;
+        if (out_name != NULL)           *out_name = strtohfsuc(last_segment);
+        if (out_catalogRecord != NULL)  *out_catalogRecord = catalogRecord;
+    }
+    
+    btree_free_node(node);
+    free(file_path);
+    return (found);
+}
 
 int hfs_catalog_get_cnid_name(hfs_wc_str name, const HFS *hfs, bt_nodeid_t cnid)
 {

@@ -47,7 +47,7 @@ void            show_version                ()
     __attribute__(( noreturn ));
 
 void            showPathInfo                (void);
-void            showCatalogRecord           (bt_nodeid_t parent, HFSUniStr255 filename, bool follow);
+void            showCatalogRecord           (bt_nodeid_t parent, HFSUniStr255 filename, bool followThreads);
 
 int             compare_ranked_files        (const void * a, const void * b)
     __attribute__(( nonnull ));
@@ -203,6 +203,9 @@ void show_version()
     exit(0);
 }
 
+int HFSPlusGetCatalogInfo(hfs_cnid_t *parent, HFSUniStr255 *name, HFSPlusCatalogRecord *catalogRecord, const char *path, const HFS *hfs)
+    __attribute__((nonnull(4,5)));
+
 void showPathInfo(void)
 {
     debug("Finding records for path: %s", HIOptions.file_path);
@@ -212,75 +215,22 @@ void showPathInfo(void)
         exit(1);
     }
     
-    char* file_path = strdup(HIOptions.file_path);
-    char* segment = NULL;
-    char last_segment[PATH_MAX] = "";
+    hfs_cnid_t              parentID = 0;
+    HFSUniStr255            name = {0};
+    HFSPlusCatalogRecord    catalogRecord = {0};
     
-    HFSPlusCatalogFile *fileRecord = NULL;
-    uint32_t parentID = kHFSRootFolderID, last_parentID = 0;
-    
-    while ( (segment = strsep(&file_path, "/")) != NULL ) {
-        debug("Segment: %d:%s", parentID, segment);
-        (void)strlcpy(last_segment, segment, PATH_MAX);
-        last_parentID = parentID;
-        
-        BTreeNodePtr node;
-        BTRecNum recordID = 0;
-        
-        HFSPlusCatalogKey key;
-        HFSPlusCatalogRecord catalogRecord;
-        
-        HFSUniStr255 search_string = strtohfsuc(segment);
-        int8_t result = hfs_catalog_find_record(&node, &recordID, &HIOptions.hfs, parentID, search_string);
-        
-        if (result) {
-            debug("Record found:");
-            
-            debug("%s: parent: %d (node %d; record %d)", segment, parentID, node->nodeNumber, recordID);
-            if (strlen(segment) == 0) continue;
-            
-            int kind = hfs_get_catalog_leaf_record(&key, &catalogRecord, node, recordID);
-            switch (kind) {
-                case kHFSPlusFolderRecord:
-                {
-                    parentID = catalogRecord.catalogFolder.folderID;
-                    break;
-                }
-                    
-                case kHFSPlusFileRecord:
-                {
-                    fileRecord = &catalogRecord.catalogFile;
-                    break;
-                }
-                    
-                case kHFSPlusFolderThreadRecord:
-                case kHFSPlusFileThreadRecord:
-                {
-                    parentID = catalogRecord.catalogThread.parentID;
-                    break;
-                }
-                    
-                default:
-                    error("Didn't change the parent (%d).", kind);
-                    break;
-            }
-        } else {
-            die(1, "Path segment not found: %d:%s", parentID, segment);
-            
-        }
-        
+    if ( HFSPlusGetCatalogInfo(&parentID, &name, &catalogRecord, HIOptions.file_path, &HIOptions.hfs) < 0) {
+        die(1, "Path not found: %s", HIOptions.file_path);
     }
     
-    if (last_segment != NULL) {
-        showCatalogRecord(last_parentID, strtohfsuc(last_segment), false);
-    }
+    showCatalogRecord(parentID, name, false);
     
-    if (fileRecord != NULL) {
-        HIOptions.extract_HFSPlusCatalogFile = *fileRecord;
+    if (catalogRecord.record_type == kHFSFileRecord) {
+        HIOptions.extract_HFSPlusCatalogFile = catalogRecord.catalogFile;
     }
 }
 
-void showCatalogRecord(bt_nodeid_t parent, HFSUniStr255 filename, bool follow)
+void showCatalogRecord(bt_nodeid_t parent, HFSUniStr255 filename, bool followThreads)
 {
     hfs_wc_str filename_str = {0};
     hfsuctowcs(filename_str, &filename);
@@ -299,9 +249,9 @@ void showCatalogRecord(bt_nodeid_t parent, HFSUniStr255 filename, bool follow)
         int type = hfs_get_catalog_leaf_record(&record_key, &catalogRecord, node, recordID);
         
         if (type == kHFSPlusFileThreadRecord || type == kHFSPlusFolderThreadRecord) {
-            if (follow) {
+            if (followThreads) {
                 debug("Following thread for %d:%ls", parent, filename_str);
-                showCatalogRecord(catalogRecord.catalogThread.parentID, catalogRecord.catalogThread.nodeName, follow);
+                showCatalogRecord(catalogRecord.catalogThread.parentID, catalogRecord.catalogThread.nodeName, followThreads);
                 return;
                 
             } else {
@@ -694,45 +644,19 @@ void loadBTree()
     // Load the tree
     if (HIOptions.tree_type == BTreeTypeCatalog) {
         if ( hfs_get_catalog_btree(&HIOptions.tree, &HIOptions.hfs) < 0)
-            die(1, "Could not get Catalog BTree!");
+            die(1, "Could not get Catalog B-Tree!");
     
     } else if (HIOptions.tree_type == BTreeTypeExtents) {
         if ( hfs_get_extents_btree(&HIOptions.tree, &HIOptions.hfs) < 0)
-            die(1, "Could not get Extents BTree!");
+            die(1, "Could not get Extents B-Tree!");
     
     } else if (HIOptions.tree_type == BTreeTypeAttributes) {
         if ( hfs_get_attribute_btree(&HIOptions.tree, &HIOptions.hfs) < 0)
-            die(1, "Could not get Attribute BTree!");
+            die(1, "Could not get Attribute B-Tree!");
     
     } else if (HIOptions.tree_type == BTreeTypeHotfiles) {
-        BTreeNodePtr node = NULL;
-        BTRecNum recordID = 0;
-        bt_nodeid_t parentfolder = kHFSRootFolderID;
-        HFSUniStr255 name = wcstohfsuc(L".hotfiles.btree");
-        int found = hfs_catalog_find_record(&node, &recordID, &HIOptions.hfs, parentfolder, name);
-        if (found != 1) {
-            error("Hotfiles btree not found. Target must be a hard drive with a copy of Mac OS X that has successfully booted to create this file (it will not be present on SSDs).");
-            exit(1);
-        }
-        BTreeKeyPtr recordKey = NULL;
-        Bytes recordValue = NULL;
-        btree_get_record(&recordKey, &recordValue, node, recordID);
-
-        HFSPlusCatalogRecord* record = (HFSPlusCatalogRecord*)recordValue;
-        HFSFork *fork = NULL;
-        if ( hfsfork_make(&fork, &HIOptions.hfs, record->catalogFile.dataFork, 0x00, record->catalogFile.fileID) < 0 ) {
-            die(1, "Could not create fork for fileID %u", record->catalogFile.fileID);
-        }
-        
-	HIOptions.tree = calloc(1, sizeof(struct _BTree));
-        FILE* fp = fopen_hfsfork(fork);
-	if (fp == NULL) { perror("open_fork"); };
-        int result = btree_init(HIOptions.tree, fp);
-        if (result < 1) {
-            error("Error initializing hotfiles btree.");
-            exit(1);
-        }
-        
+        if ( hfs_get_hotfiles_btree(&HIOptions.tree, &HIOptions.hfs) < 0)
+            die(1, "Hotfiles B-Tree not found. Target must be a hard drive with a copy of Mac OS X that has successfully booted to create this file (it will not be present on SSDs).");
     } else {
         die(1, "Unsupported tree: %s", HIOptions.tree_type);
     }
@@ -941,35 +865,6 @@ OPEN:
         }
     }
 
-#pragma mark Yank FS
-// Pull the essential files from the disk for inspection or transport.
-	if (check_mode(HIModeYankFS)) {
-		char path[PATH_MAX] = "";
-		strncpy(path, HIOptions.extract_path, PATH_MAX);
-	// Volume Header Block
-	char* buf = calloc(1, 4096);
-		int nbytes = 0;
-		nbytes = vol_read(vol, buf, sizeof(HFSPlusVolumeHeader), 1024);
-		if (nbytes < 0)
-			die(0, "reading volume header");
-		
-		if (mkdir(HIOptions.extract_path, 0777) < 0)
-			die(0, "mkdir");
-		
-		char vhPath[PATH_MAX] = "";
-		char allocationPath[PATH_MAX] = "";
-		char extentsPath[PATH_MAX] = "";
-		char catalogPath[PATH_MAX] = "";
-		char attributesPath[PATH_MAX] = "";
-		char startupPath[PATH_MAX] = "";
-		
-		// Allocation Bitmap
-		// Extents Overflow
-		// Catalog
-		// Attributes
-		// Startup
-	}
-    
 #pragma mark Disk Summary
     
     if (check_mode(HIModeShowDiskInfo)) {
@@ -1026,6 +921,104 @@ OPEN:
         if (seteuid(uid) != 0) die(1, "Failed to drop user privs.");
         info("Was running as root.  Now running as %u/%u.", geteuid(), getegid());
     }
+    
+#pragma mark Yank FS
+    // Pull the essential files from the disk for inspection or transport.
+	if (check_mode(HIModeYankFS)) {
+        if (HIOptions.hfs.vol == NULL) {
+            error("No HFS+ volume detected; can't extract FS.");
+            goto NOPE;
+        }
+        
+		char path[PATH_MAX] = "";
+		strncpy(path, HIOptions.extract_path, PATH_MAX);
+        
+        if (mkdir(HIOptions.extract_path, 0777) < 0)
+			die(0, "mkdir");
+		
+		char headerPath         [PATH_MAX] = "";
+		char allocationPath     [PATH_MAX] = "";
+		char extentsPath        [PATH_MAX] = "";
+		char catalogPath        [PATH_MAX] = "";
+		char attributesPath     [PATH_MAX] = "";
+		char startupPath        [PATH_MAX] = "";
+		char journalBlockPath   [PATH_MAX] = "";
+        char journalPath        [PATH_MAX] = "";
+        
+        strncpy(headerPath,         HIOptions.extract_path,         PATH_MAX);
+        strncpy(allocationPath,     headerPath,                     PATH_MAX);
+        strncpy(extentsPath,        headerPath,                     PATH_MAX);
+        strncpy(catalogPath,        headerPath,                     PATH_MAX);
+        strncpy(attributesPath,     headerPath,                     PATH_MAX);
+        strncpy(startupPath,        headerPath,                     PATH_MAX);
+        strncpy(journalBlockPath,   headerPath,                     PATH_MAX);
+        strncpy(journalPath,        headerPath,                     PATH_MAX);
+        
+        strncat(headerPath,         "/header.block",                PATH_MAX);
+        strncat(allocationPath,     "/allocation.bmap",             PATH_MAX);
+        strncat(extentsPath,        "/extents.btree",               PATH_MAX);
+        strncat(catalogPath,        "/catalog.btree",               PATH_MAX);
+        strncat(attributesPath,     "/attributes.btree",            PATH_MAX);
+        strncat(startupPath,        "/startupFile",                 PATH_MAX);
+        strncat(journalBlockPath,   "/journal.block",               PATH_MAX);
+        strncat(journalPath,        "/journal.buf",                 PATH_MAX);
+
+        HFSFork *fork = NULL;
+
+        // Volume Header Blocks
+        unsigned sectorCount = 16;
+        size_t readSize = vol->sector_size*sectorCount;
+        
+        char* buf = calloc(1, readSize);
+		int nbytes = 0;
+		nbytes = vol_read(vol, buf, readSize, 0);
+		if (nbytes < 0) die(0, "reading volume header");
+        
+        FILE *fp = fopen(headerPath, "w");
+        nbytes = fwrite(buf, 1, readSize, fp);
+        fclose(fp);
+		
+        struct {
+            HFSPlusForkData forkData;
+            bt_nodeid_t     cnid;
+            char            *path;
+        } files[5] = {
+            // Allocation Bitmap
+            { HIOptions.hfs.vh.allocationFile, kHFSAllocationFileID, allocationPath},
+            // Extents Overflow
+            { HIOptions.hfs.vh.extentsFile, kHFSExtentsFileID, extentsPath},
+            // Catalog
+            { HIOptions.hfs.vh.catalogFile, kHFSCatalogFileID, catalogPath},
+            // Attributes
+            { HIOptions.hfs.vh.allocationFile, kHFSAllocationFileID, allocationPath},
+            // Startup
+            { HIOptions.hfs.vh.allocationFile, kHFSAllocationFileID, allocationPath},
+        };
+        
+        FOR_UNTIL(i, 5) {
+            if (files[i].forkData.logicalSize < 1) continue;
+            
+            hfsfork_make(&fork, &HIOptions.hfs, files[i].forkData, HFSDataForkType, files[i].cnid);
+            nbytes = extractFork(fork, files[i].path);
+            hfsfork_free(fork);
+            fork = NULL;
+        }
+        
+        // Hotfiles
+        BTreePtr hotfiles = NULL;
+        if ( hfs_get_hotfiles_btree(&hotfiles, &HIOptions.hfs) != -1) {
+            // We have a hotfiles file (we don't always).
+        }
+            
+        
+        hfsfork_make(&fork, &HIOptions.hfs, HIOptions.hfs.vh.allocationFile, HFSDataForkType, kHFSAllocationFileID);
+        nbytes = extractFork(fork, allocationPath);
+        hfsfork_free(fork);
+        fork = NULL;
+        
+	}
+    
+NOPE:
     
 #pragma mark Load Volume Data
     
@@ -1094,7 +1087,7 @@ OPEN:
         showCatalogRecord(HIOptions.cnid, emptyKey, true);
     }
     
-#pragma mark BTree Requests
+#pragma mark B-Tree Requests
 
     // Show B-Tree info
     if (check_mode(HIModeShowBTreeInfo)) {
