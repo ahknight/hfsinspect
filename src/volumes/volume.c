@@ -59,10 +59,14 @@ Volume* vol_open(const char* path, int mode, off_t offset, size_t length, size_t
     
 #ifdef __APPLE__
     // Try and get the real hardware sector size and use that.
-    long bc = 0, bs = 0;
     if (block_size == 0) {
-        vol->sector_size     = ( (ioctl(vol->fd, DKIOCGETBLOCKSIZE, &bs) == 0) ? bs : s.st_blksize);
-        vol->sector_count    = ( (ioctl(vol->fd, DKIOCGETBLOCKCOUNT, &bc) == 0) ? bc : s.st_blocks);
+        blkcnt_t  bc = 0;
+        blksize_t bs = 0;
+        ioctl(vol->fd, DKIOCGETBLOCKCOUNT, &bc);
+        ioctl(vol->fd, DKIOCGETBLOCKSIZE, &bs);
+        
+        vol->sector_count    = ( (bc != 0) ? bc : s.st_blocks);
+        vol->sector_size     = ( (bs != 0) ? bs : s.st_blksize);
     }
 #endif
     

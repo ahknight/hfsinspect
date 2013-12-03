@@ -894,7 +894,7 @@ OPEN:
     gid_t gid = 99;
     
     // If extracting, determine the UID to become by checking the owner of the output directory (so we can create any requested files later).
-    if (check_mode(HIModeExtractFile)) {
+    if (check_mode(HIModeExtractFile) || check_mode(HIModeYankFS)) {
         char* dir = strdup(dirname(HIOptions.extract_path));
         if ( !strlen(dir) ) {
             die(1, "Output file directory does not exist: %s", dir);
@@ -997,6 +997,7 @@ OPEN:
         
         FOR_UNTIL(i, 5) {
             if (files[i].forkData.logicalSize < 1) continue;
+            Print("Extracting CNID %u", files[i].cnid);
             
             hfsfork_make(&fork, &HIOptions.hfs, files[i].forkData, HFSDataForkType, files[i].cnid);
             nbytes = extractFork(fork, files[i].path);
