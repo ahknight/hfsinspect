@@ -74,13 +74,13 @@ char            PROGRAM_NAME[PATH_MAX];
 const char*     BTreeOptionCatalog          = "catalog";
 const char*     BTreeOptionExtents          = "extents";
 const char*     BTreeOptionAttributes       = "attributes";
-const char*     BTreeOptionHotfile          = "hotfile";
+const char*     BTreeOptionHotfiles         = "hotfiles";
 
 typedef enum BTreeTypes {
     BTreeTypeCatalog = 0,
     BTreeTypeExtents,
     BTreeTypeAttributes,
-    BTreeTypeHotfile
+    BTreeTypeHotfiles
 } BTreeTypes;
 
 enum HIModes {
@@ -95,6 +95,7 @@ enum HIModes {
     HIModeExtractFile,
     HIModeListFolder,
     HIModeShowDiskInfo,
+    HIModeYankFS,
 };
 
 // Configuration context
@@ -173,7 +174,7 @@ void usage(int status)
     "\n"
     "    -h,         --help          Show help and quit. \n"
     "    -v,         --version       Show version information and quit. \n"
-    "    -b NAME,    --btree NAME    Specify which HFS+ B-Tree to work with. Supported options: attributes, catalog, extents, or hotfile. \n"
+    "    -b NAME,    --btree NAME    Specify which HFS+ B-Tree to work with. Supported options: attributes, catalog, extents, or hotfiles. \n"
     "    -n ID,      --node ID       Dump an HFS+ B-Tree node by ID (must specify tree with -b). \n"
     "    -r,         --volumeheader  Dump the volume header. \n"
     "    -j,         --journal       Dump the volume's journal info block structure. \n"
@@ -703,7 +704,7 @@ void loadBTree()
         if ( hfs_get_attribute_btree(&HIOptions.tree, &HIOptions.hfs) < 0)
             die(1, "Could not get Attribute BTree!");
     
-    } else if (HIOptions.tree_type == BTreeTypeHotfile) {
+    } else if (HIOptions.tree_type == BTreeTypeHotfiles) {
         BTreeNodePtr node = NULL;
         BTRecNum recordID = 0;
         bt_nodeid_t parentfolder = kHFSRootFolderID;
@@ -723,7 +724,9 @@ void loadBTree()
             die(1, "Could not create fork for fileID %u", record->catalogFile.fileID);
         }
         
+	HIOptions.tree = calloc(1, sizeof(struct _BTree));
         FILE* fp = fopen_hfsfork(fork);
+	if (fp == NULL) { perror("open_fork"); };
         int result = btree_init(HIOptions.tree, fp);
         if (result < 1) {
             error("Error initializing hotfiles btree.");
@@ -758,6 +761,7 @@ int main (int argc, char* const *argv)
         { "help",           no_argument,            NULL,                   'h' },
         { "version",        no_argument,            NULL,                   'v' },
         { "device",         required_argument,      NULL,                   'd' },
+        { "yank",           required_argument,      NULL,                   'y' },
         { "volume",         required_argument,      NULL,                   'V' },
         { "volumeheader",   no_argument,            NULL,                   'r' },
         { "node",           required_argument,      NULL,                   'n' },
@@ -774,7 +778,7 @@ int main (int argc, char* const *argv)
     };
     
     /* short options */
-    char* shortopts = "hvjlrsDd:n:b:p:P:F:V:c:o:";
+    char* shortopts = "hvjlrsDd:n:b:p:P:F:V:c:o:y:";
     
     char opt;
     while ((opt = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -836,8 +840,8 @@ int main (int argc, char* const *argv)
                 if (strcmp(optarg, BTreeOptionAttributes) == 0) HIOptions.tree_type = BTreeTypeAttributes;
                 else if (strcmp(optarg, BTreeOptionCatalog) == 0) HIOptions.tree_type = BTreeTypeCatalog;
                 else if (strcmp(optarg, BTreeOptionExtents) == 0) HIOptions.tree_type = BTreeTypeExtents;
-                else if (strcmp(optarg, BTreeOptionHotfile) == 0) HIOptions.tree_type = BTreeTypeHotfile;
-                else fatal("option -b/--btree must be one of: attributes, catalog, extents, or hotfile (not %s).", optarg);
+                else if (strcmp(optarg, BTreeOptionHotfiles) == 0) HIOptions.tree_type = BTreeTypeHotfiles;
+                else fatal("option -b/--btree must be one of: attributes, catalog, extents, or hotfiles (not %s).", optarg);
                 break;
                 
             case 'F':
@@ -857,6 +861,11 @@ int main (int argc, char* const *argv)
                 
                 if (HIOptions.record_filename == NULL || HIOptions.record_parent == 0) fatal("option -F/--fsspec requires a parent ID and file (eg. 2:.journal)");
                 
+                break;
+                
+            case 'y':
+                set_mode(HIModeYankFS);
+                (void)strlcpy(HIOptions.extract_path, optarg, PATH_MAX);
                 break;
                 
             case 'o':
@@ -931,6 +940,35 @@ OPEN:
             exit(errno);
         }
     }
+
+#pragma mark Yank FS
+// Pull the essential files from the disk for inspection or transport.
+	if (check_mode(HIModeYankFS)) {
+		char path[PATH_MAX] = "";
+		strncpy(path, HIOptions.extract_path, PATH_MAX);
+	// Volume Header Block
+	char* buf = calloc(1, 4096);
+		int nbytes = 0;
+		nbytes = vol_read(vol, buf, sizeof(HFSPlusVolumeHeader), 1024);
+		if (nbytes < 0)
+			die(0, "reading volume header");
+		
+		if (mkdir(HIOptions.extract_path, 0777) < 0)
+			die(0, "mkdir");
+		
+		char vhPath[PATH_MAX] = "";
+		char allocationPath[PATH_MAX] = "";
+		char extentsPath[PATH_MAX] = "";
+		char catalogPath[PATH_MAX] = "";
+		char attributesPath[PATH_MAX] = "";
+		char startupPath[PATH_MAX] = "";
+		
+		// Allocation Bitmap
+		// Extents Overflow
+		// Catalog
+		// Attributes
+		// Startup
+	}
     
 #pragma mark Disk Summary
     
@@ -1073,8 +1111,8 @@ OPEN:
         } else if (HIOptions.tree->treeID == kHFSAttributesFileID) {
             BeginSection("Attributes B-Tree Header");
             
-        } else if (HIOptions.tree_type == BTreeTypeHotfile) {
-            BeginSection("Hotfile B-Tree Header");
+        } else if (HIOptions.tree_type == BTreeTypeHotfiles) {
+            BeginSection("Hotfiles B-Tree Header");
             
         } else {
             die(1, "Unknown tree type: %d", HIOptions.tree_type);
@@ -1099,8 +1137,8 @@ OPEN:
         } else if (HIOptions.tree_type == BTreeTypeAttributes) {
             BeginSection("Attributes B-Tree Node %d", HIOptions.node_id);
             
-        } else if (HIOptions.tree_type == BTreeTypeHotfile) {
-            BeginSection("Hotfile B-Tree Node %d", HIOptions.node_id);
+        } else if (HIOptions.tree_type == BTreeTypeHotfiles) {
+            BeginSection("Hotfiles B-Tree Node %d", HIOptions.node_id);
             
         } else {
             die(1, "Unknown tree type: %s", HIOptions.tree_type);
@@ -1127,7 +1165,7 @@ OPEN:
 
     // Extract any found files (not complete; FIXME: dropping perms breaks right now)
     if (check_mode(HIModeExtractFile)) {
-        if (HIOptions.extract_HFSFork == NULL && HIOptions.tree->treeID != 0) {
+        if (HIOptions.extract_HFSFork == NULL && HIOptions.tree && HIOptions.tree->treeID != 0) {
             HFSFork *fork;
             hfsfork_get_special(&fork, &HIOptions.hfs, HIOptions.tree->treeID);
             HIOptions.extract_HFSFork = fork;
