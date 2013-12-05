@@ -10,7 +10,7 @@
 
 #include "misc/output.h"
 #include "misc/stringtools.h"
-#include "hfs/hfs_structs.h"
+#include "hfs/hfs_types.h"
 #include "hfs/catalog.h"
 #include "hfs/hfs.h"
 #include <sys/stat.h>
@@ -35,7 +35,7 @@ void _PrintCatalogName(char* label, bt_nodeid_t cnid)
 
 void _PrintHFSBlocks(const char *label, uint64_t blocks)
 {
-    char sizeLabel[50];
+    char sizeLabel[50] = "";
     (void)format_blocks(sizeLabel, blocks, volume->block_size, 50);
     PrintAttribute(label, sizeLabel);
 }

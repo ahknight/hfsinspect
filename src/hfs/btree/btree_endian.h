@@ -11,8 +11,8 @@
 
 #include "hfs/btree/btree.h"
 
-void swap_BTNodeDescriptor  (BTNodeDescriptor *node);
-void swap_BTHeaderRec       (BTHeaderRec *header);
-int  swap_BTreeNode         (BTreeNodePtr node);
+void swap_BTNodeDescriptor  (BTNodeDescriptor *node) _NONNULL;
+void swap_BTHeaderRec       (BTHeaderRec *header) _NONNULL;
+int  swap_BTreeNode         (BTreeNodePtr node) _NONNULL;
 
 #endif

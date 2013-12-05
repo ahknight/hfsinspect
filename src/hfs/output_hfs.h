@@ -9,20 +9,20 @@
 #ifndef hfsinspect_output_hfs_h
 #define hfsinspect_output_hfs_h
 
-#include "hfs/hfs_structs.h"
+#include "hfs/hfs_types.h"
 #include "hfs/hfs_extentlist.h"
 #include "hfs/Apple/vfs_journal.h"
 
 #define MAC_GMT_FACTOR 2082844800UL
 
-void set_hfs_volume                 (HFS *v);
+void set_hfs_volume                 (HFS *v) _NONNULL;
 
 
-void _PrintHFSBlocks                (const char* label, uint64_t blocks);
-void _PrintHFSChar                  (const char* label, const char* i, size_t nbytes);
-void _PrintHFSTimestamp             (const char* label, uint32_t timestamp);
-void _PrintHFSUniStr255             (const char* label, const HFSUniStr255 *record);
-void _PrintCatalogName              (char* label, bt_nodeid_t cnid);
+void _PrintHFSBlocks                (const char* label, uint64_t blocks) _NONNULL;
+void _PrintHFSChar                  (const char* label, const char* i, size_t nbytes) _NONNULL;
+void _PrintHFSTimestamp             (const char* label, uint32_t timestamp) _NONNULL;
+void _PrintHFSUniStr255             (const char* label, const HFSUniStr255 *record) _NONNULL;
+void _PrintCatalogName              (char* label, bt_nodeid_t cnid) _NONNULL;
 
 
 #define PrintCatalogName(record, value)         _PrintCatalogName(#value, record->value)
@@ -32,43 +32,43 @@ void _PrintCatalogName              (char* label, bt_nodeid_t cnid);
 
 
 
-void PrintVolumeInfo                (const HFS* hfs);
-void PrintHFSMasterDirectoryBlock   (const HFSMasterDirectoryBlock* vcb);
-void PrintVolumeHeader              (const HFSPlusVolumeHeader *vh);
-void PrintExtentList                (const ExtentList* list, uint32_t totalBlocks);
-void PrintForkExtentsSummary        (const HFSFork* fork);
-void PrintHFSPlusForkData           (const HFSPlusForkData *fork, uint32_t cnid, uint8_t forktype);
-void PrintBTNodeDescriptor          (const BTNodeDescriptor *node);
-void PrintBTHeaderRecord            (const BTHeaderRec *hr);
-void PrintHFSPlusBSDInfo            (const HFSPlusBSDInfo *record);
-void PrintFndrFileInfo              (const FndrFileInfo *record);
-void PrintFndrDirInfo               (const FndrDirInfo *record);
-void PrintFinderFlags               (uint16_t record);
-void PrintFndrOpaqueInfo            (const FndrOpaqueInfo *record);
-void PrintHFSPlusCatalogFolder      (const HFSPlusCatalogFolder *record);
-void PrintHFSPlusCatalogFile        (const HFSPlusCatalogFile *record);
-void PrintHFSPlusFolderThreadRecord (const HFSPlusCatalogThread *record);
-void PrintHFSPlusFileThreadRecord   (const HFSPlusCatalogThread *record);
-void PrintHFSPlusCatalogThread      (const HFSPlusCatalogThread *record);
-void PrintJournalInfoBlock          (const JournalInfoBlock *record);
-void PrintJournalHeader             (const journal_header *record);
+void PrintVolumeInfo                (const HFS* hfs) _NONNULL;
+void PrintHFSMasterDirectoryBlock   (const HFSMasterDirectoryBlock* vcb) _NONNULL;
+void PrintVolumeHeader              (const HFSPlusVolumeHeader *vh) _NONNULL;
+void PrintExtentList                (const ExtentList* list, uint32_t totalBlocks) _NONNULL;
+void PrintForkExtentsSummary        (const HFSFork* fork) _NONNULL;
+void PrintHFSPlusForkData           (const HFSPlusForkData *fork, uint32_t cnid, uint8_t forktype) _NONNULL;
+void PrintBTNodeDescriptor          (const BTNodeDescriptor *node) _NONNULL;
+void PrintBTHeaderRecord            (const BTHeaderRec *hr) _NONNULL;
+void PrintHFSPlusBSDInfo            (const HFSPlusBSDInfo *record) _NONNULL;
+void PrintFndrFileInfo              (const FndrFileInfo *record) _NONNULL;
+void PrintFndrDirInfo               (const FndrDirInfo *record) _NONNULL;
+void PrintFinderFlags               (uint16_t record) _NONNULL;
+void PrintFndrOpaqueInfo            (const FndrOpaqueInfo *record) _NONNULL;
+void PrintHFSPlusCatalogFolder      (const HFSPlusCatalogFolder *record) _NONNULL;
+void PrintHFSPlusCatalogFile        (const HFSPlusCatalogFile *record) _NONNULL;
+void PrintHFSPlusFolderThreadRecord (const HFSPlusCatalogThread *record) _NONNULL;
+void PrintHFSPlusFileThreadRecord   (const HFSPlusCatalogThread *record) _NONNULL;
+void PrintHFSPlusCatalogThread      (const HFSPlusCatalogThread *record) _NONNULL;
+void PrintJournalInfoBlock          (const JournalInfoBlock *record) _NONNULL;
+void PrintJournalHeader             (const journal_header *record) _NONNULL;
 
-void PrintVolumeSummary             (const VolumeSummary *summary);
-void PrintForkSummary               (const ForkSummary *summary);
+void PrintVolumeSummary             (const VolumeSummary *summary) _NONNULL;
+void PrintForkSummary               (const ForkSummary *summary) _NONNULL;
 
-void VisualizeHFSPlusExtentKey      (const HFSPlusExtentKey *record, const char* label, bool oneLine);
-void VisualizeHFSPlusCatalogKey     (const HFSPlusCatalogKey *record, const char* label, bool oneLine);
-void VisualizeHFSPlusAttrKey        (const HFSPlusAttrKey *record, const char* label, bool oneLine);
-void VisualizeHFSBTreeNodeRecord    (const char* label, BTHeaderRec headerRecord, const BTreeNodePtr node, BTRecNum recNum);
+void VisualizeHFSPlusExtentKey      (const HFSPlusExtentKey *record, const char* label, bool oneLine) _NONNULL;
+void VisualizeHFSPlusCatalogKey     (const HFSPlusCatalogKey *record, const char* label, bool oneLine) _NONNULL;
+void VisualizeHFSPlusAttrKey        (const HFSPlusAttrKey *record, const char* label, bool oneLine) _NONNULL;
+void VisualizeHFSBTreeNodeRecord    (const char* label, BTHeaderRec headerRecord, const BTreeNodePtr node, BTRecNum recNum) _NONNULL;
 
-void PrintTreeNode                  (const BTreePtr tree, uint32_t nodeID);
-void PrintNode                      (const BTreeNodePtr node);
-void PrintFolderListing             (uint32_t folderID);
-void PrintNodeRecord                (const BTreeNodePtr node, int recordNumber);
+void PrintTreeNode                  (const BTreePtr tree, uint32_t nodeID) _NONNULL;
+void PrintNode                      (const BTreeNodePtr node) _NONNULL;
+void PrintFolderListing             (uint32_t folderID) _NONNULL;
+void PrintNodeRecord                (const BTreeNodePtr node, int recordNumber) _NONNULL;
 
-void PrintHFSPlusExtentRecord       (const HFSPlusExtentRecord* record);
+void PrintHFSPlusExtentRecord       (const HFSPlusExtentRecord* record) _NONNULL;
 
-int format_hfs_timestamp(char* out, uint32_t timestamp, size_t length);
-int format_hfs_chars(char* out, const char* value, size_t nbytes, size_t length);
+int format_hfs_timestamp(char* out, uint32_t timestamp, size_t length) _NONNULL;
+int format_hfs_chars(char* out, const char* value, size_t nbytes, size_t length) _NONNULL;
 
 #endif

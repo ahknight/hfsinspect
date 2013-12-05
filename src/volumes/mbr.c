@@ -14,7 +14,7 @@ int mbr_load_header(Volume *vol, MBR *mbr);
 
 int mbr_load_header(Volume *vol, MBR *mbr)
 {
-    if ( vol_read(vol, mbr, sizeof(MBR), 0) < 0 )
+    if ( vol_read(vol, (Bytes)mbr, sizeof(MBR), 0) < 0 )
         return -1;
     
     return 0;
@@ -95,7 +95,7 @@ int mbr_dump(Volume *vol)
     
     const char* type_str = NULL;
     MBR *mbr = NULL;
-    INIT_BUFFER(mbr, sizeof(MBR));
+    ALLOC(mbr, sizeof(MBR));
     
     if ( mbr_load_header(vol, mbr) < 0)
         return -1;

@@ -30,7 +30,7 @@
 ExtentList* extentlist_make(void)
 {
     ExtentList *retval;
-    INIT_BUFFER(retval, sizeof(ExtentList));
+    ALLOC(retval, sizeof(ExtentList));
     retval->tqh_first = NULL;
     retval->tqh_last = &retval->tqh_first; // Ensure this is pointing to the value on the heap, not the stack.
     TAILQ_INIT(retval);
@@ -42,7 +42,7 @@ void extentlist_add(ExtentList *list, size_t startBlock, size_t blockCount)
     if (blockCount == 0) return;
     
     Extent *newExtent;
-    INIT_BUFFER(newExtent, sizeof(Extent));
+    ALLOC(newExtent, sizeof(Extent));
     newExtent->startBlock = startBlock;
     newExtent->blockCount = blockCount;
     
@@ -125,7 +125,7 @@ void extentlist_free(ExtentList* list)
     Extent *e = NULL;
     while ( (e = TAILQ_FIRST(list)) ) {
         TAILQ_REMOVE(list, e, extents);
-        FREE_BUFFER(e);
+        FREE(e);
     }
-    FREE_BUFFER(list);
+    FREE(list);
 }

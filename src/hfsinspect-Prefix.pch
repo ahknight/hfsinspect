@@ -2,6 +2,10 @@
 // Prefix header for all source files of the 'hfsinspect' target in the 'hfsinspect' project
 //
 
+#define _UNUSED     __attribute__((unused))
+#define _NONNULL    __attribute__((nonnull))
+#define NONNULL(...) __attribute__((nonnull(__VA_ARGS__)))
+
 // Can Linux make this more complicated?
 #if defined(__linux__)
 
@@ -51,11 +55,11 @@ typedef char	uuid_string_t[37];
 #endif
 
 // And this.
-#ifndef INIT_BUFFER
-#define INIT_BUFFER(name, size) { (name) = calloc(1, (size)); if ((name) == NULL) { exit(errno); }; }
+#ifndef ALLOC
+#define ALLOC(name, size) { (name) = calloc(1, (size)); if ((name) == NULL) { exit(errno); }; }
 #endif
 
 // Also this.
-#ifndef FREE_BUFFER
-#define FREE_BUFFER(name) { if (malloc_size((name))) memset((name), 'Z', malloc_size((name))); free((name)); (name) = NULL; }
+#ifndef FREE
+#define FREE(name) { if (malloc_size((name))) memset((name), 'Z', malloc_size((name))); free((name)); (name) = NULL; }
 #endif

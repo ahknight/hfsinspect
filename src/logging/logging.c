@@ -175,6 +175,8 @@ int LogLine(enum LogLevel level, const char* format, ...)
     
     if (level <= L_DEBUG)
         fp = streams[level];
+    else
+        fprintf(stderr, "Uh oh. %u isn't a valid log level.", level);
     
     _printColor(fp, level);
     nchars += vfprintf(fp, format, argp);

@@ -15,7 +15,7 @@ int hfs_get_btree(BTreePtr *btree, const HFS *hfs, hfs_cnid_t cnid)
     BTreePtr tree = NULL;
     HFSFork *fork = NULL;
     
-    INIT_BUFFER(tree, sizeof(struct _BTree));
+    ALLOC(tree, sizeof(struct _BTree));
     
     if ( hfsfork_get_special(&fork, hfs, cnid) < 0 )
         goto ERR;
@@ -42,7 +42,7 @@ int hfs_get_btree(BTreePtr *btree, const HFS *hfs, hfs_cnid_t cnid)
     return 0;
     
 ERR:
-    FREE_BUFFER(tree);
+    FREE(tree);
     return -1;
 }
 

@@ -23,7 +23,8 @@ int hfs_get_hotfiles_btree(BTreePtr *tree, const HFS *hfs)
         BTRecNum recordID = 0;
         bt_nodeid_t parentfolder = kHFSRootFolderID;
         HFSUniStr255 name = wcstohfsuc(L".hotfiles.btree");
-        int found = hfs_catalog_find_record(&node, &recordID, hfs, parentfolder, name);
+        FSSpec spec = { .hfs = hfs, .parentID = parentfolder, .name = name };
+        int found = hfs_catalog_find_record(&node, &recordID, spec);
         if (found != 1)
             return -1;
         
@@ -36,11 +37,11 @@ int hfs_get_hotfiles_btree(BTreePtr *tree, const HFS *hfs)
         if ( hfsfork_make(&fork, hfs, record->catalogFile.dataFork, 0x00, record->catalogFile.fileID) < 0 )
             return -1;
         
-        INIT_BUFFER(cachedTree, sizeof(struct _BTree));
+        ALLOC(cachedTree, sizeof(struct _BTree));
         FILE* fp = fopen_hfsfork(fork);
         if (fp == NULL) return -1;
         int result = btree_init(cachedTree, fp);
-        if (result < 1) {
+        if (result < 0) {
             error("Error initializing hotfiles btree.");
             return -1;
         }

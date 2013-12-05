@@ -62,16 +62,6 @@ int BTGetBTNodeRecord(BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum 
     record->valueLen    = record->recordLen - record->keyLen;
     record->valueLen   += (record->valueLen % 2);
     
-    // BeginSection("Record %u", record->recNum);
-    // PrintUIHex(record, offset);
-    // PrintAttributeDump("record", record->record, record->recordLen, 16);
-    // PrintUIHex(record, recordLen);
-    // PrintAttributeDump("key", record->key, record->keyLen, 16);
-    // PrintUIHex(record, keyLen);
-    // PrintAttributeDump("value", record->value, record->valueLen, 16);
-    // PrintUIHex(record, valueLen);
-    // EndSection();
-    
     return 0;
 }
 
@@ -139,8 +129,6 @@ uint16_t BTGetRecordKeyLength(const BTreeNodePtr node, uint8_t recNum)
     // Pad to an even number of bytes
     keySize += keySize % 2;
     
-//    VisualizeData(keyPtr, keySize);
-    
     return keySize;
 }
 
@@ -194,7 +182,7 @@ int btree_get_node(BTreeNodePtr *outNode, const BTreePtr tree, bt_nodeid_t nodeN
     }
     
     BTreeNodePtr node;
-    INIT_BUFFER(node, sizeof(struct _BTreeNode));
+    ALLOC(node, sizeof(struct _BTreeNode));
     
     node->nodeSize      = tree->headerRecord.nodeSize;
     node->nodeNumber    = nodeNumber;
@@ -202,7 +190,7 @@ int btree_get_node(BTreeNodePtr *outNode, const BTreePtr tree, bt_nodeid_t nodeN
     node->bTree         = tree;
     node->treeID        = tree->treeID;
     
-    INIT_BUFFER(node->data, node->nodeSize);
+    ALLOC(node->data, node->nodeSize);
     node->dataLen = malloc_size(node->data);
 
     ssize_t result = 0;
@@ -225,9 +213,6 @@ int btree_get_node(BTreeNodePtr *outNode, const BTreePtr tree, bt_nodeid_t nodeN
         
     }
     
-//    Print("Node %u", node->nodeNumber);
-//    VisualizeData(node->data, node->dataLen);
-    
     if ( swap_BTreeNode(node) < 0 ) {
         btree_free_node(node);
         warning("Byte-swap of node failed.");
@@ -245,8 +230,8 @@ int btree_get_node(BTreeNodePtr *outNode, const BTreePtr tree, bt_nodeid_t nodeN
 void btree_free_node (BTreeNodePtr node)
 {
     if (node != NULL && node->data != NULL) {
-        FREE_BUFFER(node->data);
-        FREE_BUFFER(node);
+        FREE(node->data);
+        FREE(node);
     }
 }
 
@@ -293,11 +278,6 @@ int btree_walk(const BTreePtr btree, const BTreeNodePtr node, btree_walk_func wa
 
 int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, const void * searchKey)
 {
-    assert(node);
-    assert(recordID);
-    assert(btree);
-    assert(searchKey);
-    
     debug("Searching tree %d for key of length %d", btree->treeID, ((BTreeKey*)searchKey)->length16);
     
     /*
@@ -321,7 +301,6 @@ int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, c
     
     if (level == 0) {
         error("Invalid tree (level 0?)");
-//        PrintBTHeaderRecord(&btree->headerRecord);
         return false;
     }
     size_t num_nodes = btree->headerRecord.treeDepth;
@@ -419,8 +398,6 @@ int btree_search_node(BTRecNum *index, const BTreePtr btree, const BTreeNodePtr 
     assert(node->bTree->keyCompare != NULL);
     assert(searchKey != NULL);
     
-    //    debug("Search node %d for key of length %d", node->nodeNumber, ((BTreeKey*)searchKey)->length16);
-    
     // Perform a binary search within the records (since they are guaranteed to be ordered).
     int low = 0;
     int high = node->nodeDescriptor->numRecords - 1;
@@ -454,7 +431,6 @@ int btree_search_node(BTRecNum *index, const BTreePtr btree, const BTreeNodePtr 
         
         btree_get_record(&testKey, NULL, node, recNum);
         result = keyFunc(searchKey, testKey);
-//        debug("record %d: key compare result: %d", recNum, result);
         
         if (result < 0) {
             high = recNum - 1;

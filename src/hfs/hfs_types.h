@@ -1,5 +1,5 @@
 //
-//  hfs_structs.h
+//  hfs_types.h
 //  hfsinspect
 //
 //  Created by Adam Knight on 5/6/13.

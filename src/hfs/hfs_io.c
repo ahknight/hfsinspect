@@ -187,7 +187,7 @@ int hfsfork_make (HFSFork** fork, const HFS *hfs, const HFSPlusForkData forkData
     ASSERT_PTR(hfs);
     
     HFSFork *f = NULL;
-    INIT_BUFFER(f, sizeof(HFSFork));
+    ALLOC(f, sizeof(HFSFork));
     
     f->hfs = (HFS*)hfs;
     f->forkData = forkData;
@@ -199,7 +199,7 @@ int hfsfork_make (HFSFork** fork, const HFS *hfs, const HFSPlusForkData forkData
     f->extents = extentlist_make();
     if ( hfs_extents_get_extentlist_for_fork(f->extents, f) == false) {
         critical("Failed to get extents for new fork!");
-        FREE_BUFFER(f);
+        FREE(f);
         return -1;
     }
     
@@ -211,7 +211,7 @@ int hfsfork_make (HFSFork** fork, const HFS *hfs, const HFSPlusForkData forkData
 void hfsfork_free(HFSFork *fork)
 {
     extentlist_free(fork->extents);
-    FREE_BUFFER(fork);
+    FREE(fork);
 }
 
 ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, size_t start_block)
@@ -244,7 +244,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
     }
     
     char* read_buffer;
-    INIT_BUFFER(read_buffer, block_count * fork->hfs->block_size);
+    ALLOC(read_buffer, block_count * fork->hfs->block_size);
     ExtentList *extentList = fork->extents;;
     
     // Keep track of what's left to get
@@ -277,7 +277,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
         
         ssize_t blocks = hfs_read_blocks(read_buffer, fork->hfs, read_range.count, read_range.start);
         if (blocks < 0) {
-            FREE_BUFFER(read_buffer);
+            FREE(read_buffer);
             perror("read fork");
             critical("Read error.");
             return -1;
@@ -290,7 +290,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
     }
     
     memcpy(buffer, read_buffer, MIN(block_count, request.count) * fork->hfs->block_size);
-    FREE_BUFFER(read_buffer);
+    FREE(read_buffer);
     
     return request.count;
 }
@@ -331,7 +331,7 @@ ssize_t hfs_read_fork_range(void* buffer, const HFSFork *fork, size_t size, size
     block_count = (size / fork->hfs->block_size) + ( ((offset + size) % fork->hfs->block_size) ? 1 : 0);
     
     // Use the calculated size instead of the passed size to account for block alignment.
-    INIT_BUFFER(read_buffer, block_count * fork->hfs->block_size);
+    ALLOC(read_buffer, block_count * fork->hfs->block_size);
     
     // Fetch the data into a read buffer (it may fail).
     read_blocks = hfs_read_fork(read_buffer, fork, block_count, start_block);
@@ -342,7 +342,7 @@ ssize_t hfs_read_fork_range(void* buffer, const HFSFork *fork, size_t size, size
     }
     
     // Clean up.
-    FREE_BUFFER(read_buffer);
+    FREE(read_buffer);
     
     // The amount we added to the buffer.
     return size;

@@ -34,47 +34,37 @@
 
 #pragma mark - Function Declarations
 
-void            die                         (int val, char* format, ...)
-    __attribute__(( noreturn ));
+void    die                         (int val, String format, ...) __attribute__(( noreturn ));
 
-void            set_mode                    (int mode);
-void            clear_mode                  (int mode);
-bool            check_mode                  (int mode);
+void    set_mode                    (int mode);
+void    clear_mode                  (int mode);
+bool    check_mode                  (int mode);
 
-void            usage                       (int status)
-    __attribute__(( noreturn ));
-void            show_version                ()
-    __attribute__(( noreturn ));
+void    usage                       (int status) __attribute__(( noreturn ));
+void    show_version                (void) __attribute__(( noreturn ));
 
-void            showPathInfo                (void);
-void            showCatalogRecord           (bt_nodeid_t parent, HFSUniStr255 filename, bool followThreads);
+void    showPathInfo                (void);
+void    showCatalogRecord           (FSSpec spec, bool followThreads);
 
-int             compare_ranked_files        (const void * a, const void * b)
-    __attribute__(( nonnull ));
-VolumeSummary   generateVolumeSummary       (HFS* hfs)
-    __attribute__(( nonnull ));
-void            generateForkSummary         (ForkSummary* forkSummary, const HFSPlusCatalogFile* file, const HFSPlusForkData* fork, hfs_forktype_t type)
-    __attribute__(( nonnull ));
+int     compare_ranked_files        (const void * a, const void * b) _NONNULL;
+VolumeSummary generateVolumeSummary (HFS* hfs) _NONNULL;
+void    generateForkSummary         (ForkSummary* forkSummary, const HFSPlusCatalogFile* file, const HFSPlusForkData* fork, hfs_forktype_t type) _NONNULL;
 
-ssize_t         extractFork                 (const HFSFork* fork, const char* extractPath)
-    __attribute__(( nonnull ));
-void            extractHFSPlusCatalogFile   (const HFS *hfs, const HFSPlusCatalogFile* file, const char* extractPath)
-    __attribute__(( nonnull ));
+ssize_t extractFork                 (const HFSFork* fork, const String extractPath) _NONNULL;
+void    extractHFSPlusCatalogFile   (const HFS *hfs, const HFSPlusCatalogFile* file, const String extractPath) _NONNULL;
 
-char*           deviceAtPath                (char*)
-    __attribute__(( nonnull ));
-bool            resolveDeviceAndPath        (char* path_in, char* device_out, char* path_out)
-    __attribute__(( nonnull ));
+String  deviceAtPath                (String path) _NONNULL;
+bool    resolveDeviceAndPath        (String path_in, String device_out, String path_out) _NONNULL;
 
 
 #pragma mark - Variable Definitions
 
 char            PROGRAM_NAME[PATH_MAX];
 
-const char*     BTreeOptionCatalog          = "catalog";
-const char*     BTreeOptionExtents          = "extents";
-const char*     BTreeOptionAttributes       = "attributes";
-const char*     BTreeOptionHotfiles         = "hotfiles";
+const String    BTreeOptionCatalog      = "catalog";
+const String    BTreeOptionExtents      = "extents";
+const String    BTreeOptionAttributes   = "attributes";
+const String    BTreeOptionHotfiles     = "hotfiles";
 
 typedef enum BTreeTypes {
     BTreeTypeCatalog = 0,
@@ -160,7 +150,7 @@ void usage(int status)
      -X FILTERARGS, --filter_args=FILTERARGS
                                  pass this argument string to the filter callback
      */
-    char* help = "[-hvjs] [-d file] [-V volumepath] [ [-b btree] [-n nodeid] ] [-p path] [-P absolutepath] [-F parent:name] [-o file] [--version] [path]\n"
+    String help = "[-hvjs] [-d file] [-V volumepath] [ [-b btree] [-n nodeid] ] [-p path] [-P absolutepath] [-F parent:name] [-o file] [--version] [path]\n"
     "\n"
     "SOURCES: \n"
     "hfsinspect will use the root filesystem by default, or the filesystem containing a target file in some cases. If you wish to\n"
@@ -203,9 +193,6 @@ void show_version()
     exit(0);
 }
 
-int HFSPlusGetCatalogInfo(hfs_cnid_t *parent, HFSUniStr255 *name, HFSPlusCatalogRecord *catalogRecord, const char *path, const HFS *hfs)
-    __attribute__((nonnull(4,5)));
-
 void showPathInfo(void)
 {
     debug("Finding records for path: %s", HIOptions.file_path);
@@ -215,32 +202,31 @@ void showPathInfo(void)
         exit(1);
     }
     
-    hfs_cnid_t              parentID = 0;
-    HFSUniStr255            name = {0};
+    FSSpec                  spec = {0};
     HFSPlusCatalogRecord    catalogRecord = {0};
     
-    if ( HFSPlusGetCatalogInfo(&parentID, &name, &catalogRecord, HIOptions.file_path, &HIOptions.hfs) < 0) {
+    if ( HFSPlusGetCatalogInfo(&spec, &catalogRecord, HIOptions.file_path, &HIOptions.hfs) < 0) {
         die(1, "Path not found: %s", HIOptions.file_path);
     }
     
-    showCatalogRecord(parentID, name, false);
+    showCatalogRecord(spec, false);
     
     if (catalogRecord.record_type == kHFSFileRecord) {
         HIOptions.extract_HFSPlusCatalogFile = catalogRecord.catalogFile;
     }
 }
 
-void showCatalogRecord(bt_nodeid_t parent, HFSUniStr255 filename, bool followThreads)
+void showCatalogRecord(FSSpec spec, bool followThreads)
 {
     hfs_wc_str filename_str = {0};
-    hfsuctowcs(filename_str, &filename);
+    hfsuctowcs(filename_str, &spec.name);
     
-    debug("Finding catalog record for %d:%ls", parent, filename_str);
+    debug("Finding catalog record for %d:%ls", spec.parentID, filename_str);
     
     BTreeNodePtr node = NULL;
     BTRecNum recordID = 0;
     
-    int8_t found = hfs_catalog_find_record(&node, &recordID, &HIOptions.hfs, parent, filename);
+    int8_t found = hfs_catalog_find_record(&node, &recordID, spec);
     
     if (found) {
         HFSPlusCatalogKey record_key = {0};
@@ -250,8 +236,13 @@ void showCatalogRecord(bt_nodeid_t parent, HFSUniStr255 filename, bool followThr
         
         if (type == kHFSPlusFileThreadRecord || type == kHFSPlusFolderThreadRecord) {
             if (followThreads) {
-                debug("Following thread for %d:%ls", parent, filename_str);
-                showCatalogRecord(catalogRecord.catalogThread.parentID, catalogRecord.catalogThread.nodeName, followThreads);
+                debug("Following thread for %d:%ls", spec.parentID, filename_str);
+                FSSpec s = {
+                    .hfs = spec.hfs,
+                    .parentID = catalogRecord.catalogThread.parentID,
+                    .name = catalogRecord.catalogThread.nodeName
+                };
+                showCatalogRecord(s, followThreads);
                 return;
                 
             } else {
@@ -291,7 +282,7 @@ void showCatalogRecord(bt_nodeid_t parent, HFSUniStr255 filename, bool followThr
         }
         
     } else {
-        error("Record not found: %d:%ls", parent, filename_str);
+        error("Record not found: %d:%ls", spec.parentID, filename_str);
     }
 }
 
@@ -466,10 +457,11 @@ void generateForkSummary(ForkSummary* forkSummary, const HFSPlusCatalogFile* fil
     hfsfork_free(hfsfork);
 }
 
-ssize_t extractFork(const HFSFork* fork, const char* extractPath)
+ssize_t extractFork(const HFSFork* fork, const String extractPath)
 {
-    print("Extracting fork to %s", extractPath);
-//    PrintHFSPlusForkData(&fork->forkData, fork->cnid, fork->forkType);
+    set_hfs_volume(fork->hfs);
+    Print("Extracting CNID %u to %s", fork->cnid, extractPath);
+    PrintHFSPlusForkData(&fork->forkData, fork->cnid, fork->forkType);
     
     // Open output stream
     FILE* f_out = fopen(extractPath, "w");
@@ -481,40 +473,36 @@ ssize_t extractFork(const HFSFork* fork, const char* extractPath)
     fseeko(f_in, 0, SEEK_SET);
     
     off_t offset        = 0;
-    size_t chunkSize    = fork->hfs->block_size*1024;
-    char* chunk         = calloc(1, chunkSize);
+    size_t chunkSize    = fork->hfs->block_size*1024; //4-8MB, generally.
+    Bytes chunk        = calloc(1, chunkSize);
     ssize_t nbytes      = 0;
     
-    size_t totalBytes, bytes;
+    size_t totalBytes = 0, bytes = 0;
     char totalStr[100] = {0}, bytesStr[100] = {0};
     totalBytes = fork->logicalSize;
-    bytes = 0;
     format_size(totalStr, totalBytes, 0, 100);
     format_size(bytesStr, bytes, 0, 100);
     
     do {
-        nbytes = fread(chunk, sizeof(char), chunkSize, f_in);
-        if (nbytes) {
-            nbytes = fwrite(chunk, sizeof(char), nbytes, f_out);
+        if ( (nbytes = fread(chunk, 1, chunkSize, f_in)) > 0) {
+            bytes += fwrite(chunk, 1, nbytes, f_out);
+            format_size(bytesStr, bytes, 0, 100);
+            fprintf(stdout, "\rCopying CNID %u to %s: %s of %s copied                ", fork->cnid, extractPath, bytesStr, totalStr);
+            fflush(stdout);
         }
-        bytes += nbytes;
-        format_size(bytesStr, bytes, 0, 100);
-        fprintf(stdout, "\r%s of %s copied", bytesStr, totalStr);
-        fflush(stdout);
-        
     } while (nbytes > 0);
     
     fflush(f_out);
     fclose(f_out);
     fclose(f_in);
     
-    FREE_BUFFER(chunk);
+    FREE(chunk);
     
-    print("Done.");
+    Print("\nCopy complete.");
     return offset;
 }
 
-void extractHFSPlusCatalogFile(const HFS *hfs, const HFSPlusCatalogFile* file, const char* extractPath)
+void extractHFSPlusCatalogFile(const HFS *hfs, const HFSPlusCatalogFile* file, const String extractPath)
 {
     if (file->dataFork.logicalSize > 0) {
         HFSFork *fork = NULL;
@@ -529,8 +517,8 @@ void extractHFSPlusCatalogFile(const HFS *hfs, const HFSPlusCatalogFile* file, c
         hfsfork_free(fork);
     }
     if (file->resourceFork.logicalSize > 0) {
-        char* outputPath;
-        INIT_BUFFER(outputPath, FILENAME_MAX);
+        String outputPath;
+        ALLOC(outputPath, FILENAME_MAX);
         ssize_t size;
         size = strlcpy(outputPath, extractPath, sizeof(outputPath));
         if (size < 1) die(1, "Could not create destination filename.");
@@ -546,12 +534,12 @@ void extractHFSPlusCatalogFile(const HFS *hfs, const HFSPlusCatalogFile* file, c
         
         hfsfork_free(fork);
         
-        FREE_BUFFER(outputPath);
+        FREE(outputPath);
     }
     // TODO: Merge forks, set attributes ... essentially copy it. Maybe extract in AppleSingle/Double/MacBinary format?
 }
 
-char* deviceAtPath(char* path)
+String deviceAtPath(String path)
 {
 #if defined(__APPLE__)
     static struct statfs stats;
@@ -561,7 +549,7 @@ char* deviceAtPath(char* path)
         return NULL;
     }
     
-    debug("statfs: from %s to %s", stats.f_mntfromname, stats.f_mntonname);
+    debug("statfs: from %s to %s", stats.f_mntonname, stats.f_mntfromname);
     
     return stats.f_mntfromname;
 #else
@@ -570,10 +558,10 @@ char* deviceAtPath(char* path)
 #endif
 }
 
-bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
+bool resolveDeviceAndPath(String path_in, String device_out, String path_out)
 {
 #if defined(__APPLE__)
-    char* path = realpath(path_in, NULL);
+    String path = realpath(path_in, NULL);
     if (path == NULL) {
         perror("realpath");
         die(1, "Target not found: %s", path_in);
@@ -591,8 +579,8 @@ bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
     debug("Mounted at: %s", stats.f_mntonname);
     debug("Path: %s", path);
     
-    char* device = stats.f_mntfromname;
-    char* mountPoint = stats.f_mntonname;
+    String device = stats.f_mntfromname;
+    String mountPoint = stats.f_mntonname;
     
     if (strncmp(mountPoint, "/", PATH_MAX) != 0) {
         // Remove mount point from path name (rather blindly, yes)
@@ -621,7 +609,7 @@ bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
 #endif
 }
 
-void die(int val, char* format, ...)
+void die(int val, String format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -662,7 +650,7 @@ void loadBTree()
     }
 }
 
-int main (int argc, char* const *argv)
+int main (int argc, String const *argv)
 {
     (void)strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
     
@@ -670,8 +658,8 @@ int main (int argc, char* const *argv)
     
     if (DEBUG) {
         // Ruin some memory so we crash more predictably.
-        void* m = malloc(16*1024*1024);
-        FREE_BUFFER(m);
+        Bytes m = malloc(16*1024*1024);
+        FREE(m);
     }
     
     setlocale(LC_ALL, "");
@@ -702,7 +690,7 @@ int main (int argc, char* const *argv)
     };
     
     /* short options */
-    char* shortopts = "hvjlrsDd:n:b:p:P:F:V:c:o:y:";
+    String shortopts = "hvjlrsDd:n:b:p:P:F:V:c:o:y:";
     
     char opt;
     while ((opt = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -731,7 +719,7 @@ int main (int argc, char* const *argv)
                 
             case 'V':
             {
-                char* str = deviceAtPath(optarg);
+                String str = deviceAtPath(optarg);
                 (void)strlcpy(HIOptions.device_path, str, PATH_MAX);
                 if (HIOptions.device_path == NULL) fatal("Unable to determine device. Does the path exist?");
             }
@@ -774,14 +762,14 @@ int main (int argc, char* const *argv)
                 ZERO_STRUCT(HIOptions.record_filename);
                 HIOptions.record_parent = 0;
                 
-                char* option    = strdup(optarg);
-                char* parent    = strsep(&option, ":");
-                char* filename  = strsep(&option, ":");
+                String option    = strdup(optarg);
+                String parent    = strsep(&option, ":");
+                String filename  = strsep(&option, ":");
                 
                 if (parent && strlen(parent)) sscanf(parent, "%u", &HIOptions.record_parent);
                 if (filename) (void)strlcpy(HIOptions.record_filename, filename, PATH_MAX);
                 
-                FREE_BUFFER(option);
+                FREE(option);
                 
                 if (HIOptions.record_filename == NULL || HIOptions.record_parent == 0) fatal("option -F/--fsspec requires a parent ID and file (eg. 2:.journal)");
                 
@@ -847,8 +835,8 @@ OPEN:
         if (errno == EBUSY) {
             // If the device is busy, see if we can use the raw disk instead (and aren't already).
             if (strstr(HIOptions.device_path, "/dev/disk") != NULL) {
-                char* newDevicePath;
-                INIT_BUFFER(newDevicePath, PATH_MAX + 1);
+                String newDevicePath;
+                ALLOC(newDevicePath, PATH_MAX + 1);
                 (void)strlcat(newDevicePath, "/dev/rdisk", PATH_MAX);
                 (void)strlcat(newDevicePath, &HIOptions.device_path[9], PATH_MAX);
                 info("Device %s busy. Trying the raw disk instead: %s", HIOptions.device_path, newDevicePath);
@@ -859,8 +847,8 @@ OPEN:
             exit(errno);
             
         } else {
-            error("could not open %s", HIOptions.device_path);
             perror("vol_qopen");
+            error("could not open %s", HIOptions.device_path);
             exit(errno);
         }
     }
@@ -895,7 +883,7 @@ OPEN:
     
     // If extracting, determine the UID to become by checking the owner of the output directory (so we can create any requested files later).
     if (check_mode(HIModeExtractFile) || check_mode(HIModeYankFS)) {
-        char* dir = strdup(dirname(HIOptions.extract_path));
+        String dir = strdup(dirname(HIOptions.extract_path));
         if ( !strlen(dir) ) {
             die(1, "Output file directory does not exist: %s", dir);
         }
@@ -933,8 +921,10 @@ OPEN:
 		char path[PATH_MAX] = "";
 		strncpy(path, HIOptions.extract_path, PATH_MAX);
         
-        if (mkdir(HIOptions.extract_path, 0777) < 0)
-			die(0, "mkdir");
+        int result = mkdir(HIOptions.extract_path, 0777);
+        if (result < 0 && errno != EEXIST) {
+            die(0, "mkdir");
+        }
 		
 		char headerPath         [PATH_MAX] = "";
 		char allocationPath     [PATH_MAX] = "";
@@ -942,6 +932,7 @@ OPEN:
 		char catalogPath        [PATH_MAX] = "";
 		char attributesPath     [PATH_MAX] = "";
 		char startupPath        [PATH_MAX] = "";
+		char hotfilesPath       [PATH_MAX] = "";
 		char journalBlockPath   [PATH_MAX] = "";
         char journalPath        [PATH_MAX] = "";
         
@@ -951,6 +942,7 @@ OPEN:
         strncpy(catalogPath,        headerPath,                     PATH_MAX);
         strncpy(attributesPath,     headerPath,                     PATH_MAX);
         strncpy(startupPath,        headerPath,                     PATH_MAX);
+        strncpy(hotfilesPath,       headerPath,                     PATH_MAX);
         strncpy(journalBlockPath,   headerPath,                     PATH_MAX);
         strncpy(journalPath,        headerPath,                     PATH_MAX);
         
@@ -960,6 +952,7 @@ OPEN:
         strncat(catalogPath,        "/catalog.btree",               PATH_MAX);
         strncat(attributesPath,     "/attributes.btree",            PATH_MAX);
         strncat(startupPath,        "/startupFile",                 PATH_MAX);
+        strncat(hotfilesPath,       "/hotfiles.btree",              PATH_MAX);
         strncat(journalBlockPath,   "/journal.block",               PATH_MAX);
         strncat(journalPath,        "/journal.buf",                 PATH_MAX);
 
@@ -969,13 +962,13 @@ OPEN:
         unsigned sectorCount = 16;
         size_t readSize = vol->sector_size*sectorCount;
         
-        char* buf = calloc(1, readSize);
+        Bytes buf = calloc(1, readSize);
 		int nbytes = 0;
-		nbytes = vol_read(vol, buf, readSize, 0);
+		nbytes = vol_read(vol, (Bytes)buf, readSize, 0);
 		if (nbytes < 0) die(0, "reading volume header");
         
         FILE *fp = fopen(headerPath, "w");
-        nbytes = fwrite(buf, 1, readSize, fp);
+        (void)fwrite(buf, 1, readSize, fp);
         fclose(fp);
 		
         struct {
@@ -983,40 +976,52 @@ OPEN:
             bt_nodeid_t     cnid;
             char            *path;
         } files[5] = {
-            // Allocation Bitmap
-            { HIOptions.hfs.vh.allocationFile, kHFSAllocationFileID, allocationPath},
             // Extents Overflow
-            { HIOptions.hfs.vh.extentsFile, kHFSExtentsFileID, extentsPath},
+            { HIOptions.hfs.vh.extentsFile,     kHFSExtentsFileID,      extentsPath},
             // Catalog
-            { HIOptions.hfs.vh.catalogFile, kHFSCatalogFileID, catalogPath},
-            // Attributes
-            { HIOptions.hfs.vh.allocationFile, kHFSAllocationFileID, allocationPath},
-            // Startup
-            { HIOptions.hfs.vh.allocationFile, kHFSAllocationFileID, allocationPath},
+            { HIOptions.hfs.vh.catalogFile,     kHFSCatalogFileID,      catalogPath},
+            // Allocation Bitmap (HFS+)
+            { HIOptions.hfs.vh.allocationFile,  kHFSAllocationFileID,   allocationPath},
+            // Startup (HFS+)
+            { HIOptions.hfs.vh.startupFile,     kHFSStartupFileID,      startupPath},
+            // Attributes (HFS+)
+            { HIOptions.hfs.vh.attributesFile,  kHFSAttributesFileID,   attributesPath},
         };
         
         FOR_UNTIL(i, 5) {
             if (files[i].forkData.logicalSize < 1) continue;
-            Print("Extracting CNID %u", files[i].cnid);
             
             hfsfork_make(&fork, &HIOptions.hfs, files[i].forkData, HFSDataForkType, files[i].cnid);
-            nbytes = extractFork(fork, files[i].path);
+            (void)extractFork(fork, files[i].path);
             hfsfork_free(fork);
             fork = NULL;
         }
         
         // Hotfiles
-        BTreePtr hotfiles = NULL;
-        if ( hfs_get_hotfiles_btree(&hotfiles, &HIOptions.hfs) != -1) {
-            // We have a hotfiles file (we don't always).
+        HFSPlusCatalogRecord catalogRecord = {0};
+        
+        if ( HFSPlusGetCatalogInfo(NULL, &catalogRecord, "/.hotfiles.btree", &HIOptions.hfs) ) {
+            hfsfork_make(&fork, &HIOptions.hfs, catalogRecord.catalogFile.dataFork, HFSDataForkType, catalogRecord.catalogFile.fileID);
+            (void)extractFork(fork, hotfilesPath);
+            hfsfork_free(fork);
+            fork = NULL;
         }
-            
         
-        hfsfork_make(&fork, &HIOptions.hfs, HIOptions.hfs.vh.allocationFile, HFSDataForkType, kHFSAllocationFileID);
-        nbytes = extractFork(fork, allocationPath);
-        hfsfork_free(fork);
-        fork = NULL;
+        // Journal Info Block
+        if ( HFSPlusGetCatalogInfo(NULL, &catalogRecord, "/.journal_info_block", &HIOptions.hfs) ) {
+            hfsfork_make(&fork, &HIOptions.hfs, catalogRecord.catalogFile.dataFork, HFSDataForkType, catalogRecord.catalogFile.fileID);
+            (void)extractFork(fork, journalBlockPath);
+            hfsfork_free(fork);
+            fork = NULL;
+        }
         
+        // Journal File
+        if ( HFSPlusGetCatalogInfo(NULL, &catalogRecord, "/.journal", &HIOptions.hfs) ) {
+            hfsfork_make(&fork, &HIOptions.hfs, catalogRecord.catalogFile.dataFork, HFSDataForkType, catalogRecord.catalogFile.fileID);
+            (void)extractFork(fork, journalPath);
+            hfsfork_free(fork);
+            fork = NULL;
+        }
 	}
     
 NOPE:
@@ -1077,15 +1082,23 @@ NOPE:
     // Show a catalog record by FSSpec
     if (check_mode(HIModeShowCatalogRecord)) {
         debug("Finding catalog record for %d:%s", HIOptions.record_parent, HIOptions.record_filename);
-        HFSUniStr255 search_string = strtohfsuc(HIOptions.record_filename);
-        showCatalogRecord(HIOptions.record_parent, search_string, false);
+        FSSpec spec = {
+            .hfs = &HIOptions.hfs,
+            .parentID = HIOptions.record_parent,
+            .name = strtohfsuc(HIOptions.record_filename)
+        };
+        showCatalogRecord(spec, false);
     }
     
     // Show a catalog record by its CNID (file/folder ID)
     if (check_mode(HIModeShowCNID)) {
         debug("Showing CNID %d", HIOptions.cnid);
-        HFSUniStr255 emptyKey = { 0, {'\0'} };
-        showCatalogRecord(HIOptions.cnid, emptyKey, true);
+        FSSpec spec = {
+            .hfs = &HIOptions.hfs,
+            .parentID = HIOptions.cnid,
+            .name = {0}
+        };
+        showCatalogRecord(spec, true);
     }
     
 #pragma mark B-Tree Requests
@@ -1143,7 +1156,7 @@ NOPE:
         if (showHex) {
             size_t length = HIOptions.tree->headerRecord.nodeSize;
             off_t offset = length * HIOptions.node_id;
-            char* buf = calloc(1, length);
+            Bytes buf = calloc(1, length);
             fpread(HIOptions.tree->fp, buf, length, offset);
             VisualizeData(buf, length);
             

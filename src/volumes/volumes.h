@@ -19,7 +19,7 @@
 
 #pragma mark - Functions
 
-int volumes_load (Volume *vol);
-int volumes_dump (Volume *vol);
+int volumes_load (Volume *vol) _NONNULL;
+int volumes_dump (Volume *vol) _NONNULL;
 
 #endif

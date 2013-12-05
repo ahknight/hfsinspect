@@ -10,7 +10,7 @@
 
 #include "misc/output.h"
 #include "misc/_endian.h"
-#include "hfs/hfs_structs.h"
+#include "hfs/hfs_types.h"
 #include "hfs/btree/btree_endian.h"
 #include "hfs/catalog.h"
 

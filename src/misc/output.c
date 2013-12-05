@@ -116,7 +116,7 @@ void _PrintRawAttribute(const char* label, const void* map, size_t nbytes, char 
     if (msize < 0) { perror("format_dump"); return; }
     msize++; // NULL terminator
     char* str = NULL;
-    INIT_BUFFER(str, msize);
+    ALLOC(str, msize);
     
     size_t len = format_dump(str, map, base, nbytes, msize);
     
@@ -130,7 +130,7 @@ void _PrintRawAttribute(const char* label, const void* map, size_t nbytes, char 
         if (i == 0) label = "";
     }
     
-    FREE_BUFFER(str);
+    FREE(str);
 }
 
 void VisualizeData(const void* data, size_t length)

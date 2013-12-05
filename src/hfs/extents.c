@@ -25,7 +25,7 @@ int hfs_get_extents_btree(BTreePtr *tree, const HFS *hfs)
     if (cachedTree == NULL) {
         debug("Creating extents B-Tree");
         
-        INIT_BUFFER(cachedTree, sizeof(struct _BTree));
+        ALLOC(cachedTree, sizeof(struct _BTree));
         
         HFSFork *fork;
         if ( hfsfork_get_special(&fork, hfs, kHFSExtentsFileID) < 0 ) {
@@ -77,7 +77,7 @@ int hfs_extents_get_node(BTreeNodePtr *out_node, const BTreePtr bTree, bt_nodeid
             
             if (node->nodeDescriptor->kind == kBTLeafNode) {
                 swap_HFSPlusExtentRecord(((HFSPlusExtentDescriptor*)record.value));
-                PrintHFSPlusExtentRecord(((const HFSPlusExtentRecord*)record.value));
+//                PrintHFSPlusExtentRecord(((const HFSPlusExtentRecord*)record.value));
             }
         }
     }

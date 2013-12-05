@@ -58,9 +58,9 @@ typedef struct MBR {
     .signature = {0} \
     })
 
-static unsigned kMBRTypeGPTProtective __attribute__((unused))   = 0xEE;
-static unsigned kMBRTypeAppleBoot __attribute__((unused))       = 0xAB;
-static unsigned kMBRTypeAppleHFS __attribute__((unused))        = 0xAF;
+static unsigned kMBRTypeGPTProtective _UNUSED   = 0xEE;
+static unsigned kMBRTypeAppleBoot _UNUSED       = 0xAB;
+static unsigned kMBRTypeAppleHFS _UNUSED        = 0xAF;
 
 struct MBRPartitionName {
     uint16_t        type;
@@ -71,7 +71,7 @@ struct MBRPartitionName {
 };
 typedef struct MBRPartitionName MBRPartitionName;
 
-static MBRPartitionName mbr_partition_types[] __attribute__((unused)) = {
+static MBRPartitionName mbr_partition_types[] _UNUSED = {
     {0x00, 0, "Free",                           kVolTypeSystem,         kSysFreeSpace},
     {0x01, 0, "MS FAT12",                       kVolTypeUserData,       kFSTypeFAT12},
     {0x04, 0, "MS FAT16",                       kVolTypeUserData,       kFSTypeFAT16},
@@ -110,21 +110,21 @@ extern PartitionOps mbr_ops;
  Tests a volume to see if it contains an MBR partition map.
  @return Returns -1 on error (check errno), 0 for NO, 1 for YES.
  */
-int mbr_test(Volume *vol);
+int mbr_test(Volume *vol) _NONNULL;
 
-int mbr_load_header(Volume *vol, MBR* mbr);
+int mbr_load_header(Volume *vol, MBR* mbr) _NONNULL;
 
 /**
  Updates a volume with sub-volumes for any defined partitions.
  @return Returns -1 on error (check errno), 0 for success.
  */
-int mbr_load(Volume *vol);
+int mbr_load(Volume *vol) _NONNULL;
 
 /**
  Prints a description of the MBR structure and partition information to stdout.
  @return Returns -1 on error (check errno), 0 for success.
  */
-int mbr_dump(Volume *vol);
+int mbr_dump(Volume *vol) _NONNULL;
 
 const char* mbr_partition_type_str(uint16_t type, VolType* hint);
 

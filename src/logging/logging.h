@@ -16,7 +16,7 @@
 #include <signal.h>     //raise
 
 void critical(char* format, ...) __attribute((format(printf,1,2), noreturn));
-#define critical(...)   PrintLine(L_CRITICAL, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);
+#define critical(...)   { PrintLine(L_CRITICAL, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); exit(1); }
 
 void error(char* format, ...) __attribute((format(printf,1,2)));
 #define error(...)      PrintLine(L_ERROR, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
