@@ -242,6 +242,8 @@ int btree_get_record(BTreeKeyPtr * key, Bytes * data, const BTreeNodePtr node, B
     assert(node);
     assert(node->bTree->headerRecord.nodeSize > 0);
     
+    if (recordID >= node->recordCount) return -1;
+    
     Bytes record = BTGetRecord(node, recordID);
     BTRecOffset keySize = BTGetRecordKeyLength(node, recordID);
     

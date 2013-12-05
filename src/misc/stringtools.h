@@ -10,7 +10,8 @@
 #define hfsinspect_stringtools_h
 
 #include <stdio.h>  //FILE*
-#include <wchar.h>  //wchar_T
+#include <wchar.h>  //wchar_t
+#include "hfs/hfs_types.h" // hfs_wc_str
 
 enum {
     DUMP_ADDRESS    = 0x0001,
@@ -29,6 +30,10 @@ ssize_t memstr(char* restrict out, uint8_t base, const char* input, size_t nbyte
 void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t width, uint8_t groups, unsigned mode);
 
 #pragma mark UTF conversions
+
+_NONNULL    int             hfsuctowcs                      (hfs_wc_str output, const HFSUniStr255* input);
+_NONNULL    HFSUniStr255    wcstohfsuc                      (const wchar_t* input);
+_NONNULL    HFSUniStr255    strtohfsuc                      (const char* input);
 
 // http://unicode.org/faq/utf_bom.html#utf16-3
 

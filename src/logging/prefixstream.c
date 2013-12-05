@@ -41,7 +41,7 @@ ssize_t prefixstream_write(void * c, const char * buf, size_t nbytes)
     while ( (token = strsep(&string, "\n")) != NULL) {
         
         if (context->newline && strlen(token)) {
-            fprintf(context->fp, "%s", (char*)context->prefix);
+            fprintf(context->fp, "%s ", (char*)context->prefix);
             context->newline = 0;
         }
         

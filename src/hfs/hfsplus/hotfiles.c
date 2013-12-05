@@ -9,6 +9,7 @@
 #include "hfs/hfsplus/hotfiles.h"
 #include "hfs/catalog.h"
 #include "hfs/hfs_io.h"
+#include "misc/stringtools.h"
 
 int hfs_get_hotfiles_btree(BTreePtr *tree, const HFS *hfs)
 {
