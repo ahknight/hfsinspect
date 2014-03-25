@@ -115,39 +115,39 @@ int hfs_catalog_get_node(BTreeNodePtr *out_node, const BTreePtr bTree, bt_nodeid
 }
 
 // Return is the record type (eg. kHFSPlusFolderRecord) and references to the key and value structs.
-int hfs_get_catalog_leaf_record(HFSPlusCatalogKey* const record_key, HFSPlusCatalogRecord* const record_value, const BTreeNodePtr node, BTRecNum recordID)
-{
-    if (recordID >= node->recordCount) {
-        error("Requested record %d, which is beyond the range of node %d (%d)", recordID, node->recordCount, node->nodeNumber);
-        return -1;
-    }
-    
-    debug("Getting catalog leaf record %d of node %d", recordID, node->nodeNumber);
-    
-    if (node->nodeDescriptor->kind != kBTLeafNode) return 0;
-    
-    BTNodeRecord record = {0};
-    if (BTGetBTNodeRecord(&record, node, recordID) < 0)
-        return -1;
-    
-    uint16_t max_key_length = sizeof(HFSPlusCatalogKey);
-    uint16_t max_value_length = sizeof(HFSPlusCatalogRecord) + sizeof(uint16_t);
-    
-    uint16_t key_length = record.keyLen;
-    uint16_t value_length = record.valueLen;
-    
-    if (key_length > max_key_length) {
-        warning("Key length of record %d in node %d is invalid (%d; maximum is %d)", recordID, node->nodeNumber, key_length, max_key_length);
-    }
-    if (value_length > max_value_length) {
-        warning("Value length of record %d in node %d is invalid (%d; maximum is %d)", recordID, node->nodeNumber, value_length, max_value_length);
-    }
-    
-    if (record_key != NULL)     *record_key = *(HFSPlusCatalogKey*)record.key;
-    if (record_value != NULL)   *record_value = *(HFSPlusCatalogRecord*)record.value;
-    
-    return ((HFSPlusCatalogRecord*)record.value)->record_type;
-}
+// int hfs_get_catalog_leaf_record(HFSPlusCatalogKey* const record_key, HFSPlusCatalogRecord* const record_value, const BTreeNodePtr node, BTRecNum recordID)
+// {
+//     if (recordID >= node->recordCount) {
+//         error("Requested record %d, which is beyond the range of node %d (%d)", recordID, node->recordCount, node->nodeNumber);
+//         return -1;
+//     }
+//     
+//     debug("Getting catalog leaf record %d of node %d", recordID, node->nodeNumber);
+//     
+//     if (node->nodeDescriptor->kind != kBTLeafNode) return 0;
+//     
+//     BTNodeRecord record = {0};
+//     if (BTGetBTNodeRecord(&record, node, recordID) < 0)
+//         return -1;
+//     
+//     uint16_t max_key_length = sizeof(HFSPlusCatalogKey);
+//     uint16_t max_value_length = sizeof(HFSPlusCatalogRecord) + sizeof(uint16_t);
+//     
+//     uint16_t key_length = record.keyLen;
+//     uint16_t value_length = record.valueLen;
+//     
+//     if (key_length > max_key_length) {
+//         warning("Key length of record %d in node %d is invalid (%d; maximum is %d)", recordID, node->nodeNumber, key_length, max_key_length);
+//     }
+//     if (value_length > max_value_length) {
+//         warning("Value length of record %d in node %d is invalid (%d; maximum is %d)", recordID, node->nodeNumber, value_length, max_value_length);
+//     }
+//     
+//     if (record_key != NULL)     *record_key = *(HFSPlusCatalogKey*)record.key;
+//     if (record_value != NULL)   *record_value = *(HFSPlusCatalogRecord*)record.value;
+//     
+//     return ((HFSPlusCatalogRecord*)record.value)->record_type;
+// }
 
 int8_t hfs_catalog_find_record(BTreeNodePtr *node, BTRecNum *recordID, FSSpec spec)
 {

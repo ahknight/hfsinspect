@@ -4,6 +4,8 @@ Makefile
 build
 docs/html
 docs/doxygen.log
+images/*.bin
 images/*.dmg
 images/*.img
 tmp/
+xcuserdata

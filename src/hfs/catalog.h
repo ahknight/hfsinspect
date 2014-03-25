@@ -60,7 +60,7 @@ FSSpec                HFSPlusFSSpecFromCatalogKey           (HFSPlusCatalogKey k
 
 _NONNULL    int     hfs_get_catalog_btree                   (BTreePtr *tree, const HFS *hfs);
 _NONNULL    int     hfs_catalog_get_node                    (BTreeNodePtr *node, const BTreePtr bTree, bt_nodeid_t nodeNum);
-NONNULL(3)    int     hfs_get_catalog_leaf_record             (HFSPlusCatalogKey* const record_key, HFSPlusCatalogRecord* const record_value, const BTreeNodePtr node, BTRecNum recordID) __deprecated;
+// NONNULL(3)    int     hfs_get_catalog_leaf_record             (HFSPlusCatalogKey* const record_key, HFSPlusCatalogRecord* const record_value, const BTreeNodePtr node, BTRecNum recordID) __deprecated;
 
 _NONNULL    int8_t  hfs_catalog_find_record                 (BTreeNodePtr* node, BTRecNum *recordID, FSSpec spec);
 _NONNULL    int     hfs_catalog_compare_keys_cf             (const HFSPlusCatalogKey *key1, const HFSPlusCatalogKey *key2);
