@@ -14,24 +14,77 @@
 
 bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
 {
+    if (bTree->_loadingBitmap == true)
+        return true;
+    
     assert(bTree);
     
-    BTreeNodePtr headerNode = NULL;
-    if ( BTGetNode(&headerNode, bTree, 0) < 0) return false;
-    BTNodeRecord record = {0};
-    BTGetBTNodeRecord(&record, headerNode, 2);
+    // Load the tree bitmap, if needed.
+    if (bTree->nodeBitmap == NULL) {
+        info("Loading tree bitmap.");
+        bTree->_loadingBitmap = true;
+        
+        // Get the B-Tree's header node (#0)
+        BTreeNodePtr node = NULL;
+        if ( BTGetNode(&node, bTree, 0) < 0) return false;
     
-    // TODO: Concat all the map blocks and cache them. Until then return true after the first block.
-    if ((nodeNum/8) > record.recordLen)
-        return true;
-
-    bool result = BTIsBlockUsed(nodeNum, record.record);
+        // Get the third record (map data)
+        BTNodeRecord record = {0};
+        BTGetBTNodeRecord(&record, node, 2);
+        
+        // Copy the data out into a persistant buffer
+        bTree->nodeBitmapSize = record.recordLen;
+        
+        // Initially allocate space for up to 16 nodes.
+        bTree->nodeBitmap = calloc(bTree->headerRecord.nodeSize * 16, 1);
+        assert(bTree->nodeBitmap != NULL);
+        memcpy(bTree->nodeBitmap, record.record, record.recordLen);
+        
+        // Concat any linked map node records
+        while (node->nodeDescriptor->fLink > 0 && (signed)node->nodeDescriptor->fLink != -1) {
+            size_t old_size = bTree->nodeBitmapSize;
+            bt_nodeid_t node_id = node->nodeDescriptor->fLink;
+            info("Loading bitmap continuation node %d", node_id);
+            
+            BTFreeNode(node);
+            node = NULL;
+            
+            BTGetNode(&node, bTree, node_id);
+            assert(node != NULL);
+            
+            BTGetBTNodeRecord(&record, node, 0);
+            bTree->nodeBitmapSize += record.recordLen;
+            if (malloc_size(bTree->nodeBitmap) < bTree->nodeBitmapSize) {
+                realloc(bTree->nodeBitmap, bTree->nodeBitmapSize);
+                if (bTree->nodeBitmap == NULL) {
+                    critical("Could not allocate memory for tree bitmap.");
+                    exit(errno);
+                }
+            }
+            
+            memcpy(bTree->nodeBitmap + old_size, record.record, record.recordLen);
+        }
+        info("Done loading nodes.");
+        
+        // Clean up
+        BTFreeNode(node);
+        
+        bTree->_loadingBitmap = false;
+    }
+    
+    // Check the bit in the data.
+    bool result = BTIsBlockUsed(nodeNum, bTree->nodeBitmap, bTree->nodeBitmapSize);
+    info("returning %d", result);
+    
     return result;
 }
 
-bool BTIsBlockUsed(uint32_t thisAllocationBlock, Bytes allocationFileContents)
+bool BTIsBlockUsed(uint32_t thisAllocationBlock, Bytes allocationFileContents, size_t length)
 {
-    Byte thisByte = allocationFileContents[thisAllocationBlock / 8];
+    size_t idx = (thisAllocationBlock / 8);
+    if (idx > length) return false;
+    
+    Byte thisByte = allocationFileContents[idx];
     return (thisByte & (1 << (7 - (thisAllocationBlock % 8)))) != 0;
 }
 
@@ -58,16 +111,6 @@ int BTGetBTNodeRecord(BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum 
     record->value       = (record->record + record->keyLen);
     record->valueLen    = record->recordLen - record->keyLen;
     record->valueLen   += (record->valueLen % 2);
-    
-    // BeginSection("Record %u", record->recNum);
-    // PrintUIHex(record, offset);
-    // PrintAttributeDump("record", record->record, record->recordLen, 16);
-    // PrintUIHex(record, recordLen);
-    // PrintAttributeDump("key", record->key, record->keyLen, 16);
-    // PrintUIHex(record, keyLen);
-    // PrintAttributeDump("value", record->value, record->valueLen, 16);
-    // PrintUIHex(record, valueLen);
-    // EndSection();
     
     return 0;
 }
@@ -136,8 +179,6 @@ uint16_t BTGetRecordKeyLength(const BTreeNodePtr node, uint8_t recNum)
     // Pad to an even number of bytes
     keySize += keySize % 2;
     
-//    VisualizeData(keyPtr, keySize);
-    
     return keySize;
 }
 
@@ -191,7 +232,7 @@ int btree_get_node(BTreeNodePtr *outNode, const BTreePtr tree, bt_nodeid_t nodeN
     }
     
     BTreeNodePtr node;
-    INIT_BUFFER(node, sizeof(struct _BTreeNode));
+    ALLOC(node, sizeof(struct _BTreeNode));
     
     node->nodeSize      = tree->headerRecord.nodeSize;
     node->nodeNumber    = nodeNumber;
@@ -199,7 +240,7 @@ int btree_get_node(BTreeNodePtr *outNode, const BTreePtr tree, bt_nodeid_t nodeN
     node->bTree         = tree;
     node->treeID        = tree->treeID;
     
-    INIT_BUFFER(node->data, node->nodeSize);
+    ALLOC(node->data, node->nodeSize);
     node->dataLen = malloc_size(node->data);
 
     ssize_t result = 0;
@@ -222,9 +263,6 @@ int btree_get_node(BTreeNodePtr *outNode, const BTreePtr tree, bt_nodeid_t nodeN
         
     }
     
-//    Print("Node %u", node->nodeNumber);
-//    VisualizeData(node->data, node->dataLen);
-    
     if ( swap_BTreeNode(node) < 0 ) {
         btree_free_node(node);
         warning("Byte-swap of node failed.");
@@ -242,8 +280,8 @@ int btree_get_node(BTreeNodePtr *outNode, const BTreePtr tree, bt_nodeid_t nodeN
 void btree_free_node (BTreeNodePtr node)
 {
     if (node != NULL && node->data != NULL) {
-        FREE_BUFFER(node->data);
-        FREE_BUFFER(node);
+        FREE(node->data);
+        FREE(node);
     }
 }
 
@@ -253,6 +291,8 @@ int btree_get_record(BTreeKeyPtr * key, Bytes * data, const BTreeNodePtr node, B
     assert(key || data);
     assert(node);
     assert(node->bTree->headerRecord.nodeSize > 0);
+    
+    if (recordID >= node->recordCount) return -1;
     
     Bytes record = BTGetRecord(node, recordID);
     BTRecOffset keySize = BTGetRecordKeyLength(node, recordID);
@@ -290,11 +330,6 @@ int btree_walk(const BTreePtr btree, const BTreeNodePtr node, btree_walk_func wa
 
 int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, const void * searchKey)
 {
-    assert(node);
-    assert(recordID);
-    assert(btree);
-    assert(searchKey);
-    
     debug("Searching tree %d for key of length %d", btree->treeID, ((BTreeKey*)searchKey)->length16);
     
     /*
@@ -318,7 +353,6 @@ int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, c
     
     if (level == 0) {
         error("Invalid tree (level 0?)");
-//        PrintBTHeaderRecord(&btree->headerRecord);
         return false;
     }
     size_t num_nodes = btree->headerRecord.treeDepth;
@@ -342,6 +376,7 @@ int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, c
         if ( BTGetNode(&searchNode, btree, currentNode) < 0) {
             error("search tree: failed to get node %u!", currentNode);
             perror("search");
+            btree_free_node(searchNode);
             return false;
         }
         
@@ -353,6 +388,7 @@ int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, c
         if (searchNode->nodeDescriptor->height != level) {
             // Nodes have a specific height.  This one fails.
             critical("Node found at unexpected height (got %d; expected %d).", searchNode->nodeDescriptor->height, level);
+            exit(1);
         }
         if (level == 1) {
             if (searchNode->nodeDescriptor->kind != kBTLeafNode) {
@@ -414,8 +450,6 @@ int btree_search_node(BTRecNum *index, const BTreePtr btree, const BTreeNodePtr 
     assert(node->bTree->keyCompare != NULL);
     assert(searchKey != NULL);
     
-    //    debug("Search node %d for key of length %d", node->nodeNumber, ((BTreeKey*)searchKey)->length16);
-    
     // Perform a binary search within the records (since they are guaranteed to be ordered).
     int low = 0;
     int high = node->nodeDescriptor->numRecords - 1;
@@ -449,7 +483,6 @@ int btree_search_node(BTRecNum *index, const BTreePtr btree, const BTreeNodePtr 
         
         btree_get_record(&testKey, NULL, node, recNum);
         result = keyFunc(searchKey, testKey);
-//        debug("record %d: key compare result: %d", recNum, result);
         
         if (result < 0) {
             high = recNum - 1;

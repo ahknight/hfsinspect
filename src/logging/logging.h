@@ -15,13 +15,25 @@
 #include <stdbool.h>    //bool
 #include <signal.h>     //raise
 
-#define critical(...)   PrintLine(L_CRITICAL, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+void critical(char* format, ...) __attribute((format(printf,1,2), noreturn));
+#define critical(...)   { PrintLine(L_CRITICAL, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); exit(1); }
+
+void error(char* format, ...) __attribute((format(printf,1,2)));
 #define error(...)      PrintLine(L_ERROR, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+
+void warning(char* format, ...) __attribute((format(printf,1,2)));
 #define warning(...)    PrintLine(L_WARNING, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+
+void print(char* format, ...) __attribute((format(printf,1,2)));
 #define print(...)      PrintLine(L_STANDARD, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+
+void info(char* format, ...) __attribute((format(printf,1,2)));
 #define info(...)       if (DEBUG) { PrintLine(L_INFO, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); }
+
+void debug(char* format, ...) __attribute((format(printf,1,2)));
 #define debug(...)      if (DEBUG) { PrintLine(L_DEBUG, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); }
 
+void fatal(char* format, ...) __attribute((format(printf,1,2), noreturn));
 #define fatal(...)      { fprintf(stderr, __VA_ARGS__); fputc('\n', stdout); usage(1); }
 
 extern bool DEBUG;

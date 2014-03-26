@@ -17,9 +17,9 @@
 #include <sys/disk.h>
 #endif
 
-#define VALID_DESCRIPTOR(vol) { if (vol == NULL || vol->fp == NULL) { errno = EINVAL; return -1; } }
+#define ASSERT_VOL(vol) { assert(vol); assert(vol->fp); }
 
-Volume* vol_open(const char* path, int mode, off_t offset, size_t length, size_t block_size)
+Volume* vol_open(const String path, int mode, off_t offset, size_t length, size_t block_size)
 {
     int fd;
     char* modestr = NULL;
@@ -44,7 +44,7 @@ Volume* vol_open(const char* path, int mode, off_t offset, size_t length, size_t
     
     vol->fd = fd;
     vol->fp = fdopen(fd, modestr);
-    strlcpy(vol->device, path, PATH_MAX);
+    (void)strlcpy(vol->device, path, PATH_MAX);
     vol->offset = offset;
     
     if (length && block_size) {
@@ -52,17 +52,21 @@ Volume* vol_open(const char* path, int mode, off_t offset, size_t length, size_t
         vol->sector_size = block_size;
         vol->sector_count = (length / block_size);
     } else {
-        vol->length = s.st_size;
-        vol->sector_size = s.st_blksize;
-        vol->sector_count = s.st_blocks;
+        vol->length         = s.st_size;
+        vol->sector_size    = s.st_blksize;
+        vol->sector_count   = s.st_blocks;
     }
     
 #ifdef __APPLE__
     // Try and get the real hardware sector size and use that.
-    long bc = 0, bs = 0;
     if (block_size == 0) {
-        vol->sector_size     = ( (ioctl(vol->fd, DKIOCGETBLOCKSIZE, &bs) == 0) ? bs : s.st_blksize);
-        vol->sector_count    = ( (ioctl(vol->fd, DKIOCGETBLOCKCOUNT, &bc) == 0) ? bc : s.st_blocks);
+        blkcnt_t  bc = 0;
+        blksize_t bs = 0;
+        ioctl(vol->fd, DKIOCGETBLOCKCOUNT, &bc);
+        ioctl(vol->fd, DKIOCGETBLOCKSIZE, &bs);
+        
+        vol->sector_count    = ( (bc != 0) ? bc : s.st_blocks);
+        vol->sector_size     = ( (bs != 0) ? bs : s.st_blksize);
     }
 #endif
     
@@ -72,7 +76,7 @@ Volume* vol_open(const char* path, int mode, off_t offset, size_t length, size_t
     return vol;
 }
 
-Volume* vol_qopen(const char* path)
+Volume* vol_qopen(const String path)
 {
     Volume *vol = vol_open(path, O_RDONLY, 0, 0, 0);
     return vol;
@@ -80,9 +84,9 @@ Volume* vol_qopen(const char* path)
 
 ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
 {
-    VALID_DESCRIPTOR(vol);
+    ASSERT_VOL(vol);
 
-    debug("Reading from volume at (%lld, %lu)", offset, size);
+    debug("Reading from volume at (%jd, %zu)", (intmax_t)offset, size);
     
     // Range checks
     if (vol->length && offset > vol->length)
@@ -90,7 +94,7 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
     
     if ( vol->length && (offset + size) > vol->length ) {
         size = vol->length - offset;
-        debug("Adjusted read to (%lld, %lu)", offset, size);
+        debug("Adjusted read to (%jd, %zu)", (intmax_t)offset, size);
     }
     
     if (size < 1)
@@ -106,7 +110,7 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
     size_t block_count = (size / vol->sector_size) + ( ((offset + size) % vol->sector_size) ? 1 : 0);
     
     // Use the calculated size instead of the passed size to account for block alignment.
-    char* read_buffer; INIT_BUFFER(read_buffer, block_count * vol->sector_size);
+    Bytes read_buffer; ALLOC(read_buffer, block_count * vol->sector_size);
     
     // Fetch the data into a read buffer (it may fail).
     ssize_t read_blocks = vol_read_blocks(vol, read_buffer, block_count, start_block);
@@ -115,7 +119,7 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
     if (read_blocks) memcpy(buf, read_buffer + byte_offset, size);
     
     // Clean up.
-    FREE_BUFFER(read_buffer);
+    FREE(read_buffer);
     
     // The amount we added to the buffer.
     return size;
@@ -123,7 +127,7 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
 
 ssize_t vol_read_blocks (const Volume *vol, void* buf, ssize_t block_count, ssize_t start_block)
 {
-    VALID_DESCRIPTOR(vol);
+    ASSERT_VOL(vol);
     
 //    debug("Reading %u blocks starting at block %u", block_count, start_block);
     if (vol->sector_count && start_block > vol->sector_count)
@@ -159,7 +163,7 @@ ssize_t vol_read_blocks (const Volume *vol, void* buf, ssize_t block_count, ssiz
 
 ssize_t vol_read_raw (const Volume *vol, void* buf, size_t nbyte, off_t offset)
 {
-    VALID_DESCRIPTOR(vol);
+    ASSERT_VOL(vol);
     
     ssize_t result;
     if ( (result = pread(vol->fd, buf, nbyte, (offset + vol->offset))) < 0)
@@ -170,7 +174,7 @@ ssize_t vol_read_raw (const Volume *vol, void* buf, size_t nbyte, off_t offset)
 
 ssize_t vol_write(Volume *vol, const void* buf, size_t nbyte, off_t offset)
 {
-    VALID_DESCRIPTOR(vol);
+    ASSERT_VOL(vol);
     
     ssize_t result;
     if ( (result = pwrite(vol->fd, buf, nbyte, (offset + vol->offset))) < 0)
@@ -181,7 +185,7 @@ ssize_t vol_write(Volume *vol, const void* buf, size_t nbyte, off_t offset)
 
 int vol_close(Volume *vol)
 {
-    VALID_DESCRIPTOR(vol);
+    ASSERT_VOL(vol);
     
     int fd = 0, result = 0;
     unsigned idx = 0;

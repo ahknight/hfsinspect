@@ -14,7 +14,7 @@ int mbr_load_header(Volume *vol, MBR *mbr);
 
 int mbr_load_header(Volume *vol, MBR *mbr)
 {
-    if ( vol_read(vol, mbr, sizeof(MBR), 0) < 0 )
+    if ( vol_read(vol, (Bytes)mbr, sizeof(MBR), 0) < 0 )
         return -1;
     
     return 0;
@@ -79,12 +79,12 @@ const char* mbr_partition_type_str(uint16_t type, VolType* hint)
     FOR_UNTIL(i, 256) {
         if (mbr_partition_types[i].type == type) {
             if (hint != NULL) *hint = mbr_partition_types[i].voltype;
-            strlcpy(type_str, mbr_partition_types[i].name, 99);
+            (void)strlcpy(type_str, mbr_partition_types[i].name, 99);
         }
     }
     
     if (type_str == NULL)
-        strlcpy(type_str, "unknown", 100);
+        (void)strlcpy(type_str, "unknown", 100);
     
     return type_str;
 }
@@ -95,7 +95,7 @@ int mbr_dump(Volume *vol)
     
     const char* type_str = NULL;
     MBR *mbr = NULL;
-    INIT_BUFFER(mbr, sizeof(MBR));
+    ALLOC(mbr, sizeof(MBR));
     
     if ( mbr_load_header(vol, mbr) < 0)
         return -1;

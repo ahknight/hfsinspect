@@ -10,10 +10,13 @@
 #define volumes_volume_h
 
 #include <sys/param.h>          //PATH_MAX
+#include "hfs/Apple/hfs_macos_defs.h"
 
 #pragma mark - Structures
 
 typedef uint32_t VolType;
+typedef char*    String;
+typedef BytePtr  Bytes;
 
 enum {
     kTypeUnknown                = 0,
@@ -61,8 +64,8 @@ struct Volume {
     FILE                *fp;                // C file handle
     char                device[PATH_MAX];   // path to device file
     
-    size_t              sector_size;         // block size (LBA size if the raw disk; FS blocks if a filesystem)
-    size_t              sector_count;        // total blocks in this volume
+    blksize_t           sector_size;         // block size (LBA size if the raw disk; FS blocks if a filesystem)
+    blkcnt_t            sector_count;        // total blocks in this volume
     
     off_t               offset;             // offset in bytes on device
     size_t              length;             // length in bytes
@@ -72,7 +75,7 @@ struct Volume {
     char                desc[100];          // Human-readable description of the volume format.
     char                native_desc[100];   // Native description of the volume format, if any.
     
-    uint32_t            depth;              // How many containers deep this volue is found (0 = root)
+    unsigned            depth;              // How many containers deep this volue is found (0 = root)
     Volume*             parent_partition;   // the enclosing partition; NULL if the root partition map
     
     unsigned            partition_count;    // total count of sub-partitions; 0 if this is a data partition
@@ -100,14 +103,14 @@ typedef struct PartitionOps {
  @return A pointer to a Volume struct or NULL on failure (check errno and reference open(2) for details).
  @see {@link vol_qopen}
  */
-Volume* vol_open(const char* path, int mode, off_t offset, size_t length, size_t block_size);
+Volume* vol_open(const String path, int mode, off_t offset, size_t length, size_t block_size) _NONNULL;
 
 /**
  Quickly open a whole character device. Offset, length, and block_size are set to zero and auto-detected as needed.
  @param path The path to the character device.
  @see {@link vol_open}
  */
-Volume* vol_qopen(const char* path);
+Volume* vol_qopen(const String path) _NONNULL;
 
 /**
  Read from a volume, adjusting for the volume's device offset and length.
@@ -117,9 +120,9 @@ Volume* vol_qopen(const char* path);
  @param offset The offset within the volume to read from. Do not compensate for the volume's physical location or block size -- that's what this function is for.
  @see read(2)
  */
-ssize_t vol_read        (const Volume *vol, void* buf, size_t size, off_t offset);
-ssize_t vol_read_blocks (const Volume *vol, void* buf, ssize_t block_count, ssize_t start_block);
-ssize_t vol_read_raw    (const Volume *vol, void* buf, size_t nbyte, off_t offset);
+ssize_t vol_read        (const Volume *vol, void* buf, size_t size, off_t offset) __attribute__((nonnull(1,2)));
+ssize_t vol_read_blocks (const Volume *vol, void* buf, ssize_t block_count, ssize_t start_block) __attribute__((nonnull(1,2)));
+ssize_t vol_read_raw    (const Volume *vol, void* buf, size_t nbyte, off_t offset) __attribute__((nonnull(1,2)));
 
 /**
  Write to a volume, adjusting for the volume's device offset and length.
@@ -129,18 +132,18 @@ ssize_t vol_read_raw    (const Volume *vol, void* buf, size_t nbyte, off_t offse
  @param offset The offset within the volume to write to. Do not compensate for the volume's physical location -- that's what this function is for.
  @see write(2)
  */
-ssize_t vol_write(Volume *vol, const void* buf, size_t nbyte, off_t offset);
+ssize_t vol_write(Volume *vol, const void* buf, size_t nbyte, off_t offset) __attribute__((nonnull(1,2)));
 
 /**
  Closes the file descriptor and releases the memory used by the Volume structure.
  @param vol The Volume to close.
  @see close(2)
  */
-int vol_close(Volume *vol);
+int vol_close(Volume *vol) _NONNULL;
 
 /**
  */
-Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t length);
-void vol_dump(Volume* vol);
+Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t length) _NONNULL;
+void vol_dump(Volume* vol) _NONNULL;
 
 #endif

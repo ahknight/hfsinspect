@@ -9,7 +9,7 @@
 #ifndef volumes_apm_h
 #define volumes_apm_h
 
-#include "../hfs/hfs_structs.h"
+#include "../hfs/hfs_types.h"
 
 #pragma mark - Structures
 
@@ -44,7 +44,7 @@ typedef struct APMPartitionIdentifer {
     VolType volsubtype;
 } APMPartitionIdentifer;
 
-static APMPartitionIdentifer APMPartitionIdentifers[] __attribute__((unused)) = {
+static APMPartitionIdentifer APMPartitionIdentifers[] _UNUSED = {
     {"Apple_Boot",                  "OS X Open Firmware 3.x booter",    kVolTypeSystem,     kSysReserved},
     {"Apple_Boot_RAID",             "RAID partition",                   kVolTypeSystem,     kSysReserved},
     {"Apple_Bootstrap",             "secondary loader",                 kVolTypeSystem,     kSysReserved},
@@ -76,47 +76,47 @@ static APMPartitionIdentifer APMPartitionIdentifers[] __attribute__((unused)) = 
     {"", "", 0, 0}
 };
 
-static uint32_t kAPMStatusValid                __attribute__((unused)) = 0x00000001;
-static uint32_t kAPMStatusAllocated            __attribute__((unused)) = 0x00000002;
-static uint32_t kAPMStatusInUse                __attribute__((unused)) = 0x00000004;
-static uint32_t kAPMStatusBootInfo             __attribute__((unused)) = 0x00000008;
-static uint32_t kAPMStatusReadable             __attribute__((unused)) = 0x00000010;
-static uint32_t kAPMStatusWritable             __attribute__((unused)) = 0x00000020;
-static uint32_t kAPMStatusPositionIndependent  __attribute__((unused)) = 0x00000040;
-static uint32_t kAPMStatusChainCompatible      __attribute__((unused)) = 0x00000100;
-static uint32_t kAPMStatusRealDriver           __attribute__((unused)) = 0x00000200;
-static uint32_t kAPMStatusChainDriver          __attribute__((unused)) = 0x00000400;
-static uint32_t kAPMStatusAutoMount            __attribute__((unused)) = 0x40000000;
-static uint32_t kAPMStatusIsStartup            __attribute__((unused)) = 0x80000000;
+static uint32_t kAPMStatusValid                 _UNUSED = 0x00000001;
+static uint32_t kAPMStatusAllocated             _UNUSED = 0x00000002;
+static uint32_t kAPMStatusInUse                 _UNUSED = 0x00000004;
+static uint32_t kAPMStatusBootInfo              _UNUSED = 0x00000008;
+static uint32_t kAPMStatusReadable              _UNUSED = 0x00000010;
+static uint32_t kAPMStatusWritable              _UNUSED = 0x00000020;
+static uint32_t kAPMStatusPositionIndependent   _UNUSED = 0x00000040;
+static uint32_t kAPMStatusChainCompatible       _UNUSED = 0x00000100;
+static uint32_t kAPMStatusRealDriver            _UNUSED = 0x00000200;
+static uint32_t kAPMStatusChainDriver           _UNUSED = 0x00000400;
+static uint32_t kAPMStatusAutoMount             _UNUSED = 0x40000000;
+static uint32_t kAPMStatusIsStartup             _UNUSED = 0x80000000;
 
 
 #pragma mark - Functions
 
 extern PartitionOps apm_ops;
 
-void        swap_APMHeader          (APMHeader* record);
+void        swap_APMHeader          (APMHeader* record) _NONNULL;
 
-bool        apm_sniff               (HFS* hfs);
-void        apm_print               (HFS* hfs);
+bool        apm_sniff               (HFS* hfs)          _NONNULL;
+void        apm_print               (HFS* hfs)          _NONNULL;
 
 /**
  Tests a volume to see if it contains an APM partition map.
  @return Returns -1 on error (check errno), 0 for NO, 1 for YES.
  */
-int apm_test(Volume *vol);
+int apm_test(Volume *vol)                               _NONNULL;
 
-int apm_load_header(Volume *vol, APMHeader* apm);
+int apm_load_header(Volume *vol, APMHeader* apm)        _NONNULL;
 
 /**
  Updates a volume with sub-volumes for any defined partitions.
  @return Returns -1 on error (check errno), 0 for success.
  */
-int apm_load(Volume *vol);
+int apm_load(Volume *vol)                               _NONNULL;
 
 /**
  Prints a description of the APM structure and partition information to stdout.
  @return Returns -1 on error (check errno), 0 for success.
  */
-int apm_dump(Volume *vol);
+int apm_dump(Volume *vol)                               _NONNULL;
 
 #endif

@@ -1,4 +1,7 @@
-# hfsinspect [![Build Status](https://travis-ci.org/ahknight/hfsinspect.png?branch=master)](https://travis-ci.org/ahknight/hfsinspect) [![Stories in Ready](http://badge.waffle.io/ahknight/hfsinspect.png)](http://waffle.io/ahknight/hfsinspect)
+# hfsinspect
+
+[![Build Status](https://travis-ci.org/ahknight/hfsinspect.png?branch=master)](https://travis-ci.org/ahknight/hfsinspect)
+[![Stories in Ready](http://badge.waffle.io/ahknight/hfsinspect.png)](http://waffle.io/ahknight/hfsinspect)
 
 ## An open-source HFS+ filesystem explorer and debugger (in the spirit of hfsdebug)
 
@@ -8,11 +11,36 @@ This program is a work-in-progress and is quite buggy in its current state.  Tha
 
 # Quick Guide
 
-You'll need Xcode 4+ to build right now, and it does use OS X system headers (though I plan on changing that in the future).
+    $ git clone https://github.com/ahknight/hfsinspect.git
+    $ cd hfsinspect
+    $ make
+    $ [sudo] make install # PREFIX defaults to /usr/local; for somewhere else do: PREFIX=/home/you make -e install
 
 Once built and the product located, go ahead and hit "hfsinspect --help" for a quick blurb about the options.
 
+## Building on Linux
+
+You'll need the @uuid-dev@ package for the @libuuid@ headers (in Ubuntu at least).  I've tested a lot of the app in Linux but there are occassional issues with some disks and files so if you run into them please file a detailed issue or, if you can, submit a fix.
+
+## Building on BSD
+
+Haven't tried.  Please do and report back.  As it works on OS X and Linux I would hope it functions on at least FreeBSD.
+
 ## Examples
+
+    $ hfsinspect -d ./fstest -P /
+
+    #   Record ID 1 (2/20) (offset 124; length: 32) (Node 1)
+
+      Catalog Key
+     +-----------------------------------------------------------------------------------+
+     | length | parentID   | length | nodeName                                           |
+     | 6      | 2          | 0      |                                                    |
+     +-----------------------------------------------------------------------------------+
+      recordType             = kHFSPlusFolderThreadRecord
+      reserved               = 0
+      parentID               = 1
+      nodeName               = "FS Test" (7)
 
     $ hfsinspect -d ./fstest -l -P /
     Listing for FS Test
@@ -28,20 +56,6 @@ Once built and the product located, go ahead and hit "hfsinspect --help" for a q
        Folders: 4          Data forks: 2          Hard links: 0
          Files: 2          RSRC forks: 0            Symlinks: 0
 
-    $ hfsinspect -d ./fstest -P /
-
-    #   Record ID 1 (2/20) (offset 124; length: 32) (Node 1)
-
-      Catalog Key
-     +-----------------------------------------------------------------------------------+
-     | length | parentID   | length | nodeName                                           |
-     | 6      | 2          | 0      |                                                    |
-     +-----------------------------------------------------------------------------------+
-      recordType             = kHFSPlusFolderThreadRecord
-      reserved               = 0
-      parentID               = 1
-      nodeName               = "FS Test" (7)
-    
     $ hfsinspect -d ./fstest -P /.journal
 
     #   Record ID 6 (7/20) (offset 676; length: 272) (Node 1)
@@ -331,8 +345,3 @@ Once built and the product located, go ahead and hit "hfsinspect --help" for a q
     9   1.21 GiB     128733 [redacted]
 
 Hopefully you get the idea.  Have fun!
-
-
-## Linux
-
-You'll need the @uuid-dev@ package (Ubuntu).

@@ -10,14 +10,14 @@
 
 #include "misc/output.h"
 #include "misc/_endian.h"
-#include "hfs/hfs_structs.h"
+#include "hfs/hfs_types.h"
 #include "hfs/btree/btree_endian.h"
 #include "hfs/catalog.h"
 
 void swap_HFSExtentDescriptor(HFSExtentDescriptor* record)
 {
-    Swap16(record->startBlock);
-    Swap16(record->blockCount);
+    Swap(record->startBlock);
+    Swap(record->blockCount);
 }
 
 void swap_HFSExtentRecord(HFSExtentRecord* record)
@@ -27,33 +27,34 @@ void swap_HFSExtentRecord(HFSExtentRecord* record)
 
 void swap_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* record)
 {
-    Swap16(record->drSigWord);	/* == kHFSSigWord */
-	Swap32(record->drCrDate);	/* date and time of volume creation */
-	Swap32(record->drLsMod);	/* date and time of last modification */
-	Swap16(record->drAtrb);		/* volume attributes */
-	Swap16(record->drNmFls);	/* number of files in root folder */
-	Swap16(record->drVBMSt);	/* first block of volume bitmap */
-	Swap16(record->drAllocPtr);	/* start of next allocation search */
-	Swap16(record->drNmAlBlks);	/* number of allocation blocks in volume */
-	Swap32(record->drAlBlkSiz);	/* size (in bytes) of allocation blocks */
-	Swap32(record->drClpSiz);	/* default clump size */
-	Swap16(record->drAlBlSt);	/* first allocation block in volume */
-	Swap32(record->drNxtCNID);	/* next unused catalog node ID */
-	Swap16(record->drFreeBks);	/* number of unused allocation blocks */
-	Swap32(record->drVolBkUp);	/* date and time of last backup */
-	Swap16(record->drVSeqNum);	/* volume backup sequence number */
-	Swap32(record->drWrCnt);	/* volume write count */
-	Swap32(record->drXTClpSiz);	/* clump size for extents overflow file */
-	Swap32(record->drCTClpSiz);	/* clump size for catalog file */
-	Swap16(record->drNmRtDirs);	/* number of directories in root folder */
-	Swap32(record->drFilCnt);	/* number of files in volume */
-	Swap32(record->drDirCnt);	/* number of directories in volume */
-    // noswap: Swap32(record->drFndrInfo[8]);	/* information used by the Finder */
-	Swap16(record->drEmbedSigWord);	/* embedded volume signature (formerly drVCSize) */
+    Swap(record->drSigWord); /* == kHFSSigWord */
+	Swap(record->drCrDate); /* date and time of volume creation */
+	Swap(record->drLsMod); /* date and time of last modification */
+	Swap(record->drAtrb); /* volume attributes */
+	Swap(record->drNmFls); /* number of files in root folder */
+	Swap(record->drVBMSt); /* first block of volume bitmap */
+	Swap(record->drAllocPtr); /* start of next allocation search */
+	Swap(record->drNmAlBlks); /* number of allocation blocks in volume */
+	Swap(record->drAlBlkSiz); /* size (in bytes) of allocation blocks */
+	Swap(record->drClpSiz); /* default clump size */
+	Swap(record->drAlBlSt); /* first allocation block in volume */
+	Swap(record->drNxtCNID); /* next unused catalog node ID */
+	Swap(record->drFreeBks); /* number of unused allocation blocks */
+    // noswap: record->drVN
+	Swap(record->drVolBkUp); /* date and time of last backup */
+	Swap(record->drVSeqNum); /* volume backup sequence number */
+	Swap(record->drWrCnt); /* volume write count */
+	Swap(record->drXTClpSiz); /* clump size for extents overflow file */
+	Swap(record->drCTClpSiz); /* clump size for catalog file */
+	Swap(record->drNmRtDirs); /* number of directories in root folder */
+	Swap(record->drFilCnt); /* number of files in volume */
+	Swap(record->drDirCnt);	/* number of directories in volume */
+    // noswap: record->drFndrInfo[8]; /* info used by the Finder */
+	Swap(record->drEmbedSigWord); /* embedded vol sig (née drVCSize) */
 	swap_HFSExtentDescriptor(&record->drEmbedExtent);	/* embedded volume location and size (formerly drVBMCSize and drCtlCSize) */
-	Swap32(record->drXTFlSize);	/* size of extents overflow file */
+	Swap(record->drXTFlSize);	/* size of extents overflow file */
 	swap_HFSExtentRecord(&record->drXTExtRec);	/* extent record for extents overflow file */
-	Swap32(record->drCTFlSize);	/* size of catalog file */
+	Swap(record->drCTFlSize);	/* size of catalog file */
 	swap_HFSExtentRecord(&record->drCTExtRec);	/* extent record for catalog file */
 }
 

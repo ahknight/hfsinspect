@@ -12,7 +12,7 @@
 
 int hfs_load_mbd(Volume *vol, HFSMasterDirectoryBlock *mdb)
 {
-    if ( vol_read(vol, mdb, sizeof(HFSMasterDirectoryBlock), 1024) < 0)
+    if ( vol_read(vol, (Bytes)mdb, sizeof(HFSMasterDirectoryBlock), 1024) < 0)
         return -1;
     
     swap_HFSMasterDirectoryBlock(mdb);
@@ -22,7 +22,7 @@ int hfs_load_mbd(Volume *vol, HFSMasterDirectoryBlock *mdb)
 
 int hfs_load_header(Volume *vol, HFSPlusVolumeHeader *vh)
 {
-    if ( vol_read(vol, vh, sizeof(HFSPlusVolumeHeader), 1024) < 0)
+    if ( vol_read(vol, (Bytes)vh, sizeof(HFSPlusVolumeHeader), 1024) < 0)
         return -1;
     
     swap_HFSPlusVolumeHeader(vh);
@@ -43,7 +43,7 @@ int hfs_attach(HFS* hfs, Volume *vol)
     
     type = (unsigned)result;
     
-    if (type == kTypeUnknown || type == kFSTypeHFS) {
+    if (type != kFSTypeHFSPlus && type != kFSTypeWrappedHFSPlus && type != kFSTypeHFSX) {
         errno = EINVAL;
         return -1;
     }
@@ -54,7 +54,8 @@ int hfs_attach(HFS* hfs, Volume *vol)
     // Handle wrapped volumes.
     if (type == kFSTypeWrappedHFSPlus) {
         HFSMasterDirectoryBlock mdb; ZERO_STRUCT(mdb);
-        if ( hfs_load_mbd(vol, &mdb) < 0) return -1;
+        if ( hfs_load_mbd(vol, &mdb) < 0)
+            return -1;
         
         hfs->offset = (mdb.drAlBlSt * 512) + (mdb.drEmbedExtent.startBlock * mdb.drAlBlkSiz);
     }
@@ -80,19 +81,29 @@ int hfs_attach(HFS* hfs, Volume *vol)
  */
 int hfs_test(Volume *vol)
 {
+    int type = kTypeUnknown;
+    
     // First, test for HFS or wrapped HFS+ volumes.
-    HFSMasterDirectoryBlock mdb;
+    HFSMasterDirectoryBlock *mdb = calloc(1, 512);
     
-    if ( hfs_load_mbd(vol, &mdb) < 0)
+    if ( hfs_load_mbd(vol, mdb) < 0) {
+        FREE(mdb);
         return -1;
-    
-    if (mdb.drSigWord == kHFSSigWord && mdb.drEmbedSigWord == kHFSPlusSigWord) {
-        info("Found a wrapped HFS+ volume");
-        return kFSTypeWrappedHFSPlus;
-    } else if (mdb.drSigWord == kHFSSigWord) {
-        info("Found an HFS volume");
-        return kFSTypeHFS;
     }
+
+    if (mdb->drSigWord == kHFSSigWord && mdb->drEmbedSigWord == kHFSPlusSigWord) {
+        info("Found a wrapped HFS+ volume");
+        type = kFSTypeWrappedHFSPlus;
+        
+    } else if (mdb->drSigWord == kHFSSigWord) {
+        info("Found an HFS volume");
+        type = kFSTypeHFS;
+    }
+    
+    FREE(mdb);
+    
+    if (type != kTypeUnknown)
+        return type;
     
     // Now test for a modern HFS+ volume.
     HFSPlusVolumeHeader vh;
@@ -106,15 +117,17 @@ int hfs_test(Volume *vol)
     }
     
     info("Unknown volume type");
-    return kTypeUnknown;
+    
+    return type;
 }
 
 /** returns the first HFS+ volume in a tree of volumes */
 Volume* hfs_find(Volume* vol)
 {
     Volume *result = NULL;
-    
-    if (hfs_test(vol) & (kFSTypeHFSPlus | kFSTypeWrappedHFSPlus)) {
+    int test = hfs_test(vol);
+
+    if ( (test) & (kFSTypeHFSPlus | kFSTypeWrappedHFSPlus)) {
         result = vol;
     } else if (vol->partition_count) {
         FOR_UNTIL(i, vol->partition_count) {
@@ -139,19 +152,19 @@ bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFS* hfs
 {
     if (hfs->vol) {
         char* buffer;
-        INIT_BUFFER(buffer, 2048)
+        ALLOC(buffer, 2048)
         
         ssize_t size = hfs_read(buffer, hfs, 2048, 0);
         
         if (size < 1) {
             perror("read");
             critical("Cannot read volume.");
-            FREE_BUFFER(buffer);
+            FREE(buffer);
             return -1;
         }
         
         *vh = *(HFSMasterDirectoryBlock*)(buffer+1024);
-        FREE_BUFFER(buffer);
+        FREE(buffer);
         
         swap_HFSMasterDirectoryBlock(vh);
         
@@ -165,19 +178,19 @@ bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFS* hfs)
 {
     if (hfs->vol) {
         char* buffer;
-        INIT_BUFFER(buffer, 2048)
+        ALLOC(buffer, 2048)
         
         ssize_t size = hfs_read(buffer, hfs, 2048, 0);
         
         if (size < 1) {
             perror("read");
             critical("Cannot read volume.");
-            FREE_BUFFER(buffer);
+            FREE(buffer);
             return -1;
         }
         
         *vh = *(HFSPlusVolumeHeader*)(buffer+1024);
-        FREE_BUFFER(buffer);
+        FREE(buffer);
         
         swap_HFSPlusVolumeHeader(vh);
         
@@ -191,7 +204,7 @@ bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFS* hfs)
 {
     if (hfs->vh.journalInfoBlock) {
         char* buffer;
-        INIT_BUFFER(buffer, hfs->block_size);
+        ALLOC(buffer, hfs->block_size);
         
         ssize_t read = hfs_read_blocks(buffer, hfs, 1, hfs->vh.journalInfoBlock);
         if (read < 0) {
@@ -201,7 +214,7 @@ bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFS* hfs)
             critical("Didn't read the whole journal info block!");
         }
         *block = *(JournalInfoBlock*)buffer; // copies
-        FREE_BUFFER(buffer);
+        FREE(buffer);
         
         swap_JournalInfoBlock(block);
         return true;

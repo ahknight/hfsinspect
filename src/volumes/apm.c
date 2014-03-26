@@ -39,7 +39,7 @@ int apm_get_header(Volume* vol, APMHeader* header, unsigned partition_number)
 {
     size_t block_size = vol->sector_size;
     
-    ssize_t bytes = vol_read(vol, header, sizeof(APMHeader), (block_size * partition_number));
+    ssize_t bytes = vol_read(vol, (Bytes)header, sizeof(APMHeader), (block_size * partition_number));
     if (bytes < 0) {
         return -1;
     }

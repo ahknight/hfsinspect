@@ -175,12 +175,13 @@ int LogLine(enum LogLevel level, const char* format, ...)
     
     if (level <= L_DEBUG)
         fp = streams[level];
+    else
+        fprintf(stderr, "Uh oh. %u isn't a valid log level.", level);
     
     _printColor(fp, level);
     nchars += vfprintf(fp, format, argp);
     fputc('\n', fp);
     _print_reset(fp);
-//    fflush(fp);
 
     va_end(argp);
     
@@ -214,7 +215,7 @@ int PrintLine(enum LogLevel level, const char* file, const char* function, unsig
     if (argp != NULL)
         vsnprintf((char*)&inputstr, PrintLine_MAX_LINE_LEN, format, argp);
     else
-        strlcpy(inputstr, format, PrintLine_MAX_LINE_LEN);
+        (void)strlcpy(inputstr, format, PrintLine_MAX_LINE_LEN);
     
     // Indent the string with the call depth.
     unsigned int depth = stack_depth(PrintLine_MAX_DEPTH) - 1; // remove our frame
@@ -228,7 +229,7 @@ int PrintLine(enum LogLevel level, const char* file, const char* function, unsig
     indent[depth] = '\0';
     
     // Append the text after the indentation.
-    strlcat(indent, inputstr, PrintLine_MAX_LINE_LEN);
+    (void)strlcat(indent, inputstr, PrintLine_MAX_LINE_LEN);
     
     // Now add our format to that string and print to stdout.
     if (DEBUG && level != L_STANDARD)

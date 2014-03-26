@@ -12,8 +12,9 @@
 
 #include <errno.h>      //errno
 #include <sys/param.h>  //MIN/MAX
+#include <math.h>       //log
 #include "hfs/Apple/hfs_format.h"
-#include <math.h>
+#include "hfs/catalog.h" // HFSPlusMetadataFolder
 
 /**
  Get a string representation of a block of memory in any reasonable number base.
@@ -125,7 +126,7 @@ void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t 
         
         // Line header/prefix
         if (mode & DUMP_ADDRESS) fprintf(file, "%12p", &line[0]);
-        if (mode & DUMP_OFFSET)  fprintf(file, "%#10llx", offset);
+        if (mode & DUMP_OFFSET)  fprintf(file, "%#10jx", (intmax_t)offset);
         
         // Print numeric representation
         if (mode & DUMP_ENCODED) {
@@ -171,6 +172,63 @@ void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t 
     NEXT:
         offset += line_width;
     }
+}
+
+int hfsuctowcs(hfs_wc_str output, const HFSUniStr255* input)
+{
+    // Get the length of the input
+    int len = MIN(input->length, 255);
+    
+    // Copy the u16 to the wchar array
+    FOR_UNTIL(i, len) output[i] = input->unicode[i];
+    
+    // Terminate the output at the length
+    output[len] = L'\0';
+    
+    // Replace the catalog version with a printable version.
+    if ( wcscmp(output, HFSPlusMetadataFolder) == 0 )
+        mbstowcs(output, HFSPLUSMETADATAFOLDER, len);
+    
+    return len;
+}
+
+// FIXME: Eats higher-order Unicode chars. Could be fun.
+HFSUniStr255 wcstohfsuc(const wchar_t* input)
+{
+    // Allocate the return value
+    HFSUniStr255 output = {0};
+    
+    // Get the length of the input
+    size_t len = MIN(wcslen(input), 255);
+    
+    // Iterate over the input
+    for (int i = 0; i < len; i++) {
+        // Copy the input to the output
+        output.unicode[i] = input[i];
+    }
+    
+    // Terminate the output at the length
+    output.length = len;
+    
+    return output;
+}
+
+HFSUniStr255 strtohfsuc(const char* input)
+{
+    HFSUniStr255 output = {0};
+    wchar_t* wide = NULL;
+    ALLOC(wide, 256 * sizeof(wchar_t));
+    
+    size_t char_count = strlen(input);
+    size_t wide_char_count = mbstowcs(wide, input, 255);
+    if (wide_char_count > 0) output = wcstohfsuc(wide);
+    
+    if (char_count != wide_char_count) {
+        error("Conversion error: mbstowcs returned a string of a different length than the input: %zd in; %zd out", char_count, wide_char_count);
+    }
+    FREE(wide);
+    
+    return output;
 }
 
 #ifndef __GNUC__

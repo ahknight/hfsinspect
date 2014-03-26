@@ -9,21 +9,21 @@
 #ifndef hfsinspect_hfs_endian_h
 #define hfsinspect_hfs_endian_h
 
-#include "hfs/hfs_structs.h"
+#include "hfs/hfs_types.h"
 
 #pragma mark HFS
 
-void swap_HFSMasterDirectoryBlock   (HFSMasterDirectoryBlock* record);
-void swap_HFSExtentRecord           (HFSExtentRecord* record);
-void swap_HFSExtentDescriptor       (HFSExtentDescriptor* record);
+void swap_HFSMasterDirectoryBlock   (HFSMasterDirectoryBlock* record) _NONNULL;
+void swap_HFSExtentRecord           (HFSExtentRecord* record) _NONNULL;
+void swap_HFSExtentDescriptor       (HFSExtentDescriptor* record) _NONNULL;
 
 #pragma mark HFS Plus
 
-void swap_HFSPlusVolumeHeader       (HFSPlusVolumeHeader *vh);
-void swap_JournalInfoBlock          (JournalInfoBlock* record);
-void swap_HFSPlusForkData           (HFSPlusForkData *fork);
-void swap_HFSUniStr255              (HFSUniStr255 *unistr);
-void swap_HFSPlusExtentRecord       (HFSPlusExtentDescriptor record[]);
-void swap_HFSPlusExtentDescriptor   (HFSPlusExtentDescriptor *extent);
+void swap_HFSPlusVolumeHeader       (HFSPlusVolumeHeader *vh) _NONNULL;
+void swap_JournalInfoBlock          (JournalInfoBlock* record) _NONNULL;
+void swap_HFSPlusForkData           (HFSPlusForkData *fork) _NONNULL;
+void swap_HFSUniStr255              (HFSUniStr255 *unistr) _NONNULL;
+void swap_HFSPlusExtentRecord       (HFSPlusExtentDescriptor record[]) _NONNULL;
+void swap_HFSPlusExtentDescriptor   (HFSPlusExtentDescriptor *extent) _NONNULL;
 
 #endif

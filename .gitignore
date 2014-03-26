@@ -1,10 +1,11 @@
 syntax: glob
 .vagrant
 Makefile
-bin
-docs
-doxygen.log
-hfsinspect\.?*
+build
+docs/html
+docs/doxygen.log
+images/*.bin
 images/*.dmg
 images/*.img
-*.o
+tmp/
+xcuserdata

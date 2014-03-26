@@ -61,7 +61,7 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
             offset = (mbr.partitions[0].first_sector_lba * vol->sector_size);
         }
         
-        if ( vol_read(vol, &header, length, offset) < 0 )
+        if ( vol_read(vol, (Bytes)&header, length, offset) < 0 )
             return -1;
     }
     
@@ -74,8 +74,8 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
         length = header.partition_entry_count * header.partition_entry_size;
         
         // Read the partition array
-        INIT_BUFFER(buf, length);
-        if ( vol_read(vol, buf, length, offset) < 0 )
+        ALLOC(buf, length);
+        if ( vol_read(vol, (Bytes)buf, length, offset) < 0 )
             return -1;
         
         // Iterate over the partitions and update the volume record
@@ -92,7 +92,7 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
         }
         
         // Clean up
-        FREE_BUFFER(buf);
+        FREE(buf);
 
         if (entries_out != NULL) memcpy(*entries_out, entries, sizeof(GPTPartitionRecord));
     }
@@ -120,25 +120,30 @@ int gpt_test(Volume *vol)
     size_t haystackSize = maxLBA + sizeof(GPTHeader);
     char* haystack = calloc(1, haystackSize);
     ssize_t nbytes = 0;
-    if ( (nbytes = vol_read(vol, haystack, haystackSize, 0)) < 0)
-        return nbytes;
+    if ( (nbytes = vol_read(vol, (Bytes)haystack, haystackSize, 0)) < 0) {
+        FREE(haystack);
+        return -1;
+    }
     
     char* needle = "EFI PART";
     char* found = memmem(haystack, haystackSize, needle, 8);
     
-    if (found == NULL) return false;
+    if (found == NULL) { FREE(haystack); return false; }
     
     // found is a pointer to the location of the string, which starts the block.
     // Calculate the LBA used to format the drive using this information.
     // Presume LBAs are in the range 512 to 16K..
     size_t blockSize = (found - haystack);
     if (blockSize >= 512 && blockSize <= haystackSize) {
-        debug("Updating volume sector size from %zu to %zu.", vol->sector_size, blockSize);
+        debug("Updating volume sector size from %d to %zu.", vol->sector_size, blockSize);
         vol->sector_size = blockSize;
         if (vol->length && vol->sector_count)
             vol->sector_count = (vol->length / vol->sector_size);
-        info("GPT volume has a sector size of %zu and %zu sectors for a total of %zu bytes.", vol->sector_size, vol->sector_count, vol->length);
+        info("GPT volume has a sector size of %d and %lld sectors for a total of %zu bytes.", vol->sector_size, vol->sector_count, vol->length);
     }
+    
+    FREE(haystack);
+    found = NULL;
     
     return true;
 
@@ -205,9 +210,9 @@ int gpt_load(Volume *vol)
         }
         char name[100] = {'\0'};
         wcstombs(name, wcname, 100);
-        strlcpy(p->desc, name, 36);
-        strlcpy(p->native_desc, desc, 100);
-//        strlcpy(p->native_desc, uuid_str, 100);
+        (void)strlcpy(p->desc, name, 36);
+        (void)strlcpy(p->native_desc, desc, 100);
+//        (void)strlcpy(p->native_desc, uuid_str, 100);
     }
     
     return 0;

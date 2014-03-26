@@ -6,4 +6,4 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "hfs/hfsplus/journal.h"
+#include "hfs/hfsplus/journal/journal.h"

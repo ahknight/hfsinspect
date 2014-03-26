@@ -8,11 +8,10 @@
 
 #include "hfs/extents.h"
 
-#include "hfs/hfs_io.h"
-#include "hfs/hfs_btree.h"
-#include "misc/output.h"
-#include "hfs/output_hfs.h"
 #include "misc/_endian.h"
+#include "misc/output.h"
+#include "hfs/hfs_io.h"
+#include "hfs/output_hfs.h"
 
 int hfs_get_extents_btree(BTreePtr *tree, const HFS *hfs)
 {
@@ -26,11 +25,11 @@ int hfs_get_extents_btree(BTreePtr *tree, const HFS *hfs)
     if (cachedTree == NULL) {
         debug("Creating extents B-Tree");
         
-        INIT_BUFFER(cachedTree, sizeof(struct _BTree));
+        ALLOC(cachedTree, sizeof(struct _BTree));
         
         HFSFork *fork;
         if ( hfsfork_get_special(&fork, hfs, kHFSExtentsFileID) < 0 ) {
-            critical("Could not create fork for Extents BTree!");
+            critical("Could not create fork for Extents B-Tree!");
             return -1;
         }
         FILE* fp = fopen_hfsfork(fork);
@@ -78,7 +77,7 @@ int hfs_extents_get_node(BTreeNodePtr *out_node, const BTreePtr bTree, bt_nodeid
             
             if (node->nodeDescriptor->kind == kBTLeafNode) {
                 swap_HFSPlusExtentRecord(((HFSPlusExtentDescriptor*)record.value));
-                PrintHFSPlusExtentRecord(((const HFSPlusExtentRecord*)record.value));
+//                PrintHFSPlusExtentRecord(((const HFSPlusExtentRecord*)record.value));
             }
         }
     }
@@ -99,7 +98,8 @@ int hfs_extents_find_record(HFSPlusExtentRecord *record, hfs_block_t *record_sta
     hfs_forktype_t forkType = fork->forkType;
     
     BTreePtr extentsTree = NULL;
-    hfs_get_extents_btree(&extentsTree, hfs);
+    if ( hfs_get_extents_btree(&extentsTree, hfs) < 0)
+        return -1;
     BTreeNodePtr node = NULL;
     BTRecNum index = 0;
     

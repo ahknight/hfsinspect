@@ -14,20 +14,20 @@
  #define CRCINIT 0xFFFFFFFF
  
  void init() {
- for (uint32_t i = 0; i <= 0xFF; i++) {
- uint32_t x = i;
- for (uint32_t j = 0; j < 8; j++)
- x = (x>>1) ^ (CRCPOLY & (-(int32_t)(x & 1)));
- g_crc_slicing[0][i] = x;
- }
+     for (uint32_t i = 0; i <= 0xFF; i++) {
+         uint32_t x = i;
+         for (uint32_t j = 0; j < 8; j++)
+             x = (x>>1) ^ (CRCPOLY & (-(int32_t)(x & 1)));
+         g_crc_slicing[0][i] = x;
+     }
  
- for (uint32_t i = 0; i <= 0xFF; i++) {
- uint32_t c = g_crc_slicing[0][i];
- for (uint32_t j = 1; j < 8; j++) {
- c = g_crc_slicing[0][c & 0xFF] ^ (c >> 8);
- g_crc_slicing[j][i] = c;
- }
- }
+     for (uint32_t i = 0; i <= 0xFF; i++) {
+         uint32_t c = g_crc_slicing[0][i];
+         for (uint32_t j = 1; j < 8; j++) {
+             c = g_crc_slicing[0][c & 0xFF] ^ (c >> 8);
+             g_crc_slicing[j][i] = c;
+         }
+     }
  }
  */
 

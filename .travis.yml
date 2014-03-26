@@ -1,8 +1,8 @@
-language:
-  - c
-  - objective-c
-before_install:
-  - if [[ `uname` = 'Linux' ]]; then sudo apt-get update -qq; sudo apt-get install -qq uuid-dev; fi
+language: c
+compiler:
+  - gcc
+  - clang
+before_install: bash .travis_setup.sh
 script: make clean test
 branches:
   only:

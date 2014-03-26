@@ -36,11 +36,12 @@ ssize_t prefixstream_write(void * c, const char * buf, size_t nbytes)
     memcpy(string, buf, nbytes);
     string[nbytes] = '\0';
     assert(string != NULL);
+    assert(context->fp);
     
     while ( (token = strsep(&string, "\n")) != NULL) {
         
         if (context->newline && strlen(token)) {
-            fprintf(context->fp, "%s", (char*)context->prefix);
+            fprintf(context->fp, "%s ", (char*)context->prefix);
             context->newline = 0;
         }
         
@@ -62,7 +63,7 @@ FILE* prefixstream(FILE* fp, char* prefix)
     struct prefixstream_context *context = calloc(1, sizeof(struct prefixstream_context));
     context->fp = fp;
     context->newline = 1;
-    strlcpy(context->prefix, prefix, 80);
+    (void)strlcpy(context->prefix, prefix, 80);
     
 #if defined(BSD)
     return funopen(context, NULL, prefixstream_write, NULL, prefixstream_close);

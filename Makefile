@@ -1,30 +1,78 @@
-CFLAGS += -std=c11 -msse4.2 -Isrc -include src/hfsinspect-Prefix.pch
-CFLAGS += -g -O0 -Wall
+CFLAGS += -msse4.2 -Isrc -include src/hfsinspect-Prefix.pch
+CFLAGS += -g -O0 -Wall #debug
 
-SOURCEDIRS := src src/crc32c src/hfs src/hfs/Apple src/hfs/btree src/hfs/hfsplus src/logging src/misc src/volumes
-SOURCES := $(foreach dir,$(SOURCEDIRS),$(wildcard $(dir)/*.c))
-OBJECTS = $(SOURCES:.c=.o)
+OS := $(shell uname -s)
+MACHINE := $(shell uname -m)
+include Makefile.$(OS)
 
-UNAME := $(shell uname)
-include Makefile.$(UNAME)
+BINARYNAME = hfsinspect
+BINARYPATH = $(BINDIR)/$(BINARYNAME)
+BUILDDIR = build/$(OS)-$(MACHINE)
+BINDIR = $(BUILDDIR)
+OBJDIR = $(BUILDDIR)/obj
 
-.PHONY: all
+SOURCES := $(shell find src -name *.c)
+OBJECTS := $(patsubst src/%, $(OBJDIR)/%, $(SOURCES:.c=.o))
+
+INSTALL = $(shell which install)
+PREFIX = /usr/local
+
+vpath %.c src
+.PHONY: all test docs clean distclean
+.NOTPARALLEL:
+
 all: hfsinspect
+everything: hfsinspect docs
+clean: clean-hfsinspect
+distclean: clean-test clean-docs
+	$(RM) -r build
+
+$(OBJDIR)/%.o : %.c
+	@echo Compiling $<
+	@mkdir -p `dirname $@`
+	@$(COMPILE.c) $< -o $@
+
+
+
+test: all
+	@echo "Running tests."
+	@./$(BINARYPATH) --help
+	@cp images/test.img.gz images/test.img.1.gz
+	@gunzip -qNf images/test.img.1.gz
+	@./$(BINARYPATH) -d images/test.img -r
+
+clean-test:
+	$(RM) "images/test.img" "images/MBR.dmg"
+
+
 
 hfsinspect: $(OBJECTS)
-	$(LINK.c) -o "$(BINARY)" $^ $(LIBS)
+	@echo "Building hfsinspect."
+	@mkdir -p `dirname $(BINARYPATH)`
+	@$(LINK.c) -o $(BINARYPATH) $^ $(LIBS)
 
-.PHONY: clean
-clean: $(BINDIR)
-	$(RM) "$(BINARY)" $(OBJECTS)
+clean-hfsinspect:
+	$(RM) -r "$(BUILDDIR)"
 
-.PHONY: distclean
-distclean: clean
-	$(RM) "images/test.img" "images/MBR.dmg"
-	
-.PHONY: test
-test: hfsinspect
-	./$(BINARY) --help
-	gunzip -dq images/test.img.gz
-	./$(BINARY) -d images/test.img -v
-	
+
+
+install: hfsinspect
+	@echo "Installing hfsinspect in $(PREFIX)"
+	@mkdir -p $(PREFIX)/bin
+	@$(INSTALL) $(BINARYPATH) $(PREFIX)/bin
+	@echo "Installing manpage in $(PREFIX)"
+	@mkdir -p $(PREFIX)/share/man/man1
+	@$(INSTALL) src/hfsinspect.1 $(PREFIX)/share/man/man1
+
+uninstall:
+	$(RM) $(PREFIX)/bin/$(BINARYNAME)
+	$(RM) $(PREFIX)/share/man/man1/hfsinspect.1
+
+
+
+docs:
+	@echo "Building documentation."
+	@doxygen docs/doxygen.config
+
+clean-docs:
+	$(RM) -r docs/html docs/doxygen.log

@@ -10,7 +10,7 @@
 
 #include "misc/output.h"
 #include "misc/stringtools.h"
-#include "hfs/hfs_structs.h"
+#include "hfs/hfs_types.h"
 #include "hfs/catalog.h"
 #include "hfs/hfs.h"
 #include <sys/stat.h>
@@ -26,7 +26,7 @@ void _PrintCatalogName(char* label, bt_nodeid_t cnid)
 {
     hfs_wc_str name;
     if (cnid != 0)
-        hfs_catalog_get_cnid_name(name, volume, cnid);
+        HFSPlusGetCNIDName(name, (FSSpec){volume, cnid});
     else
         name[0] = L'\0';
     
@@ -35,7 +35,7 @@ void _PrintCatalogName(char* label, bt_nodeid_t cnid)
 
 void _PrintHFSBlocks(const char *label, uint64_t blocks)
 {
-    char sizeLabel[50];
+    char sizeLabel[50] = "";
     (void)format_blocks(sizeLabel, blocks, volume->block_size, 50);
     PrintAttribute(label, sizeLabel);
 }
@@ -49,8 +49,8 @@ void _PrintHFSTimestamp(const char* label, uint32_t timestamp)
 
 void _PrintHFSChar(const char* label, const char* i, size_t nbytes)
 {
-    char str[50];
-    char hex[50];
+    char str[50] = {0};
+    char hex[50] = {0};
     
     (void)format_hfs_chars(str, i, nbytes, 50);
     (void)format_dump(hex, i, 16, nbytes, 50);
@@ -77,8 +77,8 @@ void PrintVolumeInfo(const HFS* hfs)
     else
         BeginSection("Unknown Volume Format"); // Curious.
     
-    hfs_wc_str volumeName;
-    int success = hfs_catalog_get_cnid_name(volumeName, hfs, kHFSRootFolderID);
+    hfs_wc_str volumeName = {0};
+    int success = HFSPlusGetCNIDName(volumeName, (FSSpec){hfs, kHFSRootFolderID});
     if (success)
         PrintAttribute("volume name", "%ls", volumeName);
     
@@ -323,6 +323,7 @@ void PrintHFSPlusForkData(const HFSPlusForkData *fork, uint32_t cnid, uint8_t fo
         }
         PrintForkExtentsSummary(hfsfork);
         hfsfork_free(hfsfork);
+        hfsfork = NULL;
     }
 }
 
@@ -749,11 +750,11 @@ void PrintJournalInfoBlock(const JournalInfoBlock *record)
     PrintDataLength(record, size);
 
     char uuid_str[sizeof(uuid_string_t) + 1];
-    strlcpy(uuid_str, &record->ext_jnl_uuid[0], sizeof(uuid_str));
+    (void)strlcpy(uuid_str, &record->ext_jnl_uuid[0], sizeof(uuid_str));
     PrintAttribute("ext_jnl_uuid", uuid_str);
     
     char serial[49];
-    strlcpy(serial, &record->machine_serial_num[0], 49);
+    (void)strlcpy(serial, &record->machine_serial_num[0], 49);
     PrintAttribute("machine_serial_num", serial);
     
     // (uint32_t) reserved[32]
@@ -818,7 +819,7 @@ void PrintVolumeSummary(const VolumeSummary *summary)
         char size[50];
         (void)format_size(size, summary->largestFiles[i].measure, false, 50);
         hfs_wc_str name = L"";
-        hfs_catalog_get_cnid_name(name, volume, summary->largestFiles[i].cnid);
+        HFSPlusGetCNIDName(name, (FSSpec){volume, summary->largestFiles[i].cnid});
         print("%d %10s %10u %ls", 10-i, size, summary->largestFiles[i].cnid, name);
     }
     EndSection(); // largest files
@@ -1013,20 +1014,12 @@ void PrintFolderListing(uint32_t folderID)
     char* rowFormat     = "%-9u %-10s %-10s %-9d %-9d %-15s %-15s %ls";
     
     // Search for thread record
+    FSSpec spec = { .parentID = folderID };
     BTreeNodePtr node = NULL;
     BTRecNum recordID = 0;
-    HFSPlusCatalogKey key;
-    BTreePtr tree = NULL;
     
-    key.parentID = folderID;
-    key.nodeName.length = 0;
-    key.nodeName.unicode[0] = '\0';
-    key.nodeName.unicode[1] = '\0';
-    
-    hfs_get_catalog_btree(&tree, volume);
-    
-    if ( btree_search(&node, &recordID, tree, &key) < 1 ) {
-        error("No thread record for %d found.", recordID);
+    if (hfs_catalog_find_record(&node, &recordID, spec) < 0) {
+        error("No thread record for %d found.", folderID);
         return;
     }
     
@@ -1059,9 +1052,10 @@ void PrintFolderListing(uint32_t folderID)
     // Loop over siblings until NULL
     while (1) {
         // Locate next record, even if it's in the next node.
-        if (++recordID > node->recordCount) {
+        if (++recordID >= node->recordCount) {
             debug("Done with records in node %d", node->nodeNumber);
             bt_nodeid_t nextNode = node->nodeDescriptor->fLink;
+            BTreePtr tree = node->bTree;
             btree_free_node(node);
             if ( BTGetNode(&node, tree, nextNode) < 0) { error("couldn't get the next catalog node"); return; }
             recordID = 0;
@@ -1082,21 +1076,21 @@ void PrintFolderListing(uint32_t folderID)
                 
                 hfsuctowcs(name, &recordKey->nodeName);
                 
-                if ( hfs_catalog_record_is_hard_link(catalogRecord) && hfs_catalog_record_is_alias(catalogRecord) ) {
+                if ( HFSPlusCatalogRecordIsHardLink(catalogRecord) && HFSPlusCatalogRecordIsAlias(catalogRecord) ) {
                     folderStats.hardLinkCount++;
-                    strlcpy(kind, "dir link", 10);
-                } else if (hfs_catalog_record_is_hard_link(catalogRecord)) {
+                    (void)strlcpy(kind, "dir link", 10);
+                } else if (HFSPlusCatalogRecordIsHardLink(catalogRecord)) {
                     folderStats.hardLinkCount++;
-                    strlcpy(kind, "hard link", 10);
-                } else if (hfs_catalog_record_is_symbolic_link(catalogRecord)) {
+                    (void)strlcpy(kind, "hard link", 10);
+                } else if (HFSPlusCatalogRecordIsSymLink(catalogRecord)) {
                     folderStats.symlinkCount++;
-                    strlcpy(kind, "symlink", 10);
+                    (void)strlcpy(kind, "symlink", 10);
                 } else if (catalogRecord->record_type == kHFSPlusFolderRecord) {
                     folderStats.folderCount++;
-                    strlcpy(kind, "folder", 10);
+                    (void)strlcpy(kind, "folder", 10);
                 } else {
                     folderStats.fileCount++;
-                    strlcpy(kind, "file", 10);
+                    (void)strlcpy(kind, "file", 10);
                 }
                 
                 // Files and folders share these attributes at the same locations.
