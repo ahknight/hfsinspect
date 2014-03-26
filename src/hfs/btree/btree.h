@@ -48,8 +48,11 @@ struct _BTree {
     bt_nodeid_t             treeID;
     FILE                    *fp;                // funopen handle
     Cache                   nodeCache;
+    uint8_t                *nodeBitmap;
+    size_t                  nodeBitmapSize;
     btree_key_compare_func  keyCompare;         // Function used to compare the keys in this tree.
     btree_get_node_func     getNode;            // Fetch and swap a node for this tree.
+    bool                    _loadingBitmap;
 };
 
 struct _BTreeNode {
@@ -101,7 +104,7 @@ Bytes       BTGetRecord             (const BTreeNodePtr node, uint8_t recNum) _N
 uint16_t    BTGetRecordKeyLength    (const BTreeNodePtr node, uint8_t recNum) _NONNULL;
 int         BTGetBTNodeRecord       (BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum recNum) _NONNULL;
 
-bool        BTIsBlockUsed           (uint32_t thisAllocationBlock, Bytes allocationFileContents) _NONNULL;
+bool        BTIsBlockUsed           (uint32_t thisAllocationBlock, Bytes allocationFileContents, size_t length) _NONNULL;
 bool        BTIsNodeUsed            (const BTreePtr bTree, bt_nodeid_t nodeNum) _NONNULL;
 
 #endif

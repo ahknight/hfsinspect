@@ -14,27 +14,77 @@
 
 bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
 {
+    if (bTree->_loadingBitmap == true)
+        return true;
+    
     assert(bTree);
     
-    BTreeNodePtr headerNode = NULL;
-    if ( BTGetNode(&headerNode, bTree, 0) < 0) return false;
-    BTNodeRecord record = {0};
-    BTGetBTNodeRecord(&record, headerNode, 2);
+    // Load the tree bitmap, if needed.
+    if (bTree->nodeBitmap == NULL) {
+        info("Loading tree bitmap.");
+        bTree->_loadingBitmap = true;
+        
+        // Get the B-Tree's header node (#0)
+        BTreeNodePtr node = NULL;
+        if ( BTGetNode(&node, bTree, 0) < 0) return false;
     
-    // TODO: Concat all the map blocks and cache them. Until then return true after the first block.
-    if ((nodeNum/8) > record.recordLen) {
-        BTFreeNode(headerNode);
-        return true;
+        // Get the third record (map data)
+        BTNodeRecord record = {0};
+        BTGetBTNodeRecord(&record, node, 2);
+        
+        // Copy the data out into a persistant buffer
+        bTree->nodeBitmapSize = record.recordLen;
+        
+        // Initially allocate space for up to 16 nodes.
+        bTree->nodeBitmap = calloc(bTree->headerRecord.nodeSize * 16, 1);
+        assert(bTree->nodeBitmap != NULL);
+        memcpy(bTree->nodeBitmap, record.record, record.recordLen);
+        
+        // Concat any linked map node records
+        while (node->nodeDescriptor->fLink > 0 && (signed)node->nodeDescriptor->fLink != -1) {
+            size_t old_size = bTree->nodeBitmapSize;
+            bt_nodeid_t node_id = node->nodeDescriptor->fLink;
+            info("Loading bitmap continuation node %d", node_id);
+            
+            BTFreeNode(node);
+            node = NULL;
+            
+            BTGetNode(&node, bTree, node_id);
+            assert(node != NULL);
+            
+            BTGetBTNodeRecord(&record, node, 0);
+            bTree->nodeBitmapSize += record.recordLen;
+            if (malloc_size(bTree->nodeBitmap) < bTree->nodeBitmapSize) {
+                realloc(bTree->nodeBitmap, bTree->nodeBitmapSize);
+                if (bTree->nodeBitmap == NULL) {
+                    critical("Could not allocate memory for tree bitmap.");
+                    exit(errno);
+                }
+            }
+            
+            memcpy(bTree->nodeBitmap + old_size, record.record, record.recordLen);
+        }
+        info("Done loading nodes.");
+        
+        // Clean up
+        BTFreeNode(node);
+        
+        bTree->_loadingBitmap = false;
     }
-
-    bool result = BTIsBlockUsed(nodeNum, record.record);
-    BTFreeNode(headerNode);
+    
+    // Check the bit in the data.
+    bool result = BTIsBlockUsed(nodeNum, bTree->nodeBitmap, bTree->nodeBitmapSize);
+    info("returning %d", result);
+    
     return result;
 }
 
-bool BTIsBlockUsed(uint32_t thisAllocationBlock, Bytes allocationFileContents)
+bool BTIsBlockUsed(uint32_t thisAllocationBlock, Bytes allocationFileContents, size_t length)
 {
-    Byte thisByte = allocationFileContents[thisAllocationBlock / 8];
+    size_t idx = (thisAllocationBlock / 8);
+    if (idx > length) return false;
+    
+    Byte thisByte = allocationFileContents[idx];
     return (thisByte & (1 << (7 - (thisAllocationBlock % 8)))) != 0;
 }
 
