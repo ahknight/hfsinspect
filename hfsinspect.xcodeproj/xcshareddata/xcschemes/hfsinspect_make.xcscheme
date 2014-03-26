@@ -7,16 +7,16 @@
       buildImplicitDependencies = "YES">
       <BuildActionEntries>
          <BuildActionEntry
-            buildForTesting = "YES"
+            buildForTesting = "NO"
             buildForRunning = "YES"
             buildForProfiling = "YES"
-            buildForArchiving = "YES"
+            buildForArchiving = "NO"
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "9BBA85021735AFD400273AE9"
-               BuildableName = "hfsinspect"
-               BlueprintName = "hfsinspect"
+               BlueprintIdentifier = "9B9F1FFB184AC1CB005D7271"
+               BuildableName = "hfsinspect_make"
+               BlueprintName = "hfsinspect_make"
                ReferencedContainer = "container:hfsinspect.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -25,16 +25,16 @@
    <TestAction
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "NO"
+      shouldUseLaunchSchemeArgsEnv = "YES"
       buildConfiguration = "Debug">
       <Testables>
       </Testables>
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "9BBA85021735AFD400273AE9"
-            BuildableName = "hfsinspect"
-            BlueprintName = "hfsinspect"
+            BlueprintIdentifier = "9B9F1FFB184AC1CB005D7271"
+            BuildableName = "hfsinspect_make"
+            BlueprintName = "hfsinspect_make"
             ReferencedContainer = "container:hfsinspect.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -42,51 +42,33 @@
    <LaunchAction
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      debugAsWhichUser = "root"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Volumes/Code/personal/C/hfsinspect"
+      customWorkingDirectory = "/Users/ahknight/code/hfsinspect"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "NO"
       debugXPCServices = "NO"
       allowLocationSimulation = "NO">
-      <BuildableProductRunnable>
+      <PathRunnable
+         FilePath = "/Users/ahknight/code/hfsinspect/build/Darwin-x86_64/hfsinspect">
+      </PathRunnable>
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "9BBA85021735AFD400273AE9"
-            BuildableName = "hfsinspect"
-            BlueprintName = "hfsinspect"
+            BlueprintIdentifier = "9B9F1FFB184AC1CB005D7271"
+            BuildableName = "hfsinspect_make"
+            BlueprintName = "hfsinspect_make"
             ReferencedContainer = "container:hfsinspect.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "-V /Volumes/Mail/"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "-d /dev/disk7s2"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "-d /dev/disk1"
+            argument = "-d images/test.img"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-d images/test.img"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "-D"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "-b hotfiles"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "-n 0"
+            argument = "-r"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
@@ -108,33 +90,17 @@
             value = "/usr/lib/libgmalloc.dylib"
             isEnabled = "YES">
          </AdditionalOption>
-         <AdditionalOption
-            key = "MallocGuardEdges"
-            value = ""
-            isEnabled = "YES">
-         </AdditionalOption>
-         <AdditionalOption
-            key = "MallocScribble"
-            value = ""
-            isEnabled = "YES">
-         </AdditionalOption>
       </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
       shouldUseLaunchSchemeArgsEnv = "YES"
-      savedToolIdentifier = "/Applications/Xcode.app/Contents/Applications/Instruments.app/Contents/Resources/templates/Leaks.tracetemplate"
+      savedToolIdentifier = "/Applications/Xcode.app/Contents/Applications/Instruments.app/Contents/Resources/templates/Allocations.tracetemplate"
       useCustomWorkingDirectory = "NO"
-      buildConfiguration = "Debug"
+      buildConfiguration = "Release"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "9BBA85021735AFD400273AE9"
-            BuildableName = "hfsinspect"
-            BlueprintName = "hfsinspect"
-            ReferencedContainer = "container:hfsinspect.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
+      <PathRunnable
+         FilePath = "/Users/ahknight/code/hfsinspect/hfsinspect">
+      </PathRunnable>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">
