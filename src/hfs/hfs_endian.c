@@ -154,7 +154,10 @@ void swap_HFSPlusExtentKey(HFSPlusExtentKey *record)
 void swap_HFSUniStr255(HFSUniStr255 *unistr)
 {
     Swap16(unistr->length);
-    FOR_UNTIL(i, unistr->length) Swap16(unistr->unicode[i]);
+    if (unistr->length > 256) {
+        warning("Invalid HFSUniStr255 length: %d", unistr->length);
+    }
+    FOR_UNTIL(i, MIN(256, unistr->length)) Swap16(unistr->unicode[i]);
 }
 
 void swap_HFSPlusAttrKey(HFSPlusAttrKey *record)

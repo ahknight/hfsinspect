@@ -17,6 +17,12 @@ void swap_BTNodeDescriptor(BTNodeDescriptor *record)
     Swap32(record->fLink);
     Swap32(record->bLink);
     
+    if ((signed)record->fLink < -1)
+        warning("Invalid forward link: %d", (signed)record->fLink);
+
+    if ((signed)record->bLink < -1)
+        warning("Invalid backward link: %d", (signed)record->bLink);
+
     // noswap: record->kind is a short
     if (record->kind < kBTLeafNode || record->kind > kBTMapNode)
         warning("invalid node type: %d", record->kind);

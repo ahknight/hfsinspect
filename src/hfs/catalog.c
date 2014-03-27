@@ -100,6 +100,12 @@ int hfs_catalog_get_node(BTreeNodePtr *out_node, const BTreePtr bTree, bt_nodeid
             catalogKey = (HFSPlusCatalogKey*)record;
             swap_HFSPlusCatalogKey(catalogKey);
             
+            // Verify key
+            if (catalogKey->nodeName.length > 255) {
+                warning("Record %d in node %d has an invalid name length: %d", recNum, nodeNum, catalogKey->nodeName.length);
+                catalogKey->nodeName.length = 255; // Not the right answer, but better than reading 8K of data later on.
+            }
+            
             // Index nodes are already swapped, so only swap leaf nodes
             if (node->nodeDescriptor->kind == kBTLeafNode) {
                 keyLen = BTGetRecordKeyLength(node, recNum);
@@ -362,10 +368,11 @@ int HFSPlusGetCatalogRecordByFSSpec(HFSPlusCatalogRecord *catalogRecord, FSSpec 
     HFSPlusCatalogKey catalogKey = HFSPlusCatalogKeyFromFSSpec(spec);
     
     BTreePtr catalogTree = NULL;
-    hfs_get_catalog_btree(&catalogTree, hfs);
     BTreeNodePtr searchNode = NULL;
     BTRecNum searchIndex = 0;
 
+    if ( hfs_get_catalog_btree(&catalogTree, hfs) < 0 ) return -1;
+    
     bool result = btree_search(&searchNode, &searchIndex, catalogTree, &catalogKey);
     if (result != true) return -1;
     
@@ -385,7 +392,7 @@ int HFSPlusGetCatalogRecordByFSSpec(HFSPlusCatalogRecord *catalogRecord, FSSpec 
 
 int HFSPlusGetCatalogInfoByCNID(FSSpec *out_spec, HFSPlusCatalogRecord *out_catalogRecord, const HFS *hfs, bt_nodeid_t cnid)
 {
-    FSSpec spec = { .parentID = cnid };
+    FSSpec spec = { .hfs = hfs, .parentID = cnid };
     HFSPlusCatalogRecord catalogRecord = {0};
     
     if ( HFSPlusGetCatalogRecordByFSSpec(&catalogRecord, spec) < 0 )

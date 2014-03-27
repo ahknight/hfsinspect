@@ -24,7 +24,7 @@
  @param length The size of the buffer.
  @return The number of characters written to *out (or that would be written), or -1 on error.
  */
-ssize_t memstr(char* restrict out, uint8_t base, const char* input, size_t nbytes, size_t length)
+ssize_t memstr(char* restrict out, uint8_t base, const void *data, size_t nbytes, size_t length)
 {
     /* Verify parameters */
     
@@ -32,7 +32,7 @@ ssize_t memstr(char* restrict out, uint8_t base, const char* input, size_t nbyte
     if (nbytes == 0) return 0;
     
     // No source buffer?
-    if (input == NULL) { errno = EINVAL; return -1; }
+    if (data == NULL) { errno = EINVAL; return -1; }
     
     // Base 1 would be interesting (ie. infinite). Past base 36 and we need to start picking printable character sets.
     if (base < 2 || base > 36) { errno = EINVAL; return -1; }
@@ -62,12 +62,12 @@ ssize_t memstr(char* restrict out, uint8_t base, const char* input, size_t nbyte
     // We build the result string from the tail, so here's the index in that string, starting at the end.
     uint8_t ridx = rlength - 1;
     for (size_t byte = 0; byte < nbytes; byte++) {
-        uint8_t chr = input[byte];      // Grab the current char from the input.
-        while (chr != 0 && ridx >= 0) { // Iterate until we're out of input or output.
+        uint8_t chr = ((uint8_t*)data)[byte];       // Grab the current char from the input.
+        while (chr != 0 && ridx >= 0) {             // Iterate until we're out of input or output.
             uint8_t idx = chr % base;
             out[ridx] = (idx < 10 ? '0' + idx : 'a' + (idx-10)); // GO ASCII! 0-9 then a-z (up to base 36, see above).
-            chr /= base;                // Shave off the processed portion.
-            ridx--;                     // Move left in the result string.
+            chr /= base;                            // Shave off the processed portion.
+            ridx--;                                 // Move left in the result string.
         }
     }
     
@@ -92,7 +92,7 @@ ssize_t memstr(char* restrict out, uint8_t base, const char* input, size_t nbyte
  @param mode An ORed value denoting what to include in each line.
  */
 
-void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t width, uint8_t groups, unsigned mode)
+void memdump(FILE* file, const void* data, size_t length, uint8_t base, uint8_t width, uint8_t groups, unsigned mode)
 {
     // Length of a line
     int line_width = width * groups;
@@ -100,11 +100,11 @@ void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t 
     off_t offset = 0;
     while (length > offset) {
         // Starting position for the line
-        const char* line = &data[offset];
+        const uint8_t* line = &((uint8_t*)data)[offset];
         
         if ( (offset - line_width) > 0 && (offset + line_width) < length) {
-            const char* prevLine = &data[offset - line_width];
-            const char* nextLine = &data[offset + line_width];
+            const uint8_t* prevLine = &((uint8_t*)data)[offset - line_width];
+            const uint8_t* nextLine = &((uint8_t*)data)[offset + line_width];
             
             // Do we match the previous line?
             if (memcmp(prevLine, line, line_width) == 0) {

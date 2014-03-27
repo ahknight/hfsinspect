@@ -9,6 +9,8 @@
 #include "hfs/btree/btree.h"
 #include "hfs/btree/btree_endian.h"
 #include "misc/output.h"
+#include "misc/stringtools.h"
+
 #include <stdio.h>
 #include <search.h>
 
@@ -55,7 +57,7 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
             BTGetBTNodeRecord(&record, node, 0);
             bTree->nodeBitmapSize += record.recordLen;
             if (malloc_size(bTree->nodeBitmap) < bTree->nodeBitmapSize) {
-                realloc(bTree->nodeBitmap, bTree->nodeBitmapSize);
+                bTree->nodeBitmap = realloc(bTree->nodeBitmap, bTree->nodeBitmapSize);
                 if (bTree->nodeBitmap == NULL) {
                     critical("Could not allocate memory for tree bitmap.");
                     exit(errno);
@@ -121,7 +123,11 @@ BTRecOffset BTGetRecordOffset(const BTreeNodePtr node, uint8_t recNum)
     
     int recordCount = node->nodeDescriptor->numRecords;
     BTRecOffsetPtr offsets = ((BTRecOffsetPtr)(node->data + node->nodeSize)) - recordCount - 1;
-    assert( offsets[recordCount] == 14 /*sizeof(BTNodeDescriptor)*/ );
+    if ( offsets[recordCount] != 14 ) {
+        memdump(stderr, node->data, node->nodeSize, 16, 4, 4, DUMP_FULL);
+        critical("Bad sentinel @ %ld! (%d != 14)", ((char*)offsets - (char*)node->data) + recordCount, offsets[recordCount]); /*sizeof(BTNodeDescriptor)*/
+        exit(1);
+    };
     result = offsets[recordCount - recNum];
     
     return result;
@@ -315,7 +321,7 @@ int btree_walk(const BTreePtr btree, const BTreeNodePtr node, btree_walk_func wa
     
     walker(btree, _node);
 
-    if (_node->nodeDescriptor->fLink > 0) {
+    if ( (signed)_node->nodeDescriptor->fLink > 0 ) {
         BTreeNodePtr right = NULL;
         BTGetNode(&right, btree, _node->nodeDescriptor->fLink);
         btree_walk(btree, right, walker);
