@@ -1,5 +1,5 @@
-CFLAGS += -msse4.2 -Isrc -include src/hfsinspect-Prefix.pch
-CFLAGS += -g -O0 -Wall #debug
+CFLAGS += -Wall -msse4.2 -Isrc -include src/hfsinspect-Prefix.pch
+CFLAGS += -g #-O0 #debug
 
 OS := $(shell uname -s)
 MACHINE := $(shell uname -m)
@@ -39,7 +39,7 @@ test: all
 	@./$(BINARYPATH) --help
 	@cp images/test.img.gz images/test.img.1.gz
 	@gunzip -qNf images/test.img.1.gz
-	@./$(BINARYPATH) -d images/test.img -r
+	@./$(BINARYPATH) -d images/test.img -0DrjlP /
 
 clean-test:
 	$(RM) "images/test.img" "images/MBR.dmg"

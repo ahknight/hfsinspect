@@ -31,17 +31,19 @@ int hfs_get_catalog_btree(BTreePtr *tree, const HFS *hfs)
     static BTreePtr cachedTree;
     
     if (cachedTree == NULL) {
+        HFSFork *fork = NULL;
+        FILE* fp = NULL;
+        
         debug("Creating catalog B-Tree");
         
         ALLOC(cachedTree, sizeof(struct _BTree));
 
-        HFSFork *fork;
         if ( hfsfork_get_special(&fork, hfs, kHFSCatalogFileID) < 0 ) {
             critical("Could not create fork for Catalog B-Tree!");
             return -1;
         }
         
-        FILE* fp = fopen_hfsfork(fork);
+        fp = fopen_hfsfork(fork);
         if (fp == NULL) return -1;
         
         btree_init(cachedTree, fp);

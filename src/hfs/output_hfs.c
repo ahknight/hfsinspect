@@ -817,7 +817,7 @@ void PrintVolumeSummary(const VolumeSummary *summary)
         if (summary->largestFiles[i].cnid == 0) continue;
         
         char size[50];
-        (void)format_size(size, summary->largestFiles[i].measure, false, 50);
+        (void)format_size(size, summary->largestFiles[i].measure, 50);
         hfs_wc_str name = L"";
         HFSPlusGetCNIDName(name, (FSSpec){volume, summary->largestFiles[i].cnid});
         print("%d %10s %10u %ls", 10-i, size, summary->largestFiles[i].cnid, name);
@@ -1101,10 +1101,10 @@ void PrintFolderListing(uint32_t folderID)
                 
                 if (catalogRecord->record_type == kHFSPlusFileRecord) {
                     if (catalogRecord->catalogFile.dataFork.logicalSize)
-                        (void)format_size(dataSize, catalogRecord->catalogFile.dataFork.logicalSize, false, 50);
+                        (void)format_size(dataSize, catalogRecord->catalogFile.dataFork.logicalSize, 50);
                     
                     if (catalogRecord->catalogFile.resourceFork.logicalSize)
-                        (void)format_size(rsrcSize, catalogRecord->catalogFile.resourceFork.logicalSize, false, 50);
+                        (void)format_size(rsrcSize, catalogRecord->catalogFile.resourceFork.logicalSize, 50);
                     
                     if (catalogRecord->catalogFile.dataFork.totalBlocks > 0) {
                         folderStats.dataForkCount++;
@@ -1127,8 +1127,8 @@ void PrintFolderListing(uint32_t folderID)
     char dataTotal[50];
     char rsrcTotal[50];
     
-    format_size(dataTotal, folderStats.dataForkSize, false, 50);
-    format_size(rsrcTotal, folderStats.rsrcForkCount, false, 50);
+    format_size(dataTotal, folderStats.dataForkSize, 50);
+    format_size(rsrcTotal, folderStats.rsrcForkCount, 50);
     
     Print("%s", lineStr);
     Print(headerFormat, "", "", "", "", "", dataTotal, rsrcTotal, "");

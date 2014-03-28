@@ -44,6 +44,7 @@ void    usage                       (int status) __attribute__(( noreturn ));
 void    show_version                (void) __attribute__(( noreturn ));
 
 void    showPathInfo                (void);
+void    showFreeSpace               (void);
 void    showCatalogRecord           (FSSpec spec, bool followThreads);
 
 int     compare_ranked_files        (const void * a, const void * b) _NONNULL;
@@ -86,6 +87,7 @@ enum HIModes {
     HIModeListFolder,
     HIModeShowDiskInfo,
     HIModeYankFS,
+    HIModeFreeSpace,
 };
 
 // Configuration context
@@ -171,6 +173,7 @@ void usage(int status)
     "    -c CNID,    --cnid CNID     Lookup and display a record by its catalog node ID. \n"
     "    -l,         --list          If the specified FSOB is a folder, list the contents. \n"
     "    -D,         --disk-info     Show any available information about the disk, including partitions and volume headers.\n"
+    "    -0,         --freespace     Show a summary of the used/free space and extent count based on the allocation file.\n"
     "\n"
     "OUTPUT: \n"
     "    You can optionally have hfsinspect dump any fork it finds as the result of an operation. This includes B-Trees or file forks.\n"
@@ -191,6 +194,80 @@ void show_version()
     debug("Version requested.");
     print("%s %s\n", PROGRAM_NAME, "1.0");
     exit(0);
+}
+
+void showFreeSpace(void)
+{
+    HFSFork *fork = NULL;
+    if ( hfsfork_get_special(&fork, &HIOptions.hfs, kHFSAllocationFileID) < 0 )
+        die(1, "Couldn't get a reference to the volume allocation file.");
+    
+    char *data = calloc(fork->logicalSize, 1);
+    {
+        size_t block_size = 128*1024, offset = 0;
+        ssize_t bytes = 0;
+        void *block = calloc(block_size, 1);
+        while ( (bytes = hfs_read_fork_range(block, fork, block_size, offset)) > 0 ) {
+            memcpy(data+offset, block, bytes);
+            offset += bytes;
+            if (offset >= fork->logicalSize) break;
+        }
+        free(block);
+        
+        if (offset == 0) {
+            free(data);
+            
+            // We didn't read anything.
+            if (bytes < 0) {
+                // Error
+                die(errno, "error reading allocation file");
+            }
+            
+            return;
+        }
+    }
+    
+    size_t total_used = 0;
+    size_t total_free = 0;
+    size_t total_extents = 0;
+    
+    struct extent {
+        uint8_t     used;
+        size_t      start;
+        size_t      length;
+    };
+    
+    // The first allocation block is used by the VH.
+    struct extent currentExtent = {1,0,1};
+    
+    for (size_t i = 0; i < HIOptions.hfs.vh.totalBlocks; i++) {
+        bool used = BTIsBlockUsed(i, data, fork->logicalSize);
+        if (used == currentExtent.used && (i != (HIOptions.hfs.vh.totalBlocks - 1))) {
+            currentExtent.length++;
+            continue;
+        }
+        
+        total_extents += 1;
+        
+        if (currentExtent.used)
+            total_used += currentExtent.length;
+        else
+            total_free += currentExtent.length;
+        
+        currentExtent.used = used;
+        currentExtent.start = i;
+        currentExtent.length = 1;
+    }
+    
+    BeginSection("Allocation File Statistics");
+    PrintAttribute("Extents", "%zu", total_extents);
+    _PrintHFSBlocks("Used Blocks", total_used);
+    _PrintHFSBlocks("Free Blocks", total_free);
+    _PrintHFSBlocks("Total Blocks", total_used + total_free);
+    EndSection();
+    
+    free(data);
+    hfsfork_free(fork);
 }
 
 void showPathInfo(void)
@@ -401,7 +478,7 @@ VolumeSummary generateVolumeSummary(HFS* hfs)
             // Update status
             size_t space = summary.dataFork.logicalSpace + summary.resourceFork.logicalSpace;
             char size[128] = {0};
-            (void)format_size(size, space, false, 128);
+            (void)format_size(size, space, 128);
             
             fprintf(stdout, "\r%0.2f%% (files: %ju; directories: %ju; size: %s)",
                     ((float)count / (float)catalog->headerRecord.leafRecords) * 100.,
@@ -479,13 +556,13 @@ ssize_t extractFork(const HFSFork* fork, const String extractPath)
     size_t totalBytes = 0, bytes = 0;
     char totalStr[100] = {0}, bytesStr[100] = {0};
     totalBytes = fork->logicalSize;
-    format_size(totalStr, totalBytes, 0, 100);
-    format_size(bytesStr, bytes, 0, 100);
+    format_size(totalStr, totalBytes, 100);
+    format_size(bytesStr, bytes, 100);
     
     do {
         if ( (nbytes = fread(chunk, 1, chunkSize, f_in)) > 0) {
             bytes += fwrite(chunk, 1, nbytes, f_out);
-            format_size(bytesStr, bytes, 0, 100);
+            format_size(bytesStr, bytes, 100);
             fprintf(stdout, "\rCopying CNID %u to %s: %s of %s copied                ", fork->cnid, extractPath, bytesStr, totalStr);
             fflush(stdout);
         }
@@ -685,11 +762,13 @@ int main (int argc, String const *argv)
         { "list",           no_argument,            NULL,                   'l' },
         { "journal",        no_argument,            NULL,                   'j' },
         { "disk-info",      no_argument,            NULL,                   'D' },
+        { "freespace",      no_argument,            NULL,                   '0' },
+        { "si",             no_argument,            NULL,                   'S' },
         { NULL,             0,                      NULL,                   0   }
     };
     
     /* short options */
-    String shortopts = "hvjlrsDd:n:b:p:P:F:V:c:o:y:";
+    String shortopts = "0ShvjlrsDd:n:b:p:P:F:V:c:o:y:";
     
     char opt;
     while ((opt = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -703,6 +782,8 @@ int main (int argc, String const *argv)
                 // Value set or index returned
             case 0: break;
                 
+            case 'S': output_set_uses_decimal_blocks(true); break;
+            
             case 'l': set_mode(HIModeListFolder); break;
                 
             case 'v': show_version(); break;       // Exits
@@ -803,6 +884,8 @@ int main (int argc, String const *argv)
             }
                 
             case 's': set_mode(HIModeShowSummary); break;
+                
+            case '0': set_mode(HIModeFreeSpace); break;
             
             default: debug("Unhandled argument '%c' (default case).", opt); usage(1); break;
         };
@@ -1068,6 +1151,13 @@ NOPE:
                 warning("Consistency error: volume attributes indicate it is journaled but the journal info block is empty!");
             }
         }
+    }
+    
+#pragma mark Allocation Requests
+    // Show volume's free space extents
+    if (check_mode(HIModeFreeSpace)) {
+        debug("Show free space.");
+        showFreeSpace();
     }
     
 #pragma mark Catalog Requests

@@ -15,9 +15,9 @@ uuid_t* gpt_swap_uuid(uuid_t* uuid)
 {
     // Because these UUIDs are fucked up.
     void* uuid_buf = uuid;
-    *( (uint32_t*) uuid + 0 ) = bswap32(*( (uint32_t*)uuid_buf + 0 ));
-    *( (uint16_t*) uuid + 2 ) = bswap16(*( (uint16_t*)uuid_buf + 2 ));
-    *( (uint16_t*) uuid + 3 ) = bswap16(*( (uint16_t*)uuid_buf + 3 ));
+    *( (uint32_t*) uuid + 0 ) = be32toh(*( (uint32_t*)uuid_buf + 0 ));
+    *( (uint16_t*) uuid + 2 ) = be16toh(*( (uint16_t*)uuid_buf + 2 ));
+    *( (uint16_t*) uuid + 3 ) = be16toh(*( (uint16_t*)uuid_buf + 3 ));
     *( (uint64_t*) uuid + 1 ) =         *( (uint64_t*)uuid_buf + 1 );
     return uuid;
 }
@@ -46,10 +46,10 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
     
     off_t offset = 0;
     size_t length = 0;
-    GPTHeader header; ZERO_STRUCT(header);
+    GPTHeader header = {0};
     
     {
-        MBR mbr; ZERO_STRUCT(mbr);
+        MBR mbr = {{0}};
         offset = vol->sector_size;
         length = sizeof(GPTHeader);
         
@@ -67,7 +67,7 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
     
     if (entries_out != NULL) {
         char* buf = NULL;
-        GPTPartitionRecord entries; ZERO_STRUCT(entries);
+        GPTPartitionRecord entries = {{{0}}};
 
         // Determine start of partition array
         offset = header.partition_start_lba * vol->sector_size;
@@ -94,7 +94,7 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
         // Clean up
         FREE(buf);
 
-        if (entries_out != NULL) memcpy(*entries_out, entries, sizeof(GPTPartitionRecord));
+        if (entries_out != NULL) memcpy(*entries_out, entries, sizeof(entries));
     }
     
     if (header_out != NULL) *header_out = header;
@@ -135,11 +135,11 @@ int gpt_test(Volume *vol)
     // Presume LBAs are in the range 512 to 16K..
     size_t blockSize = (found - haystack);
     if (blockSize >= 512 && blockSize <= haystackSize) {
-        debug("Updating volume sector size from %d to %zu.", vol->sector_size, blockSize);
+        debug("Updating volume sector size from %u to %zu.", vol->sector_size, blockSize);
         vol->sector_size = blockSize;
         if (vol->length && vol->sector_count)
             vol->sector_count = (vol->length / vol->sector_size);
-        info("GPT volume has a sector size of %d and %lld sectors for a total of %zu bytes.", vol->sector_size, vol->sector_count, vol->length);
+        info("GPT volume has a sector size of %u and %llu sectors for a total of %zu bytes.", vol->sector_size, vol->sector_count, vol->length);
     }
     
     FREE(haystack);
@@ -168,8 +168,8 @@ int gpt_load(Volume *vol)
     vol->type = kVolTypePartitionMap;
     vol->subtype = kPMTypeGPT;
     
-    GPTHeader header; ZERO_STRUCT(header);
-    GPTPartitionRecord entries; ZERO_STRUCT(entries);
+    GPTHeader header = {0};
+    GPTPartitionRecord entries = {{{0}}};
     off_t offset = 0;
     size_t length = 0;
     
@@ -179,9 +179,8 @@ int gpt_load(Volume *vol)
     
     // Iterate over the partitions and update the volume record
     FOR_UNTIL(i, header.partition_entry_count) {
-        uuid_string_t uuid_str;
+        uuid_string_t uuid_str = "";
         uuid_t* uuid_ptr = NULL;
-//        ContainerHint hint;
         GPTPartitionEntry partition;
         
         // Grab the next partition structure
@@ -199,7 +198,7 @@ int gpt_load(Volume *vol)
         // Update partition type with hint
         uuid_ptr = gpt_swap_uuid(&partition.type_uuid);
         uuid_unparse(*uuid_ptr, uuid_str);
-        VolType type;
+        VolType type = {0};
         const char * desc = gpt_partition_type_str(*uuid_ptr, &type);
         p->type = type;
         
@@ -226,11 +225,11 @@ int gpt_dump(Volume *vol)
 {
     debug("GPT dump");
     
-    uuid_string_t uuid_str;
-    uuid_t* uuid_ptr;
+    uuid_string_t uuid_str = "";
+    uuid_t* uuid_ptr = NULL;
     
-    GPTHeader header; ZERO_STRUCT(header);
-    GPTPartitionRecord entries; ZERO_STRUCT(entries);
+    GPTHeader header = {0};
+    GPTPartitionRecord entries = {{{0}}};
     
     if ( gpt_load_header(vol, &header, &entries) < 0)
         return -1;

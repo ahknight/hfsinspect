@@ -101,7 +101,7 @@ int mbr_dump(Volume *vol)
         return -1;
     
     BeginSection("Master Boot Record");
-    PrintAttribute("signature", "%#x", bswap16(*(uint16_t*)mbr->signature));
+    PrintAttribute("signature", "%#x", be16toh(*(uint16_t*)mbr->signature));
     
     FOR_UNTIL(i, 4) {
         MBRPartition* partition = &mbr->partitions[i];

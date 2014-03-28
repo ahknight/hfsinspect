@@ -14,6 +14,12 @@
 
 char _indent_string[50] = "";
 unsigned indent_step = 2;
+bool _use_decimal_blocks = false;
+
+void output_set_uses_decimal_blocks(bool value)
+{
+    _use_decimal_blocks = value;
+}
 
 static inline const unsigned long indent_level() {
     return strnlen(_indent_string, 50);
@@ -88,37 +94,56 @@ int PrintAttribute(const char* label, const char* format, ...)
 
 void _PrintDataLength(const char *label, uint64_t size)
 {
-    char sizeLabel[50];
-    char metricLabel[50];
-    if (size > 1024*1024) {
-        (void)format_size(sizeLabel, size, false, 50);
-        (void)format_size(metricLabel, size, true, 50);
-        PrintAttribute(label, "%s/%s (%lu bytes)", sizeLabel, metricLabel, size);
-    } else if (size > 1024) {
-        (void)format_size(sizeLabel, size, false, 50);
-        PrintAttribute(label, "%s (%lu bytes)", sizeLabel, size);
+    _assert(label != NULL);
+    
+    char decimalLabel[50];
+
+    (void)format_size(decimalLabel, size, 50);
+
+//    if (size > 1024*1024*1024) {
+//        char binaryLabel[50];
+//        (void)format_size_d(binaryLabel, size, 50, false);
+//        PrintAttribute(label, "%s/%s (%lu bytes)", decimalLabel, binaryLabel, size);
+//    } else
+    if (size > 1024) {
+        PrintAttribute(label, "%s (%lu bytes)", decimalLabel, size);
     } else {
-        PrintAttribute(label, "%lu bytes", size);
+        PrintAttribute(label, "%s", decimalLabel);
     }
 }
 
 void PrintAttributeDump(const char* label, const void* map, size_t nbytes, char base)
 {
+    _assert(label != NULL);
+    _assert(map != NULL);
+    _assert(nbytes > 0);
+    _assert(base >= 2 && base <= 36);
+    
     PrintAttribute(label, "");
     VisualizeData(map, nbytes);
 }
 
 void _PrintRawAttribute(const char* label, const void* map, size_t nbytes, char base)
 {
-    unsigned segmentLength = 32;
+    _assert(label != NULL);
+    _assert(map != NULL);
+    _assert(nbytes > 0);
+    _assert(base >= 2 && base <= 36);
     
-    ssize_t msize = format_dump(NULL, map, base, nbytes, 0);
+    unsigned segmentLength = 32;
+    char* str = NULL;
+    ssize_t len = 0;
+    ssize_t msize = 0;
+    
+    msize = format_dump(NULL, map, base, nbytes, 0);
     if (msize < 0) { perror("format_dump"); return; }
     msize++; // NULL terminator
-    char* str = NULL;
     ALLOC(str, msize);
     
-    size_t len = format_dump(str, map, base, nbytes, msize);
+    if ( (len = format_dump(str, map, base, nbytes, msize)) < 0 ) {
+        warning("format_dump failed!");
+        return;
+    }
     
     for (int i = 0; i < len; i += segmentLength) {
         char segment[segmentLength]; memset(segment, '\0', segmentLength);
@@ -143,16 +168,29 @@ void VisualizeData(const void* data, size_t length)
 
 int format_dump(char* out, const char* value, unsigned base, size_t nbytes, size_t length)
 {
+    _assert(value != NULL);
+    _assert(base >= 2 && base <= 36);
+    _assert(nbytes > 0);
+    if (out != NULL) _assert(length > 0);
+    
     return memstr(out, base, value, nbytes, length);
 }
 
-int format_size(char* out, size_t value, bool metric, size_t length)
+int format_size(char* out, size_t value, size_t length)
 {
-    float divisor = 1024.0;
-    if (metric) divisor = 1000.0;
+    return format_size_d(out, value, length, _use_decimal_blocks);
+}
+
+int format_size_d(char* out, size_t value, size_t length, bool decimal)
+{
+    _assert(out != NULL);
+    _assert(length > 0);
     
-    char* sizeNames[] = { "bytes", "KiB", "MiB", "GiB", "TiB", "EiB", "PiB", "ZiB", "YiB" };
-    char* metricNames[] = { "bytes", "KB", "MB", "GB", "TB", "EB", "PB", "ZB", "YB" };
+    float divisor = 1024.0;
+    if (decimal) divisor = 1000.0;
+    
+    char* binaryNames[] = { "bytes", "KiB", "MiB", "GiB", "TiB", "EiB", "PiB", "ZiB", "YiB" };
+    char* decimalNames[] = { "bytes", "KB", "MB", "GB", "TB", "EB", "PB", "ZB", "YB" };
     
     long double displaySize = value;
     int count = 0;
@@ -163,7 +201,7 @@ int format_size(char* out, size_t value, bool metric, size_t length)
     }
     char* sizeLabel;
     
-    if (metric) sizeLabel = metricNames[count]; else sizeLabel = sizeNames[count];
+    if (decimal) sizeLabel = decimalNames[count]; else sizeLabel = binaryNames[count];
     
     snprintf(out, length, "%0.2Lf %s", displaySize, sizeLabel);
     
@@ -174,7 +212,7 @@ int format_blocks(char* out, size_t blocks, size_t block_size, size_t length)
 {
     size_t displaySize = (blocks * block_size);
     char sizeLabel[50];
-    (void)format_size(sizeLabel, displaySize, false, 50);
+    (void)format_size(sizeLabel, displaySize, 50);
     return snprintf(out, length, "%s (%zu blocks)", sizeLabel, blocks);
 }
 

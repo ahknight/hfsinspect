@@ -64,8 +64,8 @@ struct Volume {
     FILE                *fp;                // C file handle
     char                device[PATH_MAX];   // path to device file
     
-    blksize_t           sector_size;         // block size (LBA size if the raw disk; FS blocks if a filesystem)
-    blkcnt_t            sector_count;        // total blocks in this volume
+    uint32_t            sector_size;         // block size (LBA size if the raw disk; FS blocks if a filesystem)
+    uint64_t            sector_count;        // total blocks in this volume
     
     off_t               offset;             // offset in bytes on device
     size_t              length;             // length in bytes

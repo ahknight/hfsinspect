@@ -53,7 +53,7 @@ int hfs_attach(HFS* hfs, Volume *vol)
     
     // Handle wrapped volumes.
     if (type == kFSTypeWrappedHFSPlus) {
-        HFSMasterDirectoryBlock mdb; ZERO_STRUCT(mdb);
+        HFSMasterDirectoryBlock mdb = {0};
         if ( hfs_load_mbd(vol, &mdb) < 0)
             return -1;
         

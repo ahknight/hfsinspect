@@ -9,6 +9,8 @@
 #ifndef hfsinspect_output_h
 #define hfsinspect_output_h
 
+void output_set_uses_decimal_blocks(bool value);
+
 #define MEMBER_LABEL(s, m) #m, s->m
 
 void PrintAttributeDump (const char* label, const void* map, size_t nbytes, char base);
@@ -49,7 +51,8 @@ int PrintAttribute  (const char* label, const char* format, ...);
 
 
 int format_dump     (char* out, const char* value, unsigned base, size_t nbytes, size_t length);
-int format_size     (char* out, size_t value, bool metric, size_t length);
+int format_size     (char* out, size_t value, size_t length);
+int format_size_d   (char* out, size_t value, size_t length, bool decimal);
 int format_blocks   (char* out, size_t blocks, size_t block_size, size_t length);
 int format_time     (char* out, time_t gmt_time, size_t length);
 

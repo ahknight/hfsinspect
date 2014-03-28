@@ -2,6 +2,8 @@
 // Prefix header for all source files of the 'hfsinspect' target in the 'hfsinspect' project
 //
 
+#define _assert( condition ) { if ( ! (condition) ) { critical("%s:%d assertation failed: %s", __FILE__, __LINE__, #condition); exit(1); } }
+
 #define _UNUSED     __attribute__((unused))
 #define _NONNULL    __attribute__((nonnull))
 #define NONNULL(...) __attribute__((nonnull(__VA_ARGS__)))

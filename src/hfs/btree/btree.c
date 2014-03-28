@@ -81,12 +81,12 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
     return result;
 }
 
-bool BTIsBlockUsed(uint32_t thisAllocationBlock, Bytes allocationFileContents, size_t length)
+bool BTIsBlockUsed(uint32_t thisAllocationBlock, void *allocationFileContents, size_t length)
 {
     size_t idx = (thisAllocationBlock / 8);
     if (idx > length) return false;
     
-    Byte thisByte = allocationFileContents[idx];
+    Byte thisByte = ((Bytes)allocationFileContents)[idx];
     return (thisByte & (1 << (7 - (thisAllocationBlock % 8)))) != 0;
 }
 
@@ -337,6 +337,10 @@ int btree_walk(const BTreePtr btree, const BTreeNodePtr node, btree_walk_func wa
 int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, const void * searchKey)
 {
     debug("Searching tree %d for key of length %d", btree->treeID, ((BTreeKey*)searchKey)->length16);
+    _assert(node != NULL);
+    _assert(recordID != NULL);
+    _assert(btree != NULL);
+    _assert(searchKey != NULL);
     
     /*
      Starting at the node the btree defines as the root:
