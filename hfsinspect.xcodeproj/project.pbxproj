@@ -357,7 +357,7 @@
 		9BBA84FB1735AFD400273AE9 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0500;
+				LastUpgradeCheck = 0510;
 				ORGANIZATIONNAME = "Adam Knight";
 			};
 			buildConfigurationList = 9BBA84FE1735AFD400273AE9 /* Build configuration list for PBXProject "hfsinspect" */;
@@ -539,7 +539,6 @@
 					hfsinspect,
 				);
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPLOYMENT_LOCATION = YES;
 				DSTROOT = /usr/local;
@@ -565,7 +564,6 @@
 					hfsinspect,
 				);
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPLOYMENT_LOCATION = YES;
 				DSTROOT = /usr/local;
