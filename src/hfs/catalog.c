@@ -221,6 +221,7 @@ int HFSPlusGetCNIDName(wchar_t* name, FSSpec spec)
     BTreeNodePtr node = NULL;
     BTRecNum recordID = 0;
     HFSPlusCatalogKey key = {0};
+    
     key.parentID = cnid;
     key.keyLength = kHFSPlusCatalogKeyMinimumLength;
     

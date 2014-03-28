@@ -130,6 +130,7 @@ int mbr_dump(Volume *vol)
 }
 
 PartitionOps mbr_ops = {
+    .name = "MBR",
     .test = mbr_test,
     .dump = mbr_dump,
     .load = mbr_load,

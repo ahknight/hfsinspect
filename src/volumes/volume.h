@@ -86,6 +86,7 @@ struct Volume {
 typedef int (*volop) (Volume* vol);
 
 typedef struct PartitionOps {
+    char    name[32];
     volop   test;
     volop   load;
     volop   dump;

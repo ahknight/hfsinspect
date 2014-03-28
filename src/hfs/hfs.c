@@ -30,7 +30,13 @@ int hfs_load_header(Volume *vol, HFSPlusVolumeHeader *vh)
     return 0;
 }
 
-int hfs_attach(HFS* hfs, Volume *vol)
+int hfs_close(HFS *hfs) {
+    debug("Closing volume.");
+    int result = vol_close(hfs->vol);
+    return result;
+}
+
+int hfs_open(HFS* hfs, Volume *vol)
 {
     if (hfs == NULL || vol == NULL) { errno = EINVAL; return -1; }
     
@@ -137,12 +143,6 @@ Volume* hfs_find(Volume* vol)
         }
     }
     
-    return result;
-}
-
-int hfs_close(HFS *hfs) {
-    debug("Closing volume.");
-    int result = vol_close(hfs->vol);
     return result;
 }
 

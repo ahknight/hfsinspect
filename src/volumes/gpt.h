@@ -29,17 +29,17 @@ typedef struct GPTHeader {
     uint64_t     signature;
     uint32_t     revision;
     uint32_t     header_size;
-    uint32_t     header_crc32;
+    uint32_t     crc;
     uint32_t     reserved;
     uint64_t     current_lba;
     uint64_t     backup_lba;
     uint64_t     first_lba;
     uint64_t     last_lba;
-    uuid_t        uuid;
-    uint64_t     partition_start_lba;
-    uint32_t     partition_entry_count;
-    uint32_t     partition_entry_size;
-    uint32_t     partition_crc32;
+    uuid_t       uuid;
+    uint64_t     partition_table_start_lba;
+    uint32_t     partitions_entry_count;
+    uint32_t     partitions_entry_size;
+    uint32_t     partition_table_crc;
 } GPTHeader;
 
 // 128 bytes

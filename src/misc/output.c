@@ -160,7 +160,7 @@ void _PrintRawAttribute(const char* label, const void* map, size_t nbytes, char 
 
 void VisualizeData(const void* data, size_t length)
 {
-    memdump(stdout, data, length, 16, 4, 8, DUMP_ADDRESS | DUMP_ENCODED | DUMP_OFFSET | DUMP_ASCII | DUMP_PADDING);
+    memdump(stdout, data, length, 16, 4, 4, DUMP_ADDRESS | DUMP_ENCODED | DUMP_OFFSET | DUMP_ASCII | DUMP_PADDING);
 }
 
 

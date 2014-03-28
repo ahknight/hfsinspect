@@ -37,7 +37,7 @@ int cs_verify_block(const CSVolumeHeader* vh, const Byte* block, size_t nbytes)
         
         return 0;
     }
-    warning("unsupported checksum algorithm: %u", vh->checksum_algo);
+    
     return -1;
 }
 
@@ -51,9 +51,7 @@ int cs_get_volume_header(Volume* vol, CSVolumeHeader* header)
     
     memcpy(header, buf, buf_size);
     
-    cs_verify_block(header, buf, buf_size);
-
-    return 0;
+    return cs_verify_block(header, buf, buf_size);
 }
 
 ssize_t cs_get_metadata_block(Byte** buf, const Volume* vol, const CSVolumeHeader* header, unsigned block)
@@ -310,6 +308,7 @@ void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh)
 }
 
 PartitionOps cs_ops = {
+    .name = "Core Storage",
     .test = cs_test,
     .dump = cs_dump,
     .load = NULL,

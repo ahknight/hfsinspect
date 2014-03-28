@@ -58,7 +58,7 @@ typedef char	uuid_string_t[37];
 
 // And this.
 #ifndef ALLOC
-#define ALLOC(name, size) { (name) = calloc(1, (size)); if ((name) == NULL) { exit(errno); }; }
+#define ALLOC(name, size) { (name) = calloc((size), 1); if ((name) == NULL) { exit(errno); }; }
 #endif
 
 // Also this.

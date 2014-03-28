@@ -10,6 +10,11 @@
 #include "misc/_endian.h"
 #include "misc/output.h"
 #include "misc/stringtools.h"
+#include "crc32/crc32.h"
+
+int _gpt_valid_header(GPTHeader header);
+int _gpt_valid_pmap(GPTHeader *header, GPTPartitionRecord *pmap);
+
 
 uuid_t* gpt_swap_uuid(uuid_t* uuid)
 {
@@ -65,21 +70,33 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
             return -1;
     }
     
+    // Verify the header.
+    if (_gpt_valid_header(header) != true)
+        return -1;
+    else
+        debug("GPT header CRC OK!");
+    
     if (entries_out != NULL) {
         char* buf = NULL;
         GPTPartitionRecord entries = {{{0}}};
 
         // Determine start of partition array
-        offset = header.partition_start_lba * vol->sector_size;
-        length = header.partition_entry_count * header.partition_entry_size;
+        offset = header.partition_table_start_lba * vol->sector_size;
+        length = header.partitions_entry_count * header.partitions_entry_size;
         
         // Read the partition array
         ALLOC(buf, length);
         if ( vol_read(vol, (Bytes)buf, length, offset) < 0 )
             return -1;
         
+        // Verify the partition map.
+        if (_gpt_valid_pmap(&header, (GPTPartitionRecord*)buf) != true)
+            return -1;
+        else
+            debug("GPT partition map CRC OK!");
+        
         // Iterate over the partitions and update the volume record
-        FOR_UNTIL(i, header.partition_entry_count) {
+        FOR_UNTIL(i, header.partitions_entry_count) {
             GPTPartitionEntry partition;
             
             // Grab the next partition structure
@@ -100,6 +117,45 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
     if (header_out != NULL) *header_out = header;
     
     return 0;
+}
+
+int _gpt_valid_header(GPTHeader header)
+{
+    uint32_t crc = 0, header_crc = header.crc;
+    
+    if (memcmp(&header.signature, "EFI PART", 8) != 0) {
+        debug("Invalid GPT signature.");
+        return false;
+    }
+
+    if (header.header_size != sizeof(GPTHeader)) {
+        debug("Invalid GPT header size; reports a size of %u while it should be %zu.", header.header_size, sizeof(GPTHeader));
+        return false;
+    }
+    
+    // The CRC is calculated with the checksum field zeroed.
+    header.crc = 0;
+    crc = crc32(0, &header, header.header_size);
+    header.crc = header_crc;
+    
+    if (crc != header_crc) {
+        debug("Invalid or corrupt GPT header: bad CRC; expected %#010x; got %#010x.", header_crc, crc);
+        return false;
+    }
+    
+    return true;
+}
+
+int _gpt_valid_pmap(GPTHeader *header, GPTPartitionRecord *pmap)
+{
+    uint32_t crc = 0, header_crc = header->partition_table_crc;
+    
+    crc = crc32(crc, pmap, sizeof(GPTPartitionRecord));
+    if (crc != header_crc) {
+        debug("Invalid or corrupt GPT partition map: bad CRC; expected %#010x; got %#010x.", header_crc, crc);
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -129,6 +185,10 @@ int gpt_test(Volume *vol)
     char* found = memmem(haystack, haystackSize, needle, 8);
     
     if (found == NULL) { FREE(haystack); return false; }
+    
+    // Verify this is a valid GPT header.
+    if ( _gpt_valid_header(*(GPTHeader*)found) != true )
+        return false;
     
     // found is a pointer to the location of the string, which starts the block.
     // Calculate the LBA used to format the drive using this information.
@@ -178,7 +238,7 @@ int gpt_load(Volume *vol)
         return -1;
     
     // Iterate over the partitions and update the volume record
-    FOR_UNTIL(i, header.partition_entry_count) {
+    FOR_UNTIL(i, header.partitions_entry_count) {
         uuid_string_t uuid_str = "";
         uuid_t* uuid_ptr = NULL;
         GPTPartitionEntry partition;
@@ -242,7 +302,7 @@ int gpt_dump(Volume *vol)
     BeginSection("GPT Partition Map");
     PrintUIHex              (header_p, revision);
     PrintDataLength         (header_p, header_size);
-    PrintUIHex              (header_p, header_crc32);
+    PrintUIHex              (header_p, crc);
     PrintUIHex              (header_p, reserved);
     PrintUI                 (header_p, current_lba);
     PrintUI                 (header_p, backup_lba);
@@ -250,12 +310,12 @@ int gpt_dump(Volume *vol)
     PrintUI                 (header_p, last_lba);
     _PrintDataLength        ("(size)", (header.last_lba * vol->sector_size) - (header.first_lba * vol->sector_size) );
     PrintAttribute    ("uuid", uuid_str);
-    PrintUI                 (header_p, partition_start_lba);
-    PrintUI                 (header_p, partition_entry_count);
-    PrintDataLength         (header_p, partition_entry_size);
-    PrintUIHex              (header_p, partition_crc32);
+    PrintUI                 (header_p, partition_table_start_lba);
+    PrintUI                 (header_p, partitions_entry_count);
+    PrintDataLength         (header_p, partitions_entry_size);
+    PrintUIHex              (header_p, partition_table_crc);
     
-    FOR_UNTIL(i, header.partition_entry_count) {
+    FOR_UNTIL(i, header.partitions_entry_count) {
         const char* type = NULL;
         
         GPTPartitionEntry partition = entries[i];
@@ -290,6 +350,7 @@ int gpt_dump(Volume *vol)
 }
 
 PartitionOps gpt_ops = {
+    .name = "GPT",
     .test = gpt_test,
     .dump = gpt_dump,
     .load = gpt_load,

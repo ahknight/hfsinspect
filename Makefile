@@ -1,5 +1,5 @@
 CFLAGS += -Wall -msse4.2 -Isrc -include src/hfsinspect-Prefix.pch
-CFLAGS += -g #-O0 #debug
+CFLAGS += -g -O0 #debug
 
 OS := $(shell uname -s)
 MACHINE := $(shell uname -m)

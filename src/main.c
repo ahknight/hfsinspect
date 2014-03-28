@@ -809,7 +809,7 @@ int main (int argc, String const *argv)
                 
             case 'p':
                 set_mode(HIModeShowPathInfo);
-                char *device = NULL, *file = NULL;
+                char device[PATH_MAX] = {0}, file[PATH_MAX] = {0};
                 
                 bool success = resolveDeviceAndPath(optarg, device, file);
                 
@@ -955,7 +955,7 @@ OPEN:
         vol = tmp;
     }
     
-    if (hfs_attach(&HIOptions.hfs, vol) < 0) {
+    if (hfs_open(&HIOptions.hfs, vol) < 0) {
         perror("hfs_attach");
         exit(1);
     }

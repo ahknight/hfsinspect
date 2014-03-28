@@ -191,7 +191,7 @@ int LogLine(enum LogLevel level, const char* format, ...)
     
     fflush(fp);
     
-    if (DEBUG && level <= L_ERROR) {
+    if (DEBUG && level <= L_CRITICAL) {
         raise(SIGTRAP);
     }
     

@@ -14,7 +14,7 @@ PartitionOps* partitionTypes[] = {
     &apm_ops,
     &mbr_ops,
     &cs_ops,
-    &((PartitionOps){NULL, NULL, NULL})
+    &((PartitionOps){"", NULL, NULL, NULL})
 };
 
 int volumes_load(Volume *vol)
@@ -24,16 +24,20 @@ int volumes_load(Volume *vol)
     PartitionOps** ops = (PartitionOps**)&partitionTypes;
     while ((*ops)->test != NULL) {
         if ((*ops)->test(vol) == 1) {
+            info("Detected a %s partition.", (*ops)->name);
+            if (DEBUG && (*ops)->dump != NULL) {
+                (*ops)->dump(vol);
+            }
             if ((*ops)->load != NULL) {
-                if (DEBUG && (*ops)->dump != NULL) {
-                    (*ops)->dump(vol);
-                }
                 if ( (*ops)->load(vol) < 0) {
-                    (ops)++;
-                    continue; // try another
+                    warning("Can't load %s partition: load returned failure.", (*ops)->name);
                 } else {
-                    break;
+                    debug("Loaded a %s partition.", (*ops)->name);
                 }
+                (ops)++;
+                continue; // try another
+            } else {
+                warning("Can't load %s partition: no load function.", (*ops)->name);
             }
         }
         (ops)++;
@@ -42,7 +46,7 @@ int volumes_load(Volume *vol)
     // Recursive load
     FOR_UNTIL(i, vol->partition_count) {
         info("Looking for nested partitions on partition %u", i);
-        if (vol->partitions[i]->type == kVolTypePartitionMap) {
+        if (vol->partitions[i] != NULL && vol->partitions[i]->type == kVolTypePartitionMap) {
             debug("Trying to load nested partitions on partition %u", i);
             if (volumes_load(vol->partitions[i]) < 0) {
                 error("error loading partition %u", i);

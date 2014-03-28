@@ -62,15 +62,19 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "-V /"
-            isEnabled = "YES">
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-p /"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-d /dev/disk7s2"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-d /dev/disk1"
-            isEnabled = "NO">
+            argument = "-d /dev/disk0"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-d images/test.img"
@@ -78,7 +82,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-D"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-b hotfiles"

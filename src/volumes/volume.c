@@ -17,7 +17,7 @@
 #include <sys/disk.h>
 #endif
 
-#define ASSERT_VOL(vol) { assert(vol); assert(vol->fp); }
+#define ASSERT_VOL(vol) { _assert(vol != NULL); _assert(vol->fp); }
 
 Volume* vol_open(const String path, int mode, off_t offset, size_t length, size_t block_size)
 {
@@ -89,16 +89,20 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
     debug("Reading from volume at (%jd, %zu)", (intmax_t)offset, size);
     
     // Range checks
-    if (vol->length && offset > vol->length)
+    if (vol->length && offset > vol->length) {
+        debug("Read ignored; beyond end of device.");
         return 0;
+    }
     
     if ( vol->length && (offset + size) > vol->length ) {
         size = vol->length - offset;
         debug("Adjusted read to (%jd, %zu)", (intmax_t)offset, size);
     }
     
-    if (size < 1)
+    if (size < 1) {
+        debug("Read ignored; zero length.");
         return 0;
+    }
     
     // The range starts somewhere in this block.
     size_t start_block = (size_t)(offset / vol->sector_size);
@@ -200,7 +204,7 @@ int vol_close(Volume *vol)
     }
     
     fd = vol->fd;
-    if (malloc_size(vol)) { free(vol); }
+    FREE(vol);
     
     if ( (result = close(fd)) < 0)
         perror("close");

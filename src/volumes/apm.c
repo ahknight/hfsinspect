@@ -186,6 +186,7 @@ int apm_load(Volume *vol)
 }
 
 PartitionOps apm_ops = {
+    .name = "Apple Partition Map",
     .test = apm_test,
     .dump = apm_dump,
     .load = apm_load,

@@ -358,8 +358,7 @@ int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, c
     BTRecNum searchIndex        = 0;
     bool search_result          = false;
     int level                   = depth;
-    bt_nodeid_t history[depth];
-    memset(history, 0, (sizeof(bt_nodeid_t) * depth));
+    bt_nodeid_t history[256]    = {0};
     
     if (level == 0) {
         error("Invalid tree (level 0?)");
