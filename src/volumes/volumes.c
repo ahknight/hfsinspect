@@ -34,8 +34,7 @@ int volumes_load(Volume *vol)
                     warning("Can't load %s partition: load returned failure.", (*ops)->name);
                 } else {
                     debug("Loaded a %s partition.", (*ops)->name);
-//                    (ops)++;
-//                    continue;
+                    break;
                 }
             } else {
                 warning("Can't load %s partition: no load function.", (*ops)->name);

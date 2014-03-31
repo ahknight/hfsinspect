@@ -127,6 +127,7 @@ int hfs_test(Volume *vol)
 /** returns the first HFS+ volume in a tree of volumes */
 Volume* hfs_find(Volume* vol)
 {
+    debug("hfs_find");
     Volume *result = NULL;
     int test = hfs_test(vol);
 

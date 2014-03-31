@@ -36,6 +36,8 @@ int cs_verify_block(const CSVolumeHeader* vh, const Byte* block, size_t nbytes)
         }
         
         return 0;
+//    } else {
+//        debug("Unknown checksum algo: %u", vh->checksum_algo);
     }
     
     return -1;
@@ -92,9 +94,9 @@ int cs_test(Volume* vol)
 {
     debug("CS test");
     
-    CSVolumeHeader header;
+    CSVolumeHeader header = {{0}};
     
-    if ( cs_get_volume_header(vol, &header) < 0) { perror("get cs header"); return -1; }
+    if ( cs_get_volume_header(vol, &header) < 0) { return -1; }
     
     if ( memcmp(&header.signature, "CS", 2) == 0 ) { debug("Found a CS pmap."); /* cs_dump(vol); */ return 1; }
     

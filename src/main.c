@@ -946,7 +946,7 @@ OPEN:
 #pragma mark Find HFS Volume
     
     // Device loaded. Find the first HFS+ filesystem.
-    printf("%p\n", vol);
+    debug("Looking for HFS filesystems on %s.", basename((char*)&vol->source));
     Volume *tmp = hfs_find(vol);
     if (tmp == NULL) {
         // No HFS Plus volumes found.

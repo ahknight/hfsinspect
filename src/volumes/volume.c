@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <libgen.h>
 
 #if defined (__APPLE__)
 #include <sys/disk.h>
@@ -105,7 +106,7 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
 {
     ASSERT_VOL(vol);
 
-    debug("Reading from volume at (%jd, %zu)", (intmax_t)offset, size);
+    debug("Reading from volume %s+%llu at (%jd, %zu)", basename((char*)&vol->source), vol->offset, (intmax_t)offset, size);
     
     // Range checks
     if (vol->length && offset > vol->length) {
@@ -238,8 +239,16 @@ Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t lengt
     Volume* newvol;
     ALLOC(newvol, sizeof(Volume));
     
-    newvol->fd = dup(vol->fd);
-    newvol->fp = fdopen(vol->fd, "r"); // Copies are read-only for now.
+    if( (newvol->fd = dup(vol->fd)) < 0) {
+        FREE(newvol);
+        perror("dup");
+        return NULL;
+    }
+    if( (newvol->fp = fdopen(vol->fd, "r")) == NULL) {
+        FREE(newvol);
+        perror("fdopen");
+        return NULL;
+    }
     memcpy(newvol->source, vol->source, PATH_MAX);
     
     newvol->offset = offset;
