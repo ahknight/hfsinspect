@@ -13,6 +13,8 @@
 
 #pragma mark - Structures
 
+#define APM_SIG "PM"
+
 // 136 bytes (512 reserved on-disk)
 typedef struct APMHeader APMHeader;
 struct APMHeader {

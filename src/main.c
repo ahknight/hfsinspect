@@ -925,13 +925,11 @@ OPEN:
                 (void)strlcpy(HIOptions.device_path, newDevicePath, PATH_MAX);
                 goto OPEN;
             }
-            perror("vol_qopen");
-            exit(errno);
+            die(errno, "vol_qopen");
             
         } else {
-            perror("vol_qopen");
             error("could not open %s", HIOptions.device_path);
-            exit(errno);
+            die(errno, "vol_qopen");
         }
     }
 
@@ -956,8 +954,7 @@ OPEN:
     }
     
     if (hfs_open(&HIOptions.hfs, vol) < 0) {
-        perror("hfs_attach");
-        exit(1);
+        die(1, "hfs_attach");
     }
     
     uid_t uid = 99;
@@ -973,8 +970,7 @@ OPEN:
         struct stat dirstat = {0};
         int result = stat(dir, &dirstat);
         if (result == -1) {
-            perror("stat");
-            exit(1);
+            die(errno, "stat");
         }
         
         uid = dirstat.st_uid;

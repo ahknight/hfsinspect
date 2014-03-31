@@ -90,29 +90,26 @@ int hfs_test(Volume *vol)
     int type = kTypeUnknown;
     
     // First, test for HFS or wrapped HFS+ volumes.
-    HFSMasterDirectoryBlock *mdb = calloc(1, 512);
+    HFSMasterDirectoryBlock mdb = {0};
     
-    if ( hfs_load_mbd(vol, mdb) < 0) {
-        FREE(mdb);
+    if ( hfs_load_mbd(vol, &mdb) < 0) {
         return -1;
     }
 
-    if (mdb->drSigWord == kHFSSigWord && mdb->drEmbedSigWord == kHFSPlusSigWord) {
+    if (mdb.drSigWord == kHFSSigWord && mdb.drEmbedSigWord == kHFSPlusSigWord) {
         info("Found a wrapped HFS+ volume");
         type = kFSTypeWrappedHFSPlus;
         
-    } else if (mdb->drSigWord == kHFSSigWord) {
+    } else if (mdb.drSigWord == kHFSSigWord) {
         info("Found an HFS volume");
         type = kFSTypeHFS;
     }
-    
-    FREE(mdb);
     
     if (type != kTypeUnknown)
         return type;
     
     // Now test for a modern HFS+ volume.
-    HFSPlusVolumeHeader vh;
+    HFSPlusVolumeHeader vh = {0};
     
     if ( hfs_load_header(vol, &vh) < 0 )
         return -1;

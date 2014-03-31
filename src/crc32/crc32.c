@@ -64,10 +64,10 @@ static const uint32_t crc32_table_enet[256] = {
     0x2d02ef8dL
 };
 
-uint32_t crc32 (uint32_t crc, void *buf, size_t len)
+uint32_t crc32 (uint32_t crc, const void *buf, size_t len)
 {
-    uint8_t *buf_p = buf;
-    uint8_t *buf_end = buf_p + len;
+    const uint8_t *buf_p = buf;
+    const uint8_t *buf_end = buf_p + len;
     
     crc = ~crc;
     while (buf_p < buf_end)

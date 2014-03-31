@@ -15,6 +15,8 @@
 
 #pragma mark - Structures
 
+#define GPT_SIG "EFI PART"
+
 /*
  http://developer.apple.com/library/mac/#technotes/tn2166/_index.html
  
@@ -96,7 +98,7 @@ static uint64_t kGPTMSNoAutomount       _UNUSED = 0x8000000000000000; //63
 
 extern PartitionOps gpt_ops;
 
-uuid_t*     gpt_swap_uuid           (uuid_t* uuid) _NONNULL;
+void        gpt_swap_uuid           (uuid_t *uuid_p, const uuid_t* uuid) _NONNULL;
 const char* gpt_partition_type_str  (uuid_t uuid, VolType* hint);
 
 /**

@@ -155,16 +155,36 @@ int LogLine(enum LogLevel level, const char* format, ...)
     int nchars = 0;
     
     static FILE* streams[6] = {0};
+
+#define USE_EMOJI 0
+
+    char* prefixes[6] = {
+#if USE_EMOJI
+        "❕",
+        "⛔️",
+        "🚸 ",
+        "🆗 ",
+        "ℹ️",
+        "🐞 ",
+#else
+        "! ",
+        "E ",
+        "W ",
+        "  ",
+        "I ",
+        "D ",
+#endif
+    };
     
     if (streams[0] == NULL) {
-        streams[L_CRITICAL] = prefixstream(stderr, "❕ ");
-        streams[L_ERROR]    = prefixstream(stderr, "⛔️ ");
-        streams[L_WARNING]  = prefixstream(stderr, "🚸 ");
-        streams[L_STANDARD] = prefixstream(stdout, "🆗 ");
+        streams[L_CRITICAL] = prefixstream(stderr, prefixes[L_CRITICAL]);
+        streams[L_ERROR]    = prefixstream(stderr, prefixes[L_ERROR]);
+        streams[L_WARNING]  = prefixstream(stderr, prefixes[L_WARNING]);
+        streams[L_STANDARD] = prefixstream(stdout, prefixes[L_STANDARD]);
         
         if (DEBUG) {
-            streams[L_INFO]     = prefixstream(stderr, "ℹ️ ");
-            streams[L_DEBUG]    = prefixstream(stderr, "🐞 ");
+            streams[L_INFO]     = prefixstream(stderr, prefixes[L_INFO]);
+            streams[L_DEBUG]    = prefixstream(stderr, prefixes[L_DEBUG]);
         } else {
             streams[L_INFO]     = nullstream();
             streams[L_DEBUG]    = nullstream();

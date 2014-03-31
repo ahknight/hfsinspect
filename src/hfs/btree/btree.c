@@ -38,8 +38,7 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
         bTree->nodeBitmapSize = record.recordLen;
         
         // Initially allocate space for up to 16 nodes.
-        bTree->nodeBitmap = calloc(bTree->headerRecord.nodeSize * 16, 1);
-        assert(bTree->nodeBitmap != NULL);
+        ALLOC(bTree->nodeBitmap, bTree->headerRecord.nodeSize * 16);
         memcpy(bTree->nodeBitmap, record.record, record.recordLen);
         
         // Concat any linked map node records

@@ -12,22 +12,24 @@
 #include "misc/stringtools.h"
 #include "crc32/crc32.h"
 
-int _gpt_valid_header(GPTHeader header);
-int _gpt_valid_pmap(GPTHeader *header, GPTPartitionRecord *pmap);
+int         _gpt_valid_header       (GPTHeader header);
+int         _gpt_valid_pmap         (GPTHeader header, const GPTPartitionRecord *pmap);
+void        _gpt_print_header       (const GPTHeader *header_p, const Volume *vol);
+void        _gpt_print_partitions   (const GPTHeader *header_p, const GPTPartitionRecord *entries_p, Volume *vol);
+void        _gpt_swap_uuid          (uuid_t *uuid_p, const uuid_t* uuid);
+const char* _gpt_partition_type_str (uuid_t uuid, VolType* hint);
 
 
-uuid_t* gpt_swap_uuid(uuid_t* uuid)
+void _gpt_swap_uuid(uuid_t *uuid_p, const uuid_t* uuid)
 {
     // Because these UUIDs are fucked up.
-    void* uuid_buf = uuid;
-    *( (uint32_t*) uuid + 0 ) = be32toh(*( (uint32_t*)uuid_buf + 0 ));
-    *( (uint16_t*) uuid + 2 ) = be16toh(*( (uint16_t*)uuid_buf + 2 ));
-    *( (uint16_t*) uuid + 3 ) = be16toh(*( (uint16_t*)uuid_buf + 3 ));
-    *( (uint64_t*) uuid + 1 ) =         *( (uint64_t*)uuid_buf + 1 );
-    return uuid;
+    *( (uint32_t*) uuid_p + 0 ) = be32toh(*( (uint32_t*)uuid + 0 ));
+    *( (uint16_t*) uuid_p + 2 ) = be16toh(*( (uint16_t*)uuid + 2 ));
+    *( (uint16_t*) uuid_p + 3 ) = be16toh(*( (uint16_t*)uuid + 3 ));
+    *( (uint64_t*) uuid_p + 1 ) =         *( (uint64_t*)uuid + 1 );
 }
 
-const char* gpt_partition_type_str(uuid_t uuid, VolType* hint)
+const char* _gpt_partition_type_str(uuid_t uuid, VolType* hint)
 {
     for(int i=0; gpt_partition_types[i].name[0] != '\0'; i++) {
         uuid_t test;
@@ -58,15 +60,18 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
         offset = vol->sector_size;
         length = sizeof(GPTHeader);
         
+        // Load an MBR record, if available.
         if ( mbr_load_header(vol, &mbr) < 0 )
             return -1;
         
+        // Update the offset of the GPT table, if known.
         if (mbr.partitions[0].type == kMBRTypeGPTProtective) {
-            vol->sector_size = 512;
+//            vol->sector_size = 512;
             offset = (mbr.partitions[0].first_sector_lba * vol->sector_size);
         }
         
-        if ( vol_read(vol, (Bytes)&header, length, offset) < 0 )
+        // Read the GPT header.
+        if ( vol_read(vol, &header, length, offset) < 0 )
             return -1;
     }
     
@@ -90,7 +95,7 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
             return -1;
         
         // Verify the partition map.
-        if (_gpt_valid_pmap(&header, (GPTPartitionRecord*)buf) != true)
+        if (_gpt_valid_pmap(header, (GPTPartitionRecord*)buf) != true)
             return -1;
         else
             debug("GPT partition map CRC OK!");
@@ -121,34 +126,43 @@ int gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *entr
 
 int _gpt_valid_header(GPTHeader header)
 {
-    uint32_t crc = 0, header_crc = header.crc;
+    uint32_t crc = 0, header_crc = 0;
     
-    if (memcmp(&header.signature, "EFI PART", 8) != 0) {
+    if (memcmp(&header.signature, GPT_SIG, 8) != 0) {
         debug("Invalid GPT signature.");
         return false;
     }
-
+    
+    if (header.partitions_entry_size != sizeof(GPTPartitionEntry)) {
+        debug("Invalid GPT partition entry size; reports a size of %u while it should be %zu.", header.partitions_entry_size, sizeof(GPTPartitionEntry));
+    }
+    
+    if (header.partitions_entry_count > 128) {
+        warning("Only GPT partition tables up to 128 partitions are supported; the %u addtional partitions will be ignored.", header.partitions_entry_count - 128);
+        header.partitions_entry_count = 128;
+    }
+    
     if (header.header_size != sizeof(GPTHeader)) {
         debug("Invalid GPT header size; reports a size of %u while it should be %zu.", header.header_size, sizeof(GPTHeader));
         return false;
     }
     
     // The CRC is calculated with the checksum field zeroed.
+    header_crc = header.crc;
     header.crc = 0;
     crc = crc32(0, &header, header.header_size);
-    header.crc = header_crc;
     
     if (crc != header_crc) {
-        debug("Invalid or corrupt GPT header: bad CRC; expected %#010x; got %#010x.", header_crc, crc);
-        return false;
+        warning("Invalid or corrupt GPT header: bad CRC; expected %#010x; got %#010x.", header_crc, crc);
+//        return false;
     }
     
     return true;
 }
 
-int _gpt_valid_pmap(GPTHeader *header, GPTPartitionRecord *pmap)
+int _gpt_valid_pmap(GPTHeader header, const GPTPartitionRecord *pmap)
 {
-    uint32_t crc = 0, header_crc = header->partition_table_crc;
+    uint32_t crc = 0, header_crc = header.partition_table_crc;
     
     crc = crc32(crc, pmap, sizeof(GPTPartitionRecord));
     if (crc != header_crc) {
@@ -172,28 +186,33 @@ int gpt_test(Volume *vol)
     // So, we read 16KB and search.  Upside: if we find it, we update the
     // sector size to indicate that since it's always at LBA 1. :)
     
-    size_t maxLBA = 16*1024;
-    size_t haystackSize = maxLBA + sizeof(GPTHeader);
-    char* haystack = calloc(1, haystackSize);
+    char *haystack, *found;
+    GPTHeader header;
     ssize_t nbytes = 0;
-    if ( (nbytes = vol_read(vol, (Bytes)haystack, haystackSize, 0)) < 0) {
+    size_t blockSize = 0, maxLBA = 16*1024;
+    size_t haystackSize = maxLBA + sizeof(GPTHeader);
+    
+    ALLOC(haystack, haystackSize);
+    if ( (nbytes = vol_read(vol, haystack, haystackSize, 0)) < 0 ) {
         FREE(haystack);
         return -1;
     }
     
-    char* needle = "EFI PART";
-    char* found = memmem(haystack, haystackSize, needle, 8);
+    found = memmem(haystack, haystackSize, GPT_SIG, 8);
     
     if (found == NULL) { FREE(haystack); return false; }
     
+    blockSize = (found - haystack);
+    header = *(GPTHeader*)found;
+    debug("Suspect a GPT header at offset %#0lx.", blockSize);
+    
     // Verify this is a valid GPT header.
-    if ( _gpt_valid_header(*(GPTHeader*)found) != true )
+    if ( _gpt_valid_header(header) != true )
         return false;
     
     // found is a pointer to the location of the string, which starts the block.
     // Calculate the LBA used to format the drive using this information.
     // Presume LBAs are in the range 512 to 16K..
-    size_t blockSize = (found - haystack);
     if (blockSize >= 512 && blockSize <= haystackSize) {
         debug("Updating volume sector size from %u to %zu.", vol->sector_size, blockSize);
         vol->sector_size = blockSize;
@@ -206,15 +225,6 @@ int gpt_test(Volume *vol)
     found = NULL;
     
     return true;
-
-//    // How it SHOULD work.
-//    GPTHeader header = {0};
-//    if ( gpt_load_header(vol, &header, NULL) < 0 )
-//        return -1;
-//    
-//    if (memcmp(&header.signature, "EFI PART", 8) == 0) { debug("Found a GPT pmap."); return 1; }
-//    
-//    return 0;
 }
 
 /**
@@ -240,7 +250,7 @@ int gpt_load(Volume *vol)
     // Iterate over the partitions and update the volume record
     FOR_UNTIL(i, header.partitions_entry_count) {
         uuid_string_t uuid_str = "";
-        uuid_t* uuid_ptr = NULL;
+        uuid_t uuid = {0};
         GPTPartitionEntry partition;
         
         // Grab the next partition structure
@@ -256,10 +266,10 @@ int gpt_load(Volume *vol)
         Volume *p = vol_make_partition(vol, i, offset, length);
         
         // Update partition type with hint
-        uuid_ptr = gpt_swap_uuid(&partition.type_uuid);
-        uuid_unparse(*uuid_ptr, uuid_str);
+        _gpt_swap_uuid(&uuid, &partition.type_uuid);
+        uuid_unparse(uuid, uuid_str);
         VolType type = {0};
-        const char * desc = gpt_partition_type_str(*uuid_ptr, &type);
+        const char * desc = _gpt_partition_type_str(uuid, &type);
         p->type = type;
         
         wchar_t wcname[100] = {'\0'};
@@ -277,29 +287,13 @@ int gpt_load(Volume *vol)
     return 0;
 }
 
-/**
- Prints a description of the GPT structure and partition information to stdout.
- @return Returns -1 on error (check errno), 0 for success.
- */
-int gpt_dump(Volume *vol)
+void _gpt_print_header(const GPTHeader *header_p, const Volume *vol)
 {
-    debug("GPT dump");
-    
     uuid_string_t uuid_str = "";
-    uuid_t* uuid_ptr = NULL;
+    uuid_t uuid = {0};
+    _gpt_swap_uuid(&uuid, &header_p->uuid);
+    uuid_unparse(uuid, uuid_str);
     
-    GPTHeader header = {0};
-    GPTPartitionRecord entries = {{{0}}};
-    
-    if ( gpt_load_header(vol, &header, &entries) < 0)
-        return -1;
-    
-    uuid_ptr = gpt_swap_uuid(&header.uuid);
-    uuid_unparse(*uuid_ptr, uuid_str);
-    
-    GPTHeader *header_p = &header;
-    
-    BeginSection("GPT Partition Map");
     PrintUIHex              (header_p, revision);
     PrintDataLength         (header_p, header_size);
     PrintUIHex              (header_p, crc);
@@ -308,41 +302,72 @@ int gpt_dump(Volume *vol)
     PrintUI                 (header_p, backup_lba);
     PrintUI                 (header_p, first_lba);
     PrintUI                 (header_p, last_lba);
-    _PrintDataLength        ("(size)", (header.last_lba * vol->sector_size) - (header.first_lba * vol->sector_size) );
-    PrintAttribute    ("uuid", uuid_str);
+    if (vol != NULL)
+        _PrintDataLength ("(size)", (header_p->last_lba * vol->sector_size) - (header_p->first_lba * vol->sector_size) );
+    
+    PrintAttribute          ("uuid", uuid_str);
     PrintUI                 (header_p, partition_table_start_lba);
     PrintUI                 (header_p, partitions_entry_count);
     PrintDataLength         (header_p, partitions_entry_size);
     PrintUIHex              (header_p, partition_table_crc);
-    
-    FOR_UNTIL(i, header.partitions_entry_count) {
+}
+
+void _gpt_print_partitions(const GPTHeader *header_p, const GPTPartitionRecord *entries_p, Volume *vol)
+{
+    uuid_string_t uuid_str = "";
+    uuid_t uuid = {0};
+    wchar_t name[37] = {0};
+
+    FOR_UNTIL(i, header_p->partitions_entry_count) {
         const char* type = NULL;
         
-        GPTPartitionEntry partition = entries[i];
+        GPTPartitionEntry partition = (*entries_p)[i];
         
         if (partition.first_lba == 0 && partition.last_lba == 0) break;
         
         BeginSection("Partition: %d (%llu)", i + 1, (partition.first_lba * vol->sector_size));
         
-        uuid_ptr = gpt_swap_uuid(&partition.type_uuid);
-        uuid_unparse(*uuid_ptr, uuid_str);
-        type = gpt_partition_type_str(*uuid_ptr, NULL);
-        PrintAttribute("type", "%s (%s)", type, uuid_str);
+        _gpt_swap_uuid(&uuid, &partition.type_uuid);
+        uuid_unparse(uuid, uuid_str);
+        type = _gpt_partition_type_str(uuid, NULL);
+        PrintAttribute("type", "%s (%s)", type, uuid);
         
-        uuid_ptr = gpt_swap_uuid(&partition.uuid);
-        uuid_unparse(*uuid_ptr, uuid_str);
+        _gpt_swap_uuid(&uuid, &partition.uuid);
+        uuid_unparse(uuid, uuid_str);
         PrintAttribute("uuid", "%s", uuid_str);
         
         PrintAttribute("first_lba", "%llu", partition.first_lba);
         PrintAttribute("last_lba", "%llu", partition.last_lba);
         _PrintDataLength("(size)", (partition.last_lba * vol->sector_size) - (partition.first_lba * vol->sector_size) );
         _PrintRawAttribute("attributes", &partition.attributes, sizeof(partition.attributes), 2);
-        wchar_t name[37] = {0};
         for(int c = 0; c < 37; c++) name[c] = partition.name[c];
         name[36] = '\0';
         PrintAttribute("name", "%ls", name);
         EndSection();
     }
+}
+
+/**
+ Prints a description of the GPT structure and partition information to stdout.
+ @return Returns -1 on error (check errno), 0 for success.
+ */
+int gpt_dump(Volume *vol)
+{
+    debug("GPT dump");
+    
+    GPTHeader header = {0};
+    GPTPartitionRecord entries = {{{0}}};
+    
+    if ( gpt_load_header(vol, &header, &entries) < 0)
+        return -1;
+    
+    GPTHeader *header_p = &header;
+    GPTPartitionRecord *entries_p = &entries;
+    
+    BeginSection("GPT Partition Map");
+    
+    _gpt_print_header(header_p, vol);
+    _gpt_print_partitions(header_p, entries_p, vol);
     
     EndSection();
     

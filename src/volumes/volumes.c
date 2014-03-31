@@ -12,8 +12,8 @@
 PartitionOps* partitionTypes[] = {
     &gpt_ops,
     &apm_ops,
-    &mbr_ops,
     &cs_ops,
+    &mbr_ops,
     &((PartitionOps){"", NULL, NULL, NULL})
 };
 
@@ -23,6 +23,7 @@ int volumes_load(Volume *vol)
     
     PartitionOps** ops = (PartitionOps**)&partitionTypes;
     while ((*ops)->test != NULL) {
+        info("Testing for a %s partition.", (*ops)->name);
         if ((*ops)->test(vol) == 1) {
             info("Detected a %s partition.", (*ops)->name);
             if (DEBUG && (*ops)->dump != NULL) {
@@ -33,9 +34,9 @@ int volumes_load(Volume *vol)
                     warning("Can't load %s partition: load returned failure.", (*ops)->name);
                 } else {
                     debug("Loaded a %s partition.", (*ops)->name);
+//                    (ops)++;
+//                    continue;
                 }
-                (ops)++;
-                continue; // try another
             } else {
                 warning("Can't load %s partition: no load function.", (*ops)->name);
             }

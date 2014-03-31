@@ -56,17 +56,31 @@ int apm_get_volume_header(Volume* vol, APMHeader* header)
 
 /**
  Tests a volume to see if it contains an APM partition map.
+ Note that APM volumes can have block sizes of 512, 1K or 2K.
  @return Returns -1 on error (check errno), 0 for NO, 1 for YES.
  */
 int apm_test(Volume* vol)
 {
     debug("APM test");
     
-    APMHeader header;
-    if ( apm_get_volume_header(vol, &header) < 0)
+    uint8_t *buf;
+    ALLOC(buf, 4096);
+    
+    if ( vol_read(vol, buf, 4096, 0) < 0 )
         return -1;
     
-    if (memcmp(&header.signature, "MP", 2) == 0)  { debug("Found an APM pmap."); return 1; }
+    if ( memcmp(buf+512, APM_SIG, 2) == 0 ) {
+        vol->sector_size = 512;
+        return 1;
+
+    } else if ( memcmp(buf+1024, APM_SIG, 2) == 0 ) {
+        vol->sector_size = 1024;
+        return 1;
+
+    } else if ( memcmp(buf+2048, APM_SIG, 2) == 0 ) {
+        vol->sector_size = 2048;
+        return 1;
+    }
     
     return 0;
 }
@@ -81,7 +95,8 @@ int apm_dump(Volume* vol)
     
     unsigned partitionID = 1;
     
-    APMHeader* header = calloc(1, sizeof(APMHeader));
+    APMHeader* header;
+    ALLOC(header, sizeof(APMHeader));
     
     BeginSection("Apple Partition Map");
     
@@ -161,7 +176,7 @@ int apm_load(Volume *vol)
         if ( apm_get_header(vol, &header, partitionID) < 0 )
             return -1;
         
-        size_t sector_size  = 512;
+        size_t sector_size  = vol->sector_size;
         off_t offset        = header.partition_start * sector_size;
         size_t length       = header.partition_length * sector_size;
         

@@ -87,7 +87,7 @@ CacheRecordPtr cache_record_new_(Cache cache)
     if (cache == NULL) return NULL;
     
     // Create and insert a new record.
-    CacheRecordPtr record = calloc(1, sizeof(CacheRecord));
+    CacheRecordPtr record = calloc(sizeof(CacheRecord), 1);
     if (record == NULL) return NULL;
     
     insque(record, cache->records);
@@ -146,13 +146,13 @@ int cache_init(Cache* cache, uint64_t num_records)
 {
     ASSERT_PTR(cache);
     
-    *cache = calloc(1, sizeof(struct _Cache));
+    *cache = calloc(sizeof(struct _Cache), 1);
     if (*cache == NULL) return -1;
     
     Cache c = *cache;
     c->max_records = num_records;
     c->record_count = 0;
-    c->records = calloc(1, sizeof(CacheRecord));
+    c->records = calloc(sizeof(CacheRecord), 1);
     
     return 0;
 }
@@ -209,7 +209,7 @@ int cache_set(Cache cache, const char* buf, size_t len, ckey_t key)
     
     record->key = key;
     record->datalen = len;
-    if ( (record->data = calloc(1, record->datalen)) == NULL) { free(record); goto ERROR; }
+    if ( (record->data = calloc(record->datalen, 1)) == NULL) { free(record); goto ERROR; }
     memcpy(record->data, buf, record->datalen);
     
     void* ref = NULL;
