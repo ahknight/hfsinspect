@@ -1,2 +1,2 @@
 # Presumes LLVM/Clang
-CFLAGS += -std=c11 -Wpedantic -Wno-four-char-constants
+CFLAGS += -Wpedantic -Wno-four-char-constants

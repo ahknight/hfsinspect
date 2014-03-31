@@ -1,4 +1,4 @@
-CFLAGS += -Wall -msse4.2 -Isrc -include src/hfsinspect-Prefix.pch
+CFLAGS += -std=c11 -Isrc -include src/hfsinspect-Prefix.pch -Wall -msse4.2
 CFLAGS += -g -O0 #debug
 
 OS := $(shell uname -s)

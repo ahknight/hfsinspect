@@ -694,11 +694,13 @@ void die(int val, String format, ...)
     va_end(args);
     
     if (errno > 0) perror(str);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-security"
     
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wformat-security"
     error(str);
-#pragma clang diagnostic pop
+    
+#pragma GCC diagnostic pop
     
     exit(val);
 }
