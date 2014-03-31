@@ -8,5 +8,5 @@ mkdir -p "bin/$UNAME"
 # Ubuntu Prerequisites
 if [[ $UNAME = 'Linux' ]]
     then
-    sudo apt-get install uuid-dev
+    sudo apt-get install uuid-dev libbsd-dev
 fi
