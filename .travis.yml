@@ -2,9 +2,18 @@ language: c
 compiler:
   - gcc
   - clang
-before_install: bash .travis_setup.sh
-script: make clean test
 branches:
   only:
     - master
     - develop
+notifications:
+  email:
+    - adam@movq.us
+env: DEBUG=1
+before_install:
+  - 'mkdir -p "build"'
+  - "[[ $(uname -s) = 'Linux' ]] && sudo apt-get update -qq"
+install:
+  - "[[ $(uname -s) = 'Linux' ]] && sudo apt-get install libbsd-dev uuid-dev -qq"
+script:
+  - make test
