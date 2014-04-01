@@ -40,7 +40,6 @@ int hfs_get_catalog_btree(BTreePtr *tree, const HFS *hfs)
 
         if ( hfsfork_get_special(&fork, hfs, kHFSCatalogFileID) < 0 ) {
             critical("Could not create fork for Catalog B-Tree!");
-            return -1;
         }
         
         fp = fopen_hfsfork(fork);

@@ -30,7 +30,6 @@ int hfs_get_extents_btree(BTreePtr *tree, const HFS *hfs)
         HFSFork *fork;
         if ( hfsfork_get_special(&fork, hfs, kHFSExtentsFileID) < 0 ) {
             critical("Could not create fork for Extents B-Tree!");
-            return -1;
         }
         FILE* fp = fopen_hfsfork(fork);
         if (fp == NULL)

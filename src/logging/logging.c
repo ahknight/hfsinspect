@@ -215,7 +215,7 @@ int LogLine(enum LogLevel level, const char* format, ...)
         raise(SIGTRAP);
     }
     
-    if (level == L_CRITICAL)
+    if (!DEBUG && level == L_CRITICAL)
         exit(1);
     
     return nchars;

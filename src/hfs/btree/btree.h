@@ -12,7 +12,6 @@
 #include "misc/cache.h"
 #include "hfs/Apple/hfs_format.h"
 #include "hfs/Apple/hfs_macos_defs.h"
-#include <stdint.h>
 
 typedef BytePtr     Bytes;
 typedef BTreeKey    *BTreeKeyPtr;

@@ -59,7 +59,6 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
                 bTree->nodeBitmap = realloc(bTree->nodeBitmap, bTree->nodeBitmapSize);
                 if (bTree->nodeBitmap == NULL) {
                     critical("Could not allocate memory for tree bitmap.");
-                    exit(errno);
                 }
             }
             
@@ -138,7 +137,6 @@ BTRecOffset BTGetRecordOffset(const BTreeNodePtr node, uint8_t recNum)
     if ( offsets[recordCount] != 14 ) {
         memdump(stderr, node->data, node->nodeSize, 16, 4, 4, DUMP_FULL);
         critical("Bad sentinel @ %ld! (%d != 14)", ((char*)offsets - (char*)node->data) + recordCount, offsets[recordCount]); /*sizeof(BTNodeDescriptor)*/
-        exit(1);
     };
     result = offsets[recordCount - recNum];
     
@@ -412,7 +410,6 @@ int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, c
         if (searchNode->nodeDescriptor->height != level) {
             // Nodes have a specific height.  This one fails.
             critical("Node found at unexpected height (got %d; expected %d).", searchNode->nodeDescriptor->height, level);
-            exit(1);
         }
         if (level == 1) {
             if (searchNode->nodeDescriptor->kind != kBTLeafNode) {

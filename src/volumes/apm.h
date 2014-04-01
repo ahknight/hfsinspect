@@ -9,7 +9,7 @@
 #ifndef volumes_apm_h
 #define volumes_apm_h
 
-#include "../hfs/hfs_types.h"
+#include "hfs/hfs_types.h"
 
 #pragma mark - Structures
 

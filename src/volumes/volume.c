@@ -50,7 +50,7 @@ int vol_open(Volume* vol, const String path, int mode, off_t offset, size_t leng
         vol->sector_count = (length / block_size);
     } else {
         vol->length         = s.st_size;
-        vol->sector_size    = s.st_blksize;
+        vol->sector_size    = S_BLKSIZE;
         vol->sector_count   = s.st_blocks;
     }
     
@@ -66,7 +66,7 @@ int vol_open(Volume* vol, const String path, int mode, off_t offset, size_t leng
             ioctl(vol->fd, DKIOCGETBLOCKSIZE, &bs);
             
             vol->sector_count    = ( (bc != 0) ? bc : s.st_blocks);
-            vol->sector_size     = ( (bs != 0) ? bs : s.st_blksize);
+            vol->sector_size     = ( (bs != 0) ? bs : S_BLKSIZE);
             
 #elif defined (__linux__)
             unsigned int bs = 0;
@@ -75,7 +75,7 @@ int vol_open(Volume* vol, const String path, int mode, off_t offset, size_t leng
             ioctl(vol->fd, BLKSSZGET, &bs);     // BLKBSZGET is the physical sector size; BLKSSZGET is the logical. Probably.
             ioctl(vol->fd, BLKGETSIZE64, &ds);  // Logical device size in bytes
             
-            vol->sector_size = ( (bs != 0) ? bs : s.st_blksize);
+            vol->sector_size = ( (bs != 0) ? bs : S_BLKSIZE);
             vol->length = ( (ds != 0) ? ds : s.st_size);
             vol->sector_count = vol->length / vol->sector_size;
 #endif

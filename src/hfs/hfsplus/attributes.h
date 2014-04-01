@@ -9,6 +9,7 @@
 #ifndef hfsinspect_hfs_attribute_ops_h
 #define hfsinspect_hfs_attribute_ops_h
 
+#include "types.h"
 #include "hfs/hfs_types.h"
 
 int hfs_get_attribute_btree     (BTreePtr *tree, const HFS *hfs) _NONNULL;

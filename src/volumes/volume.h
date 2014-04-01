@@ -10,13 +10,11 @@
 #define volumes_volume_h
 
 #include <sys/param.h>          //PATH_MAX
-#include "hfs/Apple/hfs_macos_defs.h"
+#include "types.h"
 
 #pragma mark - Structures
 
 typedef uint32_t VolType;
-typedef char*    String;
-typedef BytePtr  Bytes;
 
 enum {
     kTypeUnknown                = 0,

@@ -1008,7 +1008,7 @@ void PrintFolderListing(uint32_t folderID)
     debug("Printing listing for folder ID %d", folderID);
 
     // CNID kind mode user group data rsrc name
-    char lineStr[110];
+    char lineStr[110] = {0};
     memset(lineStr, '-', 100);
     char* headerFormat  = "%-9s %-10s %-10s %-9s %-9s %-15s %-15s %s";
     char* rowFormat     = "%-9u %-10s %-10s %-9d %-9d %-15s %-15s %ls";
