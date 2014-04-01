@@ -286,7 +286,9 @@ void showPathInfo(void)
         error("Path not found: %s", HIOptions.file_path);
         return;
     }
-    
+    wchar_t name[255] = {0};
+    hfsuctowcs(name, &spec.name);
+    debug("Showing catalog record for %d:%ls.", spec.parentID, name);
     showCatalogRecord(spec, false);
     
     if (catalogRecord.record_type == kHFSFileRecord) {

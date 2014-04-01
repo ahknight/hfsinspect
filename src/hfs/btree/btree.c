@@ -89,6 +89,17 @@ bool BTIsBlockUsed(uint32_t thisAllocationBlock, void *allocationFileContents, s
     return (thisByte & (1 << (7 - (thisAllocationBlock % 8)))) != 0;
 }
 
+void PrintBTNodeRecord(BTNodeRecordPtr record)
+{
+    BeginSection("Node %u, Record %u (Tree %u)", record->node->nodeNumber, record->recNum, record->node->bTree->treeID);
+    PrintUI(record, offset);
+    PrintUI(record, recordLen);
+    PrintUI(record, keyLen);
+    PrintRawAttribute(record, key, 16);
+    PrintUI(record, valueLen);
+    EndSection();
+}
+
 int BTGetBTNodeRecord(BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum recNum)
 {
     assert(record);
@@ -112,6 +123,8 @@ int BTGetBTNodeRecord(BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum 
     record->value       = (record->record + record->keyLen);
     record->valueLen    = record->recordLen - record->keyLen;
     record->valueLen   += (record->valueLen % 2);
+    
+//    PrintBTNodeRecord(record);
     
     return 0;
 }
@@ -171,9 +184,12 @@ uint16_t BTGetRecordKeyLength(const BTreeNodePtr node, uint8_t recNum)
     }
     
     // Handle too-long keys
-    if (keySize > headerRecord.maxKeyLength)
+    // Note that while this will let us fight another day, it generally means Things Are Bad.
+    if (keySize > headerRecord.maxKeyLength) {
+        warning("Key length for (tree %u, node %u, record %u) was %u; the maximum for this B-tree is %u.", node->treeID, node->nodeNumber, recNum, keySize, headerRecord.maxKeyLength);
         keySize = headerRecord.maxKeyLength;
-    
+    }
+
     // Adjust for the initial key length field
     keySize += (
                 (headerRecord.attributes & kBTBigKeysMask) ?

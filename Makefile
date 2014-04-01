@@ -21,8 +21,8 @@ vpath %.c src
 .PHONY: all test docs clean distclean
 .NOTPARALLEL:
 
-all: hfsinspect
-everything: hfsinspect docs
+all: $(BINARYPATH)
+everything: $(BINARYPATH) docs
 clean: clean-hfsinspect
 distclean: clean-test clean-docs
 	$(RM) -r build
@@ -46,7 +46,7 @@ clean-test:
 
 
 
-hfsinspect: $(OBJECTS)
+$(BINARYPATH): $(OBJECTS)
 	@echo "Building hfsinspect."
 	@mkdir -p `dirname $(BINARYPATH)`
 	@$(LINK.c) -o $(BINARYPATH) $^ $(LIBS)
@@ -56,7 +56,7 @@ clean-hfsinspect:
 
 
 
-install: hfsinspect
+install: $(BINARYPATH)
 	@echo "Installing hfsinspect in $(PREFIX)"
 	@mkdir -p $(PREFIX)/bin
 	@$(INSTALL) $(BINARYPATH) $(PREFIX)/bin

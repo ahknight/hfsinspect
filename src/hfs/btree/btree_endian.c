@@ -67,7 +67,7 @@ int swap_BTreeNode(BTreeNodePtr node)
     if ( sentinel == 14 ) { warning("Node is already swapped."); return 0; }
     
     // Verify that this is a node in the first place (swap error protection).
-    sentinel = be16toh(sentinel);
+    Swap16(sentinel);
     if ( sentinel != 14 ) {
         warning("Node is not a node (sentinel: %u != 14).", sentinel);
         errno = EINVAL;
@@ -125,7 +125,7 @@ int swap_BTreeNode(BTreeNodePtr node)
         Bytes record = BTGetRecord(node, recordNum);
         BTreeKeyPtr key = (BTreeKey*)(record);
         if (swapKeys) {
-            Swap( key->length16 );
+            Swap16( key->length16 );
         }
         
         switch (nodeDescriptor->kind) {
