@@ -136,7 +136,7 @@ BTRecOffset BTGetRecordOffset(const BTreeNodePtr node, uint8_t recNum)
     BTRecOffsetPtr offsets = ((BTRecOffsetPtr)(node->data + node->nodeSize)) - recordCount - 1;
     if ( offsets[recordCount] != 14 ) {
         memdump(stderr, node->data, node->nodeSize, 16, 4, 4, DUMP_FULL);
-        critical("Bad sentinel @ %ld! (%d != 14)", ((char*)offsets - (char*)node->data) + recordCount, offsets[recordCount]); /*sizeof(BTNodeDescriptor)*/
+        critical("Bad sentinel @ %ld! (%d != 14)", (long)((char*)offsets - (char*)node->data) + recordCount, offsets[recordCount]); /*sizeof(BTNodeDescriptor)*/
     };
     result = offsets[recordCount - recNum];
     

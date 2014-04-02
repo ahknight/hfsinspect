@@ -341,7 +341,7 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord *out_ca
         if (out_catalogRecord != NULL) *out_catalogRecord = catalogRecord;
     }
     
-    free(dup);
+    FREE(dup);
     
     debug("found: %u", found);
     return (found ? 0 : -1);

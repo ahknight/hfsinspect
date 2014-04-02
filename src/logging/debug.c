@@ -22,7 +22,7 @@ int print_trace(FILE* fp, unsigned offset)
     for (i = 0; i < (size - offset); i++) {
         nbytes += fprintf(fp, "%s\n", lines[i]);
     }
-    free(lines);
+    FREE(lines);
     return nbytes;
 }
 

@@ -102,7 +102,7 @@ int apm_dump(Volume* vol)
     
     while (1) {
         int result = apm_get_header(vol, header, partitionID);
-        if (result == -1) { free(header); perror("get APM header"); return -1; }
+        if (result == -1) { FREE(header); perror("get APM header"); return -1; }
         
         char str[33] = "";
         

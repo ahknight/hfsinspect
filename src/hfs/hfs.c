@@ -12,10 +12,17 @@
 
 int hfs_load_mbd(Volume *vol, HFSMasterDirectoryBlock *mdb)
 {
-    if ( vol_read(vol, (Bytes)mdb, sizeof(HFSMasterDirectoryBlock), 1024) < 0)
+    // On IA32, using Clang, the swap function needs a little scratch space
+    // so we read into a larger area, swap there, then copy out.
+    
+    Bytes buf[200] = {0};
+    
+    if ( vol_read(vol, buf, sizeof(HFSMasterDirectoryBlock), 1024) < 0)
         return -1;
     
-    swap_HFSMasterDirectoryBlock(mdb);
+    swap_HFSMasterDirectoryBlock((HFSMasterDirectoryBlock*)buf);
+    
+    memcpy(mdb, buf, sizeof(HFSMasterDirectoryBlock));
     
     return 0;
 }
@@ -87,6 +94,8 @@ int hfs_open(HFS* hfs, Volume *vol)
  */
 int hfs_test(Volume *vol)
 {
+    debug("hfs_test");
+    
     int type = kTypeUnknown;
     
     // First, test for HFS or wrapped HFS+ volumes.

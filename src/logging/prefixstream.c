@@ -18,7 +18,7 @@ struct prefixstream_context {
 
 int prefixstream_close(void * context)
 {
-    free(context);
+    FREE(context);
     return 0;
 }
 
@@ -53,7 +53,7 @@ ssize_t prefixstream_write(void * c, const char * buf, size_t nbytes)
         }
     };
     
-    free(tofree);
+    FREE(tofree);
     
     return nbytes;
 }

@@ -55,5 +55,5 @@ typedef char	uuid_string_t[37];
 
 // Also this.
 #ifndef FREE
-#define FREE(name) { if (malloc_size((name))) memset((name), 0x55, malloc_size((name))); free((name)); (name) = NULL; }
+#define FREE(name) { free((name)); (name) = NULL; }
 #endif

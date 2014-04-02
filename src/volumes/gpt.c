@@ -124,7 +124,7 @@ int _gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *ent
     for (int i = 9; i < 13; i++) {
         size_t block_size = pow(2, i);
         offset = block_size * first_sector_lba;
-        debug("Looking for GPT header at offset %llu", offset);
+        debug("Looking for GPT header at offset %ju", (uintmax_t)offset);
         
         // Read the GPT header.
         if ( vol_read(vol, &header, length, offset) < 0 )
@@ -157,7 +157,7 @@ int _gpt_load_header(Volume *vol, GPTHeader *header_out, GPTPartitionRecord *ent
             return -1;
         
         // Verify the partition map.
-        if (_gpt_valid_pmap(header, (GPTPartitionRecord*)buf) != true)
+        if (_gpt_valid_pmap(header, (const GPTPartitionRecord*)buf) != true)
             return -1;
         else
             debug("GPT partition map CRC OK!");
@@ -226,12 +226,12 @@ void _gpt_print_partitions(const GPTHeader *header_p, const GPTPartitionRecord *
         
         BeginSection("Partition: %d (%llu)", i + 1, (partition.first_lba * vol->sector_size));
         
-        _gpt_swap_uuid(&uuid, &partition.type_uuid);
+        _gpt_swap_uuid(&uuid, (const uuid_t *)&partition.type_uuid);
         uuid_unparse(uuid, uuid_str);
         type = _gpt_partition_type_str(uuid, NULL);
         PrintAttribute("type", "%s (%s)", type, uuid);
         
-        _gpt_swap_uuid(&uuid, &partition.uuid);
+        _gpt_swap_uuid(&uuid, (const uuid_t *)&partition.uuid);
         uuid_unparse(uuid, uuid_str);
         PrintAttribute("uuid", "%s", uuid_str);
         
@@ -346,7 +346,7 @@ int gpt_load(Volume *vol)
         Volume *p = vol_make_partition(vol, i, offset, length);
         
         // Update partition type with hint
-        _gpt_swap_uuid(&uuid, &partition.type_uuid);
+        _gpt_swap_uuid(&uuid, (const uuid_t *)&partition.type_uuid);
         uuid_unparse(uuid, uuid_str);
         VolType type = {0};
         const char * desc = _gpt_partition_type_str(uuid, &type);
@@ -381,13 +381,10 @@ int gpt_dump(Volume *vol)
     if ( _gpt_load_header(vol, &header, &entries) < 0)
         return -1;
     
-    GPTHeader *header_p = &header;
-    GPTPartitionRecord *entries_p = &entries;
-    
     BeginSection("GPT Partition Map");
     
-    _gpt_print_header(header_p, vol);
-    _gpt_print_partitions(header_p, entries_p, vol);
+    _gpt_print_header((const GPTHeader *)&header, vol);
+    _gpt_print_partitions((const GPTHeader *)&header, (const GPTPartitionRecord *)&entries, vol);
     
     EndSection();
     

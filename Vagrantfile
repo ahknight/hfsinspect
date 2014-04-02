@@ -19,7 +19,7 @@ if [ ! -e $SETUPFLAG ]
   aptitude -yq safe-upgrade
 
   # Install developent tools
-  aptitude -yq install build-essential pkg-config uuid-dev libbsd-dev
+  aptitude -yq install build-essential clang pkg-config uuid-dev libbsd-dev
   
   # Link /vagrant to somewhere useful
   ln -s /vagrant ~vagrant/hfsinspect

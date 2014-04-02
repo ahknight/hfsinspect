@@ -106,7 +106,7 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
 {
     ASSERT_VOL(vol);
 
-    debug("Reading from volume %s+%llu at (%jd, %zu)", basename((char*)&vol->source), vol->offset, (intmax_t)offset, size);
+    debug("Reading from volume %s+%ju at (%jd, %zu)", basename((char*)&vol->source), (uintmax_t)vol->offset, (intmax_t)offset, size);
     
     // Range checks
     if (vol->length && offset > vol->length) {
@@ -139,8 +139,12 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
     // Fetch the data into a read buffer (it may fail).
     ssize_t read_blocks = vol_read_blocks(vol, read_buffer, block_count, start_block);
     
+    // Adjust for truncated reads.
+    size = MIN( (read_blocks * vol->sector_size) - byte_offset, size);
+    
     // On success, copy the output.
     if (read_blocks) memcpy(buf, read_buffer + byte_offset, size);
+//    debug("Copied %zu bytes.", size);
     
     // Clean up.
     FREE(read_buffer);
@@ -193,6 +197,8 @@ ssize_t vol_read_raw (const Volume *vol, void* buf, size_t nbyte, off_t offset)
     if ( (result = pread(vol->fd, buf, nbyte, (offset + vol->offset))) < 0)
         perror("pread");
     
+//    debug("Read %zu bytes.", result);
+
     return result;
 }
 

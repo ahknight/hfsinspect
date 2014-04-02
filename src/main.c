@@ -6,34 +6,25 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 #include <getopt.h>         //getopt_long
 #include <libgen.h>         //basename
 #include <locale.h>         //setlocale
-#include <sys/param.h>      //MIN/MAX
+#include <stdarg.h>
 
 #if defined(__APPLE__)
 #include <sys/mount.h>      //statfs
 #endif
 
-#include <sys/types.h>      //stat
 #include <sys/stat.h>       //stat
-#include <string.h>
-#include <stdarg.h>
-#include <xlocale.h>
 
 #include "types.h"
 #include "operations/operations.h"
 
-#include "misc/output.h"
+//#include "misc/output.h"
 #include "misc/stringtools.h"
+#include "volumes/volumes.h"
 #include "hfs/hfs.h"
 #include "hfs/output_hfs.h"
-#include "volumes/volumes.h"
 
 
 #pragma mark - Function Declarations
@@ -248,12 +239,6 @@ int main (int argc, String const *argv)
     (void)strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
     
     if (argc == 1) usage(0);
-    
-    if (DEBUG) {
-        // Ruin some memory so we crash more predictably.
-        Bytes m = malloc(16*1024*1024);
-        FREE(m);
-    }
     
     setlocale(LC_ALL, "");
     
@@ -493,7 +478,7 @@ OPEN:
         
         uid = dirstat.st_uid;
         gid = dirstat.st_gid;
-        free(dir);
+        FREE(dir);
     }
 
 #pragma mark Drop Permissions
@@ -759,9 +744,10 @@ NOPE:
         if (showHex) {
             size_t length = options.tree->headerRecord.nodeSize;
             off_t offset = length * options.node_id;
-            Bytes buf = calloc(1, length);
+            Bytes buf = calloc(length, 1);
             fpread(options.tree->fp, buf, length, offset);
             VisualizeData(buf, length);
+            FREE(buf);
             
         } else {
             PrintTreeNode(options.tree, options.node_id);

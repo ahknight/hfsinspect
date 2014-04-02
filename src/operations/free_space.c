@@ -27,10 +27,10 @@ void showFreeSpace(HIOptions *options)
             offset += bytes;
             if (offset >= fork->logicalSize) break;
         }
-        free(block);
+        FREE(block);
         
         if (offset == 0) {
-            free(data);
+            FREE(data);
             
             // We didn't read anything.
             if (bytes < 0) {
@@ -81,7 +81,7 @@ void showFreeSpace(HIOptions *options)
     _PrintHFSBlocks("Total Blocks", total_used + total_free);
     EndSection();
     
-    free(data);
+    FREE(data);
     hfsfork_free(fork);
 }
 

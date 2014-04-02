@@ -92,8 +92,8 @@ int hfs_seekfn(void * c, off_t* p, int mode)
 int hfs_closefn(void * c)
 {
     HFSVolumeCookie *cookie = (HFSVolumeCookie*)c;
-    free(cookie->hfs);
-    free(cookie);
+    FREE(cookie->hfs);
+    FREE(cookie);
     return 0;
 }
 
@@ -404,8 +404,8 @@ int fork_seekfn(void * c, off_t *p, int mode)
 int fork_closefn(void * c)
 {
     HFSForkCookie *cookie = (HFSForkCookie*)c;
-    free(cookie->fork);
-    free(cookie);
+    FREE(cookie->fork);
+    FREE(cookie);
     return 0;
 }
 

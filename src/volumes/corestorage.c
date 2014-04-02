@@ -256,7 +256,7 @@ int cs_dump(Volume* vol)
         EndSection();
     }
     
-    free(buf); buf = NULL;
+    FREE(buf);
     
 //    BeginSection("Block Dump");
 //    cs_dump_all_blocks(vol, header);
@@ -306,7 +306,7 @@ void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh)
         EndSection();
     }
     
-    free(buf); buf = NULL;
+    FREE(buf);
 }
 
 PartitionOps cs_ops = {
