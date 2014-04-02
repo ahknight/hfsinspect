@@ -34,7 +34,7 @@ $(OBJDIR)/%.o : %.c
 
 
 test: all
-	gunzip --decompress --keep --force images/test.img.gz
+	gunzip < images/test.img.gz > images/test.img
 	./tools/tests.sh $(BINARYPATH) images/test.img
 
 clean-test:
