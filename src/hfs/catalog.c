@@ -31,17 +31,18 @@ int hfs_get_catalog_btree(BTreePtr *tree, const HFS *hfs)
     static BTreePtr cachedTree;
     
     if (cachedTree == NULL) {
+        HFSFork *fork = NULL;
+        FILE* fp = NULL;
+        
         debug("Creating catalog B-Tree");
         
         ALLOC(cachedTree, sizeof(struct _BTree));
 
-        HFSFork *fork;
         if ( hfsfork_get_special(&fork, hfs, kHFSCatalogFileID) < 0 ) {
             critical("Could not create fork for Catalog B-Tree!");
-            return -1;
         }
         
-        FILE* fp = fopen_hfsfork(fork);
+        fp = fopen_hfsfork(fork);
         if (fp == NULL) return -1;
         
         btree_init(cachedTree, fp);
@@ -99,6 +100,12 @@ int hfs_catalog_get_node(BTreeNodePtr *out_node, const BTreePtr bTree, bt_nodeid
             // Swap the key first since we need a correct key length
             catalogKey = (HFSPlusCatalogKey*)record;
             swap_HFSPlusCatalogKey(catalogKey);
+            
+            // Verify key
+            if (catalogKey->nodeName.length > 255) {
+                warning("Record %d in node %d has an invalid name length: %d", recNum, nodeNum, catalogKey->nodeName.length);
+                catalogKey->nodeName.length = 255; // Not the right answer, but better than reading 8K of data later on.
+            }
             
             // Index nodes are already swapped, so only swap leaf nodes
             if (node->nodeDescriptor->kind == kBTLeafNode) {
@@ -213,6 +220,7 @@ int HFSPlusGetCNIDName(wchar_t* name, FSSpec spec)
     BTreeNodePtr node = NULL;
     BTRecNum recordID = 0;
     HFSPlusCatalogKey key = {0};
+    
     key.parentID = cnid;
     key.keyLength = kHFSPlusCatalogKeyMinimumLength;
     
@@ -333,7 +341,7 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord *out_ca
         if (out_catalogRecord != NULL) *out_catalogRecord = catalogRecord;
     }
     
-    free(dup);
+    FREE(dup);
     
     debug("found: %u", found);
     return (found ? 0 : -1);
@@ -362,10 +370,11 @@ int HFSPlusGetCatalogRecordByFSSpec(HFSPlusCatalogRecord *catalogRecord, FSSpec 
     HFSPlusCatalogKey catalogKey = HFSPlusCatalogKeyFromFSSpec(spec);
     
     BTreePtr catalogTree = NULL;
-    hfs_get_catalog_btree(&catalogTree, hfs);
     BTreeNodePtr searchNode = NULL;
     BTRecNum searchIndex = 0;
 
+    if ( hfs_get_catalog_btree(&catalogTree, hfs) < 0 ) return -1;
+    
     bool result = btree_search(&searchNode, &searchIndex, catalogTree, &catalogKey);
     if (result != true) return -1;
     
@@ -385,7 +394,7 @@ int HFSPlusGetCatalogRecordByFSSpec(HFSPlusCatalogRecord *catalogRecord, FSSpec 
 
 int HFSPlusGetCatalogInfoByCNID(FSSpec *out_spec, HFSPlusCatalogRecord *out_catalogRecord, const HFS *hfs, bt_nodeid_t cnid)
 {
-    FSSpec spec = { .parentID = cnid };
+    FSSpec spec = { .hfs = hfs, .parentID = cnid };
     HFSPlusCatalogRecord catalogRecord = {0};
     
     if ( HFSPlusGetCatalogRecordByFSSpec(&catalogRecord, spec) < 0 )

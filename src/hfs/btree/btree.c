@@ -9,6 +9,8 @@
 #include "hfs/btree/btree.h"
 #include "hfs/btree/btree_endian.h"
 #include "misc/output.h"
+#include "misc/stringtools.h"
+
 #include <stdio.h>
 #include <search.h>
 
@@ -36,8 +38,7 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
         bTree->nodeBitmapSize = record.recordLen;
         
         // Initially allocate space for up to 16 nodes.
-        bTree->nodeBitmap = calloc(bTree->headerRecord.nodeSize * 16, 1);
-        assert(bTree->nodeBitmap != NULL);
+        ALLOC(bTree->nodeBitmap, bTree->headerRecord.nodeSize * 16);
         memcpy(bTree->nodeBitmap, record.record, record.recordLen);
         
         // Concat any linked map node records
@@ -55,10 +56,9 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
             BTGetBTNodeRecord(&record, node, 0);
             bTree->nodeBitmapSize += record.recordLen;
             if (malloc_size(bTree->nodeBitmap) < bTree->nodeBitmapSize) {
-                realloc(bTree->nodeBitmap, bTree->nodeBitmapSize);
+                bTree->nodeBitmap = realloc(bTree->nodeBitmap, bTree->nodeBitmapSize);
                 if (bTree->nodeBitmap == NULL) {
                     critical("Could not allocate memory for tree bitmap.");
-                    exit(errno);
                 }
             }
             
@@ -79,13 +79,24 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
     return result;
 }
 
-bool BTIsBlockUsed(uint32_t thisAllocationBlock, Bytes allocationFileContents, size_t length)
+bool BTIsBlockUsed(uint32_t thisAllocationBlock, void *allocationFileContents, size_t length)
 {
     size_t idx = (thisAllocationBlock / 8);
     if (idx > length) return false;
     
-    Byte thisByte = allocationFileContents[idx];
+    Byte thisByte = ((Bytes)allocationFileContents)[idx];
     return (thisByte & (1 << (7 - (thisAllocationBlock % 8)))) != 0;
+}
+
+void PrintBTNodeRecord(BTNodeRecordPtr record)
+{
+    BeginSection("Node %u, Record %u (Tree %u)", record->node->nodeNumber, record->recNum, record->node->bTree->treeID);
+    PrintUI(record, offset);
+    PrintUI(record, recordLen);
+    PrintUI(record, keyLen);
+    PrintRawAttribute(record, key, 16);
+    PrintUI(record, valueLen);
+    EndSection();
 }
 
 int BTGetBTNodeRecord(BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum recNum)
@@ -112,6 +123,8 @@ int BTGetBTNodeRecord(BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum 
     record->valueLen    = record->recordLen - record->keyLen;
     record->valueLen   += (record->valueLen % 2);
     
+//    PrintBTNodeRecord(record);
+    
     return 0;
 }
 
@@ -121,7 +134,10 @@ BTRecOffset BTGetRecordOffset(const BTreeNodePtr node, uint8_t recNum)
     
     int recordCount = node->nodeDescriptor->numRecords;
     BTRecOffsetPtr offsets = ((BTRecOffsetPtr)(node->data + node->nodeSize)) - recordCount - 1;
-    assert( offsets[recordCount] == 14 /*sizeof(BTNodeDescriptor)*/ );
+    if ( offsets[recordCount] != 14 ) {
+        memdump(stderr, node->data, node->nodeSize, 16, 4, 4, DUMP_FULL);
+        critical("Bad sentinel @ %ld! (%d != 14)", (long)((char*)offsets - (char*)node->data) + recordCount, offsets[recordCount]); /*sizeof(BTNodeDescriptor)*/
+    };
     result = offsets[recordCount - recNum];
     
     return result;
@@ -166,9 +182,12 @@ uint16_t BTGetRecordKeyLength(const BTreeNodePtr node, uint8_t recNum)
     }
     
     // Handle too-long keys
-    if (keySize > headerRecord.maxKeyLength)
+    // Note that while this will let us fight another day, it generally means Things Are Bad.
+    if (keySize > headerRecord.maxKeyLength) {
+        warning("Key length for (tree %u, node %u, record %u) was %u; the maximum for this B-tree is %u.", node->treeID, node->nodeNumber, recNum, keySize, headerRecord.maxKeyLength);
         keySize = headerRecord.maxKeyLength;
-    
+    }
+
     // Adjust for the initial key length field
     keySize += (
                 (headerRecord.attributes & kBTBigKeysMask) ?
@@ -315,7 +334,7 @@ int btree_walk(const BTreePtr btree, const BTreeNodePtr node, btree_walk_func wa
     
     walker(btree, _node);
 
-    if (_node->nodeDescriptor->fLink > 0) {
+    if ( (signed)_node->nodeDescriptor->fLink > 0 ) {
         BTreeNodePtr right = NULL;
         BTGetNode(&right, btree, _node->nodeDescriptor->fLink);
         btree_walk(btree, right, walker);
@@ -331,6 +350,10 @@ int btree_walk(const BTreePtr btree, const BTreeNodePtr node, btree_walk_func wa
 int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, const void * searchKey)
 {
     debug("Searching tree %d for key of length %d", btree->treeID, ((BTreeKey*)searchKey)->length16);
+    _assert(node != NULL);
+    _assert(recordID != NULL);
+    _assert(btree != NULL);
+    _assert(searchKey != NULL);
     
     /*
      Starting at the node the btree defines as the root:
@@ -348,8 +371,7 @@ int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, c
     BTRecNum searchIndex        = 0;
     bool search_result          = false;
     int level                   = depth;
-    bt_nodeid_t history[depth];
-    memset(history, 0, (sizeof(bt_nodeid_t) * depth));
+    bt_nodeid_t history[256]    = {0};
     
     if (level == 0) {
         error("Invalid tree (level 0?)");
@@ -388,7 +410,6 @@ int btree_search(BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, c
         if (searchNode->nodeDescriptor->height != level) {
             // Nodes have a specific height.  This one fails.
             critical("Node found at unexpected height (got %d; expected %d).", searchNode->nodeDescriptor->height, level);
-            exit(1);
         }
         if (level == 1) {
             if (searchNode->nodeDescriptor->kind != kBTLeafNode) {

@@ -36,8 +36,10 @@ int cs_verify_block(const CSVolumeHeader* vh, const Byte* block, size_t nbytes)
         }
         
         return 0;
+//    } else {
+//        debug("Unknown checksum algo: %u", vh->checksum_algo);
     }
-    warning("unsupported checksum algorithm: %u", vh->checksum_algo);
+    
     return -1;
 }
 
@@ -51,9 +53,7 @@ int cs_get_volume_header(Volume* vol, CSVolumeHeader* header)
     
     memcpy(header, buf, buf_size);
     
-    cs_verify_block(header, buf, buf_size);
-
-    return 0;
+    return cs_verify_block(header, buf, buf_size);
 }
 
 ssize_t cs_get_metadata_block(Byte** buf, const Volume* vol, const CSVolumeHeader* header, unsigned block)
@@ -94,9 +94,9 @@ int cs_test(Volume* vol)
 {
     debug("CS test");
     
-    CSVolumeHeader header;
+    CSVolumeHeader header = {{0}};
     
-    if ( cs_get_volume_header(vol, &header) < 0) { perror("get cs header"); return -1; }
+    if ( cs_get_volume_header(vol, &header) < 0) { return -1; }
     
     if ( memcmp(&header.signature, "CS", 2) == 0 ) { debug("Found a CS pmap."); /* cs_dump(vol); */ return 1; }
     
@@ -256,7 +256,7 @@ int cs_dump(Volume* vol)
         EndSection();
     }
     
-    free(buf); buf = NULL;
+    FREE(buf);
     
 //    BeginSection("Block Dump");
 //    cs_dump_all_blocks(vol, header);
@@ -306,10 +306,11 @@ void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh)
         EndSection();
     }
     
-    free(buf); buf = NULL;
+    FREE(buf);
 }
 
 PartitionOps cs_ops = {
+    .name = "Core Storage",
     .test = cs_test,
     .dump = cs_dump,
     .load = NULL,

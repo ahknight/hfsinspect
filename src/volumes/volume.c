@@ -12,39 +12,36 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <libgen.h>
 
-#ifdef __APPLE__
+#if defined (__APPLE__)
 #include <sys/disk.h>
+#elif defined (__linux__)
+#include <sys/ioctl.h>
+#include <sys/mount.h>
 #endif
 
-#define ASSERT_VOL(vol) { assert(vol); assert(vol->fp); }
+#define ASSERT_VOL(vol) { _assert(vol != NULL); _assert(vol->fp); }
 
-Volume* vol_open(const String path, int mode, off_t offset, size_t length, size_t block_size)
+int vol_open(Volume* vol, const String path, int mode, off_t offset, size_t length, size_t block_size)
 {
-    int fd;
+    _assert(vol);
+    _assert(path);
+    
+    int fd = 0;
     char* modestr = NULL;
-    struct stat s;
-    Volume* vol = NULL;
+    struct stat s = {0};
     
     mode = O_RDONLY;
     modestr = "r";
     
     fd = open(path, mode);
-    if (fd < 0)
-        return NULL;
-    
-    if ( fstat(fd, &s) < 0 )
-        return NULL;
-    
-    vol = calloc(1, sizeof(Volume));
-    if (vol == NULL)
-        return NULL;
-    
-    memset(vol, 0, sizeof(Volume));
-    
+    if (fd < 0) return -1;
+    if ( fstat(fd, &s) < 0 ) return -1;
+        
     vol->fd = fd;
-    vol->fp = fdopen(fd, modestr);
-    (void)strlcpy(vol->device, path, PATH_MAX);
+    if ( (vol->fp = fdopen(fd, modestr)) == NULL ) return -1;
+    (void)strlcpy(vol->source, path, PATH_MAX);
     vol->offset = offset;
     
     if (length && block_size) {
@@ -53,32 +50,55 @@ Volume* vol_open(const String path, int mode, off_t offset, size_t length, size_
         vol->sector_count = (length / block_size);
     } else {
         vol->length         = s.st_size;
-        vol->sector_size    = s.st_blksize;
+        vol->sector_size    = S_BLKSIZE;
         vol->sector_count   = s.st_blocks;
     }
     
-#ifdef __APPLE__
-    // Try and get the real hardware sector size and use that.
-    if (block_size == 0) {
-        blkcnt_t  bc = 0;
-        blksize_t bs = 0;
-        ioctl(vol->fd, DKIOCGETBLOCKCOUNT, &bc);
-        ioctl(vol->fd, DKIOCGETBLOCKSIZE, &bs);
+    if (S_ISBLK(vol->mode) || S_ISCHR(vol->mode)) {
+        // Try and get the real hardware sector size and use that.
+        // Note that this helps with devices, but not with disk images.
         
-        vol->sector_count    = ( (bc != 0) ? bc : s.st_blocks);
-        vol->sector_size     = ( (bs != 0) ? bs : s.st_blksize);
-    }
+        if (block_size == 0) {
+#if defined (__APPLE__)
+            blkcnt_t  bc = 0;
+            blksize_t bs = 0;
+            ioctl(vol->fd, DKIOCGETBLOCKCOUNT, &bc);
+            ioctl(vol->fd, DKIOCGETBLOCKSIZE, &bs);
+            
+            vol->sector_count    = ( (bc != 0) ? bc : s.st_blocks);
+            vol->sector_size     = ( (bs != 0) ? bs : S_BLKSIZE);
+            
+#elif defined (__linux__)
+            unsigned int bs = 0;
+            unsigned long ds = 0;
+            
+            ioctl(vol->fd, BLKSSZGET, &bs);     // BLKBSZGET is the physical sector size; BLKSSZGET is the logical. Probably.
+            ioctl(vol->fd, BLKGETSIZE64, &ds);  // Logical device size in bytes
+            
+            vol->sector_size = ( (bs != 0) ? bs : S_BLKSIZE);
+            vol->length = ( (ds != 0) ? ds : s.st_size);
+            vol->sector_count = vol->length / vol->sector_size;
 #endif
+        }
+    }
     
     if (length == 0 && vol->sector_size && vol->sector_count)
         vol->length = vol->sector_size * vol->sector_count;
-
-    return vol;
+    
+    return 0;
 }
 
 Volume* vol_qopen(const String path)
 {
-    Volume *vol = vol_open(path, O_RDONLY, 0, 0, 0);
+    Volume *vol;
+    ALLOC(vol, sizeof(Volume));
+    
+    if ( vol_open(vol, path, O_RDONLY, 0, 0, 0) < 0 ) {
+        FREE(vol);
+        perror("vol_open");
+        return NULL;
+    }
+    
     return vol;
 }
 
@@ -86,19 +106,23 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
 {
     ASSERT_VOL(vol);
 
-    debug("Reading from volume at (%jd, %zu)", (intmax_t)offset, size);
+    debug("Reading from volume %s+%ju at (%jd, %zu)", basename((char*)&vol->source), (uintmax_t)vol->offset, (intmax_t)offset, size);
     
     // Range checks
-    if (vol->length && offset > vol->length)
+    if (vol->length && offset > vol->length) {
+        debug("Read ignored; beyond end of source.");
         return 0;
+    }
     
     if ( vol->length && (offset + size) > vol->length ) {
         size = vol->length - offset;
         debug("Adjusted read to (%jd, %zu)", (intmax_t)offset, size);
     }
     
-    if (size < 1)
+    if (size < 1) {
+        debug("Read ignored; zero length.");
         return 0;
+    }
     
     // The range starts somewhere in this block.
     size_t start_block = (size_t)(offset / vol->sector_size);
@@ -115,8 +139,12 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
     // Fetch the data into a read buffer (it may fail).
     ssize_t read_blocks = vol_read_blocks(vol, read_buffer, block_count, start_block);
     
+    // Adjust for truncated reads.
+    size = MIN( (read_blocks * vol->sector_size) - byte_offset, size);
+    
     // On success, copy the output.
     if (read_blocks) memcpy(buf, read_buffer + byte_offset, size);
+//    debug("Copied %zu bytes.", size);
     
     // Clean up.
     FREE(read_buffer);
@@ -169,6 +197,8 @@ ssize_t vol_read_raw (const Volume *vol, void* buf, size_t nbyte, off_t offset)
     if ( (result = pread(vol->fd, buf, nbyte, (offset + vol->offset))) < 0)
         perror("pread");
     
+//    debug("Read %zu bytes.", result);
+
     return result;
 }
 
@@ -200,7 +230,7 @@ int vol_close(Volume *vol)
     }
     
     fd = vol->fd;
-    if (malloc_size(vol)) { free(vol); }
+    FREE(vol);
     
     if ( (result = close(fd)) < 0)
         perror("close");
@@ -212,11 +242,20 @@ Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t lengt
 {
     { if (vol == NULL || vol->fp == NULL) { errno = EINVAL; return NULL; } }
     
-    Volume* newvol = calloc(1, sizeof(Volume));
+    Volume* newvol;
+    ALLOC(newvol, sizeof(Volume));
     
-    newvol->fd = dup(vol->fd);
-    newvol->fp = fdopen(vol->fd, "r"); // Copies are read-only for now.
-    memcpy(newvol->device, vol->device, PATH_MAX);
+    if( (newvol->fd = dup(vol->fd)) < 0) {
+        FREE(newvol);
+        perror("dup");
+        return NULL;
+    }
+    if( (newvol->fp = fdopen(vol->fd, "r")) == NULL) {
+        FREE(newvol);
+        perror("fdopen");
+        return NULL;
+    }
+    memcpy(newvol->source, vol->source, PATH_MAX);
     
     newvol->offset = offset;
     newvol->length = length;
@@ -246,7 +285,7 @@ void vol_dump(Volume* vol)
     
     BeginSection("Volume '%s' (%s)", vol->desc, vol->native_desc);
     
-    Print("device", "%s", vol->device);
+    Print("source", "%s", vol->source);
     PrintUI(vol, type);
     
 #define PrintUICharsIfEqual(var, val) if (var == val) { \

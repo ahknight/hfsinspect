@@ -12,10 +12,17 @@
 
 int hfs_load_mbd(Volume *vol, HFSMasterDirectoryBlock *mdb)
 {
-    if ( vol_read(vol, (Bytes)mdb, sizeof(HFSMasterDirectoryBlock), 1024) < 0)
+    // On IA32, using Clang, the swap function needs a little scratch space
+    // so we read into a larger area, swap there, then copy out.
+    
+    Bytes buf[200] = {0};
+    
+    if ( vol_read(vol, buf, sizeof(HFSMasterDirectoryBlock), 1024) < 0)
         return -1;
     
-    swap_HFSMasterDirectoryBlock(mdb);
+    swap_HFSMasterDirectoryBlock((HFSMasterDirectoryBlock*)buf);
+    
+    memcpy(mdb, buf, sizeof(HFSMasterDirectoryBlock));
     
     return 0;
 }
@@ -30,7 +37,13 @@ int hfs_load_header(Volume *vol, HFSPlusVolumeHeader *vh)
     return 0;
 }
 
-int hfs_attach(HFS* hfs, Volume *vol)
+int hfs_close(HFS *hfs) {
+    debug("Closing volume.");
+    int result = vol_close(hfs->vol);
+    return result;
+}
+
+int hfs_open(HFS* hfs, Volume *vol)
 {
     if (hfs == NULL || vol == NULL) { errno = EINVAL; return -1; }
     
@@ -53,7 +66,7 @@ int hfs_attach(HFS* hfs, Volume *vol)
     
     // Handle wrapped volumes.
     if (type == kFSTypeWrappedHFSPlus) {
-        HFSMasterDirectoryBlock mdb; ZERO_STRUCT(mdb);
+        HFSMasterDirectoryBlock mdb = {0};
         if ( hfs_load_mbd(vol, &mdb) < 0)
             return -1;
         
@@ -81,32 +94,31 @@ int hfs_attach(HFS* hfs, Volume *vol)
  */
 int hfs_test(Volume *vol)
 {
+    debug("hfs_test");
+    
     int type = kTypeUnknown;
     
     // First, test for HFS or wrapped HFS+ volumes.
-    HFSMasterDirectoryBlock *mdb = calloc(1, 512);
+    HFSMasterDirectoryBlock mdb = {0};
     
-    if ( hfs_load_mbd(vol, mdb) < 0) {
-        FREE(mdb);
+    if ( hfs_load_mbd(vol, &mdb) < 0) {
         return -1;
     }
 
-    if (mdb->drSigWord == kHFSSigWord && mdb->drEmbedSigWord == kHFSPlusSigWord) {
+    if (mdb.drSigWord == kHFSSigWord && mdb.drEmbedSigWord == kHFSPlusSigWord) {
         info("Found a wrapped HFS+ volume");
         type = kFSTypeWrappedHFSPlus;
         
-    } else if (mdb->drSigWord == kHFSSigWord) {
+    } else if (mdb.drSigWord == kHFSSigWord) {
         info("Found an HFS volume");
         type = kFSTypeHFS;
     }
-    
-    FREE(mdb);
     
     if (type != kTypeUnknown)
         return type;
     
     // Now test for a modern HFS+ volume.
-    HFSPlusVolumeHeader vh;
+    HFSPlusVolumeHeader vh = {0};
     
     if ( hfs_load_header(vol, &vh) < 0 )
         return -1;
@@ -124,6 +136,7 @@ int hfs_test(Volume *vol)
 /** returns the first HFS+ volume in a tree of volumes */
 Volume* hfs_find(Volume* vol)
 {
+    debug("hfs_find");
     Volume *result = NULL;
     int test = hfs_test(vol);
 
@@ -137,12 +150,6 @@ Volume* hfs_find(Volume* vol)
         }
     }
     
-    return result;
-}
-
-int hfs_close(HFS *hfs) {
-    debug("Closing volume.");
-    int result = vol_close(hfs->vol);
     return result;
 }
 

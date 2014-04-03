@@ -10,6 +10,13 @@
 		9B066F1A17622BCD00D84F55 /* stringtools.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B066F1917622BCD00D84F55 /* stringtools.c */; };
 		9B112988176E1D74009BC4D4 /* attributes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B112987176E1D74009BC4D4 /* attributes.c */; };
 		9B2EE368174D1BD6008A0C54 /* debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B2EE367174D1BD6008A0C54 /* debug.c */; };
+		9B4D865018EB4F65002C053D /* path_info.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B4D864F18EB4F65002C053D /* path_info.c */; };
+		9B4D865218EB4F6E002C053D /* hfs_summary.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B4D865118EB4F6E002C053D /* hfs_summary.c */; };
+		9B4D865818EB4F8D002C053D /* cnid.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B4D865718EB4F8D002C053D /* cnid.c */; };
+		9B4D865A18EB4F99002C053D /* extract_file.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B4D865918EB4F99002C053D /* extract_file.c */; };
+		9B4D865E18EB4FAB002C053D /* free_space.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B4D865D18EB4FAB002C053D /* free_space.c */; };
+		9B4D866118EB5C4E002C053D /* operations.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B4D866018EB5C4E002C053D /* operations.c */; };
+		9B51851118E60F2D007A8BAA /* crc32.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B51851018E60F2D007A8BAA /* crc32.c */; };
 		9B5DB77F1830736C000179FD /* output.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B5DB77E1830736C000179FD /* output.c */; };
 		9B63C6C117614F92005E1411 /* hfs_extentlist.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B63C6C017614F92005E1411 /* hfs_extentlist.c */; };
 		9B6BA3F1184E792900CED73F /* hotfiles.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B6BA3F0184E792900CED73F /* hotfiles.c */; };
@@ -61,6 +68,16 @@
 		9B112987176E1D74009BC4D4 /* attributes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = attributes.c; path = hfsplus/attributes.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9B2EE367174D1BD6008A0C54 /* debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = debug.c; sourceTree = "<group>"; };
 		9B2EE369174D1BDB008A0C54 /* debug.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = debug.h; sourceTree = "<group>"; };
+		9B4D864A18EB4F42002C053D /* operations.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = operations.h; sourceTree = "<group>"; };
+		9B4D864F18EB4F65002C053D /* path_info.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = path_info.c; sourceTree = "<group>"; };
+		9B4D865118EB4F6E002C053D /* hfs_summary.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hfs_summary.c; sourceTree = "<group>"; };
+		9B4D865718EB4F8D002C053D /* cnid.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cnid.c; sourceTree = "<group>"; };
+		9B4D865918EB4F99002C053D /* extract_file.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = extract_file.c; sourceTree = "<group>"; };
+		9B4D865D18EB4FAB002C053D /* free_space.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = free_space.c; sourceTree = "<group>"; };
+		9B4D865F18EB5104002C053D /* types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = types.h; sourceTree = "<group>"; };
+		9B4D866018EB5C4E002C053D /* operations.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = operations.c; sourceTree = "<group>"; };
+		9B51850F18E60F10007A8BAA /* crc32.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = crc32.h; sourceTree = "<group>"; };
+		9B51851018E60F2D007A8BAA /* crc32.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = crc32.c; sourceTree = "<group>"; };
 		9B5DB77B18305D9B000179FD /* _endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = _endian.h; sourceTree = "<group>"; };
 		9B5DB77E1830736C000179FD /* output.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = output.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9B5DB78018307370000179FD /* output.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = output.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -144,6 +161,29 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		9B4D864918EB4F03002C053D /* operations */ = {
+			isa = PBXGroup;
+			children = (
+				9B4D864A18EB4F42002C053D /* operations.h */,
+				9B4D866018EB5C4E002C053D /* operations.c */,
+				9B4D865718EB4F8D002C053D /* cnid.c */,
+				9B4D865918EB4F99002C053D /* extract_file.c */,
+				9B4D865D18EB4FAB002C053D /* free_space.c */,
+				9B4D865118EB4F6E002C053D /* hfs_summary.c */,
+				9B4D864F18EB4F65002C053D /* path_info.c */,
+			);
+			path = operations;
+			sourceTree = "<group>";
+		};
+		9B51850E18E60EEE007A8BAA /* crc32 */ = {
+			isa = PBXGroup;
+			children = (
+				9B51850F18E60F10007A8BAA /* crc32.h */,
+				9B51851018E60F2D007A8BAA /* crc32.c */,
+			);
+			path = crc32;
+			sourceTree = "<group>";
+		};
 		9B5DB78718318AC7000179FD /* misc */ = {
 			isa = PBXGroup;
 			children = (
@@ -243,12 +283,15 @@
 		9BBA85081735AFD400273AE9 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				9BBA850D1735AFD400273AE9 /* hfsinspect.1 */,
 				9BBA850C1735AFD400273AE9 /* hfsinspect-Prefix.pch */,
 				9BBA85091735AFD400273AE9 /* main.c */,
-				9BBA850D1735AFD400273AE9 /* hfsinspect.1 */,
-				9BDF32631736D34500F60671 /* hfs */,
+				9B4D865F18EB5104002C053D /* types.h */,
+				9B4D864918EB4F03002C053D /* operations */,
 				9BC1D07F182BE84900D9B301 /* volumes */,
+				9BDF32631736D34500F60671 /* hfs */,
 				9B5DB78718318AC7000179FD /* misc */,
+				9B51850E18E60EEE007A8BAA /* crc32 */,
 				9BA332AF183C6E7700F55322 /* crc32c */,
 				9BB1A68917682DC700202643 /* logging */,
 			);
@@ -357,7 +400,7 @@
 		9BBA84FB1735AFD400273AE9 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0500;
+				LastUpgradeCheck = 0510;
 				ORGANIZATIONNAME = "Adam Knight";
 			};
 			buildConfigurationList = 9BBA84FE1735AFD400273AE9 /* Build configuration list for PBXProject "hfsinspect" */;
@@ -387,15 +430,18 @@
 				9BC1D089182BE8DC00D9B301 /* apm.c in Sources */,
 				9BBA850A1735AFD400273AE9 /* main.c in Sources */,
 				9BDF325E1736D27500F60671 /* output_hfs.c in Sources */,
+				9B4D865E18EB4FAB002C053D /* free_space.c in Sources */,
 				9BC2C0A3184A497400738BB2 /* nullstream.c in Sources */,
 				9B9589FF18399F650031C89A /* cache.c in Sources */,
 				9BDF32621736D30E00F60671 /* hfs_endian.c in Sources */,
 				9BDF32661737307D00F60671 /* hfs.c in Sources */,
 				9BCD797017457F2000CB9BC4 /* hfs_unicode.c in Sources */,
 				9B6BA3F1184E792900CED73F /* hotfiles.c in Sources */,
+				9B4D865818EB4F8D002C053D /* cnid.c in Sources */,
 				9BC2C0A6184A4A0800738BB2 /* prefixstream.c in Sources */,
 				9BC1D08E182BE94400D9B301 /* volumes.c in Sources */,
 				9B2EE368174D1BD6008A0C54 /* debug.c in Sources */,
+				9B4D865A18EB4F99002C053D /* extract_file.c in Sources */,
 				9B7637F4175785E5000620CE /* logging.c in Sources */,
 				9B7637F7175E3BEF000620CE /* hfs_btree.c in Sources */,
 				9B7637FA175E3C13000620CE /* hfs_io.c in Sources */,
@@ -404,16 +450,20 @@
 				9B70C50F1845219600E90B19 /* btree.c in Sources */,
 				9B7637FD175E3D7D000620CE /* extents.c in Sources */,
 				9B763800175E3ED4000620CE /* catalog.c in Sources */,
+				9B51851118E60F2D007A8BAA /* crc32.c in Sources */,
 				9B70C5151845291800E90B19 /* utilities.c in Sources */,
+				9B4D866118EB5C4E002C053D /* operations.c in Sources */,
 				9B63C6C117614F92005E1411 /* hfs_extentlist.c in Sources */,
 				9B066F1A17622BCD00D84F55 /* stringtools.c in Sources */,
 				9BB1A65E17628DD900202643 /* range.c in Sources */,
+				9B4D865218EB4F6E002C053D /* hfs_summary.c in Sources */,
 				9B5DB77F1830736C000179FD /* output.c in Sources */,
 				9BC1D085182BE8D200D9B301 /* mbr.c in Sources */,
 				9B112988176E1D74009BC4D4 /* attributes.c in Sources */,
 				9BC1D087182BE8D700D9B301 /* gpt.c in Sources */,
 				9BA332B6183C6EC600F55322 /* crc32c.c in Sources */,
 				9B70C512184526E400E90B19 /* btree_endian.c in Sources */,
+				9B4D865018EB4F65002C053D /* path_info.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -491,38 +541,43 @@
 		9BBA850F1735AFD400273AE9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
+				CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND = YES;
+				CLANG_ANALYZER_SECURITY_INSECUREAPI_STRCPY = YES;
 				CLANG_LINK_OBJC_RUNTIME = NO;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CLANG_STATIC_ANALYZER_MODE = deep;
 				CLANG_X86_VECTOR_INSTRUCTIONS = sse4.2;
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = c11;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_WARN_PEDANTIC = YES;
-				LLVM_LTO = NO;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = "-Wall";
+				RUN_CLANG_STATIC_ANALYZER = YES;
 				SDKROOT = macosx;
 				VALID_ARCHS = "i386 x86_64 ppc64 ppc";
+				WARNING_CFLAGS = "-Wall";
 			};
 			name = Debug;
 		};
 		9BBA85101735AFD400273AE9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
+				CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND = YES;
+				CLANG_ANALYZER_SECURITY_INSECUREAPI_STRCPY = YES;
 				CLANG_LINK_OBJC_RUNTIME = NO;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CLANG_STATIC_ANALYZER_MODE = deep;
 				CLANG_X86_VECTOR_INSTRUCTIONS = sse4.2;
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = c11;
+				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_WARN_PEDANTIC = YES;
-				LLVM_LTO = NO;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				OTHER_CFLAGS = "-Wall";
+				RUN_CLANG_STATIC_ANALYZER = YES;
 				SDKROOT = macosx;
 				VALID_ARCHS = "i386 x86_64 ppc64 ppc";
+				WARNING_CFLAGS = "-Wall";
 			};
 			name = Release;
 		};
@@ -534,12 +589,11 @@
 					hfsinspect,
 				);
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
-				CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND = YES;
-				CLANG_ANALYZER_SECURITY_INSECUREAPI_STRCPY = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPLOYMENT_LOCATION = YES;
 				DSTROOT = /usr/local;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "src/hfsinspect-Prefix.pch";
 				INSTALL_PATH = /bin;
@@ -548,6 +602,7 @@
 					"$(SDKROOT)/usr/lib/system",
 				);
 				PRODUCT_NAME = hfsinspect;
+				SKIP_INSTALL = YES;
 				STRIP_INSTALLED_PRODUCT = NO;
 				USER_HEADER_SEARCH_PATHS = src;
 			};
@@ -561,12 +616,11 @@
 					hfsinspect,
 				);
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
-				CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND = YES;
-				CLANG_ANALYZER_SECURITY_INSECUREAPI_STRCPY = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPLOYMENT_LOCATION = YES;
 				DSTROOT = /usr/local;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "src/hfsinspect-Prefix.pch";
 				INSTALL_PATH = /bin;

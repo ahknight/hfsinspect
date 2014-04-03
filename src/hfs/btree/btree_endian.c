@@ -17,6 +17,12 @@ void swap_BTNodeDescriptor(BTNodeDescriptor *record)
     Swap32(record->fLink);
     Swap32(record->bLink);
     
+    if ((signed)record->fLink < -1)
+        warning("Invalid forward link: %d", (signed)record->fLink);
+
+    if ((signed)record->bLink < -1)
+        warning("Invalid backward link: %d", (signed)record->bLink);
+
     // noswap: record->kind is a short
     if (record->kind < kBTLeafNode || record->kind > kBTMapNode)
         warning("invalid node type: %d", record->kind);
@@ -61,7 +67,7 @@ int swap_BTreeNode(BTreeNodePtr node)
     if ( sentinel == 14 ) { warning("Node is already swapped."); return 0; }
     
     // Verify that this is a node in the first place (swap error protection).
-    sentinel = be16toh(sentinel);
+    Swap16(sentinel);
     if ( sentinel != 14 ) {
         warning("Node is not a node (sentinel: %u != 14).", sentinel);
         errno = EINVAL;
@@ -119,7 +125,7 @@ int swap_BTreeNode(BTreeNodePtr node)
         Bytes record = BTGetRecord(node, recordNum);
         BTreeKeyPtr key = (BTreeKey*)(record);
         if (swapKeys) {
-            Swap( key->length16 );
+            Swap16( key->length16 );
         }
         
         switch (nodeDescriptor->kind) {

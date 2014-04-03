@@ -24,10 +24,10 @@ enum {
 };
 
 // Generate a string representation of a buffer with adjustable number base (2-36).
-ssize_t memstr(char* restrict out, uint8_t base, const char* input, size_t nbytes, size_t length);
+ssize_t memstr(char* restrict out, uint8_t base, const void *data, size_t nbytes, size_t length);
 
 // Print a classic memory dump with configurable base and grouping.
-void memdump(FILE* file, const char* data, size_t length, uint8_t base, uint8_t width, uint8_t groups, unsigned mode);
+void memdump(FILE* file, const void *data, size_t length, uint8_t base, uint8_t width, uint8_t groups, unsigned mode);
 
 #pragma mark UTF conversions
 

@@ -9,6 +9,7 @@
 #ifndef hfsinspect_output_hfs_h
 #define hfsinspect_output_hfs_h
 
+#include "misc/output.h"
 #include "hfs/hfs_types.h"
 #include "hfs/hfs_extentlist.h"
 #include "hfs/Apple/vfs_journal.h"

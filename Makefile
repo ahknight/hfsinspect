@@ -1,5 +1,5 @@
-CFLAGS += -msse4.2 -Isrc -include src/hfsinspect-Prefix.pch
-CFLAGS += -g -O0 -Wall #debug
+CFLAGS += -std=c1x -Isrc -include src/hfsinspect-Prefix.pch -Wall -msse4.2
+CFLAGS += -g -O0 #debug
 
 OS := $(shell uname -s)
 MACHINE := $(shell uname -m)
@@ -21,8 +21,8 @@ vpath %.c src
 .PHONY: all test docs clean distclean
 .NOTPARALLEL:
 
-all: hfsinspect
-everything: hfsinspect docs
+all: $(BINARYPATH)
+everything: $(BINARYPATH) docs
 clean: clean-hfsinspect
 distclean: clean-test clean-docs
 	$(RM) -r build
@@ -33,20 +33,16 @@ $(OBJDIR)/%.o : %.c
 	@$(COMPILE.c) $< -o $@
 
 
-
 test: all
-	@echo "Running tests."
-	@./$(BINARYPATH) --help
-	@cp images/test.img.gz images/test.img.1.gz
-	@gunzip -qNf images/test.img.1.gz
-	@./$(BINARYPATH) -d images/test.img -r
+	gunzip < images/test.img.gz > images/test.img
+	./tools/tests.sh $(BINARYPATH) images/test.img
 
 clean-test:
 	$(RM) "images/test.img" "images/MBR.dmg"
 
 
 
-hfsinspect: $(OBJECTS)
+$(BINARYPATH): $(OBJECTS)
 	@echo "Building hfsinspect."
 	@mkdir -p `dirname $(BINARYPATH)`
 	@$(LINK.c) -o $(BINARYPATH) $^ $(LIBS)
@@ -56,7 +52,7 @@ clean-hfsinspect:
 
 
 
-install: hfsinspect
+install: $(BINARYPATH)
 	@echo "Installing hfsinspect in $(PREFIX)"
 	@mkdir -p $(PREFIX)/bin
 	@$(INSTALL) $(BINARYPATH) $(PREFIX)/bin

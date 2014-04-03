@@ -26,7 +26,7 @@
 int     hfs_test    (Volume* vol)               _NONNULL;
 Volume* hfs_find    (Volume* vol)               _NONNULL;
 
-int     hfs_attach  (HFS* hfs, Volume* vol)     _NONNULL;
+int     hfs_open  (HFS* hfs, Volume* vol)     _NONNULL;
 int     hfs_close   (HFS* hfs)                  _NONNULL;
 
 bool    hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFS* hfs)                    _NONNULL;

@@ -1,3 +1,10 @@
 # Presumes GNU GCC
-CFLAGS += -std=gnu1x -fstack-protector -Wall -Wno-multichar -Wno-unknown-pragmas
-LIBS   += -luuid -lm
+
+# man feature_test_macros or see include <features.h>
+CFLAGS += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_ISOC11_SOURCE
+
+CFLAGS += -fstack-protector -Wno-multichar -Wno-unknown-pragmas
+LIBS   += -lm # math.h
+
+# CFLAGS += $(shell pkg-config --cflags libbsd-overlay uuid)
+LIBS += $(shell pkg-config --libs libbsd-overlay uuid)

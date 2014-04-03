@@ -15,6 +15,8 @@
 
 #pragma mark - Structures
 
+#define GPT_SIG "EFI PART"
+
 /*
  http://developer.apple.com/library/mac/#technotes/tn2166/_index.html
  
@@ -29,18 +31,18 @@ typedef struct GPTHeader {
     uint64_t     signature;
     uint32_t     revision;
     uint32_t     header_size;
-    uint32_t     header_crc32;
+    uint32_t     crc;
     uint32_t     reserved;
     uint64_t     current_lba;
     uint64_t     backup_lba;
     uint64_t     first_lba;
     uint64_t     last_lba;
-    uuid_t        uuid;
-    uint64_t     partition_start_lba;
-    uint32_t     partition_entry_count;
-    uint32_t     partition_entry_size;
-    uint32_t     partition_crc32;
-} GPTHeader;
+    uuid_t       uuid;
+    uint64_t     partition_table_start_lba;
+    uint32_t     partitions_entry_count;
+    uint32_t     partitions_entry_size;
+    uint32_t     partition_table_crc;
+} __attribute__((packed, aligned(2))) GPTHeader;
 
 // 128 bytes
 typedef struct GPTPartitionEntry {
@@ -50,7 +52,7 @@ typedef struct GPTPartitionEntry {
     uint64_t   last_lba;
     uint64_t   attributes;
     uint16_t   name[36];
-} GPTPartitionEntry;
+} __attribute__((packed, aligned(2))) GPTPartitionEntry;
 
 typedef GPTPartitionEntry GPTPartitionRecord[128];
 
@@ -96,7 +98,7 @@ static uint64_t kGPTMSNoAutomount       _UNUSED = 0x8000000000000000; //63
 
 extern PartitionOps gpt_ops;
 
-uuid_t*     gpt_swap_uuid           (uuid_t* uuid) _NONNULL;
+void        gpt_swap_uuid           (uuid_t *uuid_p, const uuid_t* uuid) _NONNULL;
 const char* gpt_partition_type_str  (uuid_t uuid, VolType* hint);
 
 /**
@@ -104,8 +106,6 @@ const char* gpt_partition_type_str  (uuid_t uuid, VolType* hint);
  @return Returns -1 on error (check errno), 0 for NO, 1 for YES.
  */
 int gpt_test(Volume *vol) _NONNULL;
-
-int gpt_load_header(Volume *vol, GPTHeader *gpt, GPTPartitionRecord *entries) _NONNULL;
 
 /**
  Updates a volume with sub-volumes for any defined partitions.

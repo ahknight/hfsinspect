@@ -9,9 +9,11 @@
 #ifndef volumes_apm_h
 #define volumes_apm_h
 
-#include "../hfs/hfs_types.h"
+#include "hfs/hfs_types.h"
 
 #pragma mark - Structures
+
+#define APM_SIG "PM"
 
 // 136 bytes (512 reserved on-disk)
 typedef struct APMHeader APMHeader;

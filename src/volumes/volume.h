@@ -10,13 +10,11 @@
 #define volumes_volume_h
 
 #include <sys/param.h>          //PATH_MAX
-#include "hfs/Apple/hfs_macos_defs.h"
+#include "types.h"
 
 #pragma mark - Structures
 
 typedef uint32_t VolType;
-typedef char*    String;
-typedef BytePtr  Bytes;
 
 enum {
     kTypeUnknown                = 0,
@@ -62,12 +60,13 @@ typedef struct Volume Volume;
 struct Volume {
     int                 fd;                 // POSIX file descriptor
     FILE                *fp;                // C file handle
-    char                device[PATH_MAX];   // path to device file
+    char                source[PATH_MAX];   // path to source file
+    mode_t              mode;               // mode of source file
     
-    blksize_t           sector_size;         // block size (LBA size if the raw disk; FS blocks if a filesystem)
-    blkcnt_t            sector_count;        // total blocks in this volume
+    uint32_t            sector_size;         // block size (LBA size if the raw disk; FS blocks if a filesystem)
+    uint64_t            sector_count;        // total blocks in this volume
     
-    off_t               offset;             // offset in bytes on device
+    off_t               offset;             // offset in bytes on source
     size_t              length;             // length in bytes
     
     VolType             type;               // Major type of volume (partition map or filesystem)
@@ -86,6 +85,7 @@ struct Volume {
 typedef int (*volop) (Volume* vol);
 
 typedef struct PartitionOps {
+    char    name[32];
     volop   test;
     volop   load;
     volop   dump;
@@ -94,26 +94,27 @@ typedef struct PartitionOps {
 #pragma mark - Functions
 
 /** 
- Opens the character device at the specified path and returns an allocated Volume* structure. Close and release the structure with vol_close().
- @param path The path to the character device.
+ Opens the source at the specified path and returns an allocated Volume* structure. Close and release the structure with vol_close().
+ @param vol A pointer to a Volume struct.
+ @param path The path to the source.
  @param mode The mode to pass to open(2). Only O_RDONLY and O_RDRW are supported.
- @param offset The offset on the device this volume starts at.
- @param length The length of the volume on the device. Reads past this will be treated as if they were reading past the end of a file and return zeroes. Pass in 0 for no length checking.
- @param block_size The size of the blocks on this volume. For devices, use the LBA block size. For filesystems, use the filesystem allocation block size. If 0 is passed in, ioctl(2) is used to determine the block size of the underlying device automatically.
- @return A pointer to a Volume struct or NULL on failure (check errno and reference open(2) for details).
+ @param offset The offset on the source this volume starts at.
+ @param length The length of the volume on the source. Reads past this will be treated as if they were reading past the end of a file and return zeroes. Pass in 0 for no length checking.
+ @param block_size The size of the blocks on this volume. For devices, use the LBA block size. For filesystems, use the filesystem allocation block size. If 0 is passed in and path points to a device, ioctl(2) is used to determine the block size of underlying devices automatically.
+ @return Zero on success, -1 on failure (check errno and reference open(2) for details).
  @see {@link vol_qopen}
  */
-Volume* vol_open(const String path, int mode, off_t offset, size_t length, size_t block_size) _NONNULL;
+int vol_open(Volume* vol, const String path, int mode, off_t offset, size_t length, size_t block_size) _NONNULL;
 
 /**
- Quickly open a whole character device. Offset, length, and block_size are set to zero and auto-detected as needed.
- @param path The path to the character device.
+ Quickly open a whole source. Offset, length, and block_size are set to zero and auto-detected as needed.
+ @param path The path to the source.
  @see {@link vol_open}
  */
 Volume* vol_qopen(const String path) _NONNULL;
 
 /**
- Read from a volume, adjusting for the volume's device offset and length.
+ Read from a volume, adjusting for the volume's source offset and length.
  @param vol The Volume to read from.
  @param buf A buffer of sufficient size to hold the result.
  @param nbyte The number of bytes to read.
@@ -125,7 +126,7 @@ ssize_t vol_read_blocks (const Volume *vol, void* buf, ssize_t block_count, ssiz
 ssize_t vol_read_raw    (const Volume *vol, void* buf, size_t nbyte, off_t offset) __attribute__((nonnull(1,2)));
 
 /**
- Write to a volume, adjusting for the volume's device offset and length.
+ Write to a volume, adjusting for the volume's source offset and length.
  @param vol The Volume to write to.
  @param buf A buffer containing the data to write.
  @param nbyte The number of bytes to write.

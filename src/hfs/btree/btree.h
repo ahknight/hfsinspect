@@ -12,7 +12,6 @@
 #include "misc/cache.h"
 #include "hfs/Apple/hfs_format.h"
 #include "hfs/Apple/hfs_macos_defs.h"
-#include <stdint.h>
 
 typedef BytePtr     Bytes;
 typedef BTreeKey    *BTreeKeyPtr;
@@ -104,7 +103,7 @@ Bytes       BTGetRecord             (const BTreeNodePtr node, uint8_t recNum) _N
 uint16_t    BTGetRecordKeyLength    (const BTreeNodePtr node, uint8_t recNum) _NONNULL;
 int         BTGetBTNodeRecord       (BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum recNum) _NONNULL;
 
-bool        BTIsBlockUsed           (uint32_t thisAllocationBlock, Bytes allocationFileContents, size_t length) _NONNULL;
+bool        BTIsBlockUsed           (uint32_t thisAllocationBlock, void *allocationFileContents, size_t length) _NONNULL;
 bool        BTIsNodeUsed            (const BTreePtr bTree, bt_nodeid_t nodeNum) _NONNULL;
 
 #endif

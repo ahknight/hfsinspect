@@ -19,7 +19,10 @@ if [ ! -e $SETUPFLAG ]
   aptitude -yq safe-upgrade
 
   # Install developent tools
-  aptitude -yq install build-essential uuid-dev
+  aptitude -yq install build-essential clang pkg-config uuid-dev libbsd-dev
+  
+  # Link /vagrant to somewhere useful
+  ln -s /vagrant ~vagrant/hfsinspect
   
   touch $SETUPFLAG
 fi
@@ -32,13 +35,13 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell", inline: $provision_script
   
-  config.vm.define :i686 do |precise32|
-    precise32.vm.box = "precise32"
-    precise32.vm.network :private_network, ip: "10.8.8.10"
+  config.vm.define :linux32 do |linux32|
+    linux32.vm.box = "trusty32"
+    linux32.vm.network :private_network, ip: "10.8.8.10"
   end
 
-  config.vm.define :x86_64 do |precise64|
-    precise64.vm.box = "precise64"
-    precise64.vm.network :private_network, ip: "10.8.8.11"
+  config.vm.define :linux64 do |linux64|
+    linux64.vm.box = "trusty64"
+    linux64.vm.network :private_network, ip: "10.8.8.11"
   end
 end
