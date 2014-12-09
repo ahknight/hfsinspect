@@ -5,9 +5,9 @@
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
 
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
@@ -21,42 +21,61 @@
       <div class="inner">
         <h1>hfsinspect</h1>
         <h2>An open-source HFS+ filesystem explorer and debugger (in the spirit of hfsdebug)</h2>
-        <a href="https://github.com/ahknight/hfsinspect" class="button"><small>View project on</small>GitHub</a>
+        <a href="https://github.com/ahknight/hfsinspect" class="button"><small>View project on</small> GitHub</a>
       </div>
     </header>
 
     <div id="content-wrapper">
       <div class="inner clearfix">
         <section id="main-content">
-          <p>This program is a work-in-progress and is quite buggy in its current state.  That said, it's read-only and can display some really interesting information already so have a run with it, help where you can, and file some suggestions on the site.</p>
+          <h1>
+<a id="hfsinspect" class="anchor" href="#hfsinspect" aria-hidden="true"><span class="octicon octicon-link"></span></a>hfsinspect</h1>
 
-<p><a href="https://github.com/ahknight/hfsinspect">https://github.com/ahknight/hfsinspect</a></p>
+<p><a href="https://travis-ci.org/ahknight/hfsinspect"><img src="https://travis-ci.org/ahknight/hfsinspect.png?branch=master" alt="Build Status"></a>
+<a href="http://waffle.io/ahknight/hfsinspect"><img src="http://badge.waffle.io/ahknight/hfsinspect.png" alt="Stories in Ready"></a></p>
+
+<h2>
+<a id="an-open-source-hfs-filesystem-explorer-and-debugger-in-the-spirit-of-hfsdebug" class="anchor" href="#an-open-source-hfs-filesystem-explorer-and-debugger-in-the-spirit-of-hfsdebug" aria-hidden="true"><span class="octicon octicon-link"></span></a>An open-source HFS+ filesystem explorer and debugger (in the spirit of hfsdebug)</h2>
+
+<p>This program is a work-in-progress and is quite buggy in its current state.  That said, it's read-only and can display some really interesting information already so have a run with it, help where you can, and file some suggestions on the site.</p>
+
+<pre><code>https://github.com/ahknight/hfsinspect
+</code></pre>
 
 <h1>
-<a name="quick-guide" class="anchor" href="#quick-guide"><span class="octicon octicon-link"></span></a>Quick Guide</h1>
+<a id="quick-guide" class="anchor" href="#quick-guide" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick Guide</h1>
 
-<p>You'll need Xcode 4+ to build right now, and it does use OS X system headers (though I plan on changing that in the future).</p>
+<pre><code>$ git clone https://github.com/ahknight/hfsinspect.git
+$ cd hfsinspect
+$ make
+$ [sudo] make install # PREFIX defaults to /usr/local; for somewhere else do: PREFIX=/home/you make -e install
+</code></pre>
 
 <p>Once built and the product located, go ahead and hit "hfsinspect --help" for a quick blurb about the options.</p>
 
 <h2>
-<a name="examples" class="anchor" href="#examples"><span class="octicon octicon-link"></span></a>Examples</h2>
+<a id="building-on-linux" class="anchor" href="#building-on-linux" aria-hidden="true"><span class="octicon octicon-link"></span></a>Building on Linux</h2>
 
-<pre><code>$ hfsinspect -d ./fstest -l -P /
-Listing for FS Test
-CNID      kind       mode       user      group     data            rsrc            name
-18        folder     d--------- 0         0         -               -               ␀␀␀␀HFS+ Private Data
-19        folder     dr-xr-xr-t 0         0         -               -               .HFS+ Private Directory Data
-20        folder     d-wx-wx-wt 501       20        -               -               .Trashes
-21        folder     drwx------ 501       20        -               -               .fseventsd
-16        file       ---------- 0         0         512.00 KiB      0.00 bytes      .journal
-17        file       ---------- 0         0         4.00 KiB        0.00 bytes      .journal_info_block
-----------------------------------------------------------------------------------------------------
-                                                    516.00 KiB      0.00 bytes
-   Folders: 4          Data forks: 2          Hard links: 0
-     Files: 2          RSRC forks: 0            Symlinks: 0
+<p>You'll need the @uuid-dev@ package for the @libuuid@ headers (in Ubuntu at least).  I've tested a lot of the app in Linux but there are occassional issues with some disks and files so if you run into them please file a detailed issue or, if you can, submit a fix.</p>
 
-$ hfsinspect -d ./fstest -P /
+<h2>
+<a id="building-on-bsd" class="anchor" href="#building-on-bsd" aria-hidden="true"><span class="octicon octicon-link"></span></a>Building on BSD</h2>
+
+<p>Haven't tried.  Please do and report back.  As it works on OS X and Linux I would hope it functions on at least FreeBSD.</p>
+
+<h2>
+<a id="testing-in-vitualbox" class="anchor" href="#testing-in-vitualbox" aria-hidden="true"><span class="octicon octicon-link"></span></a>Testing in VitualBox</h2>
+
+<p>One thing to note when testing in VirtualBox is that it doesn't pass-through SSE4 instructions by default, so only the software CRC32C path can be tested.  As of VirtualBox 4.3.8, however, there is a <a href="https://www.virtualbox.org/manual/ch09.html#sse412passthrough">semi-hidden option</a> to enable this:</p>
+
+<pre><code>VBoxManage setextradata "VM name" VBoxInternal/CPUM/SSE4.1 1
+VBoxManage setextradata "VM name" VBoxInternal/CPUM/SSE4.2 1
+</code></pre>
+
+<h2>
+<a id="examples" class="anchor" href="#examples" aria-hidden="true"><span class="octicon octicon-link"></span></a>Examples</h2>
+
+<pre><code>$ hfsinspect -d ./fstest -P /
 
 #   Record ID 1 (2/20) (offset 124; length: 32) (Node 1)
 
@@ -69,6 +88,20 @@ $ hfsinspect -d ./fstest -P /
   reserved               = 0
   parentID               = 1
   nodeName               = "FS Test" (7)
+
+$ hfsinspect -d ./fstest -l -P /
+Listing for FS Test
+CNID      kind       mode       user      group     data            rsrc            name
+18        folder     d--------- 0         0         -               -               ␀␀␀␀HFS+ Private Data
+19        folder     dr-xr-xr-t 0         0         -               -               .HFS+ Private Directory Data
+20        folder     d-wx-wx-wt 501       20        -               -               .Trashes
+21        folder     drwx------ 501       20        -               -               .fseventsd
+16        file       ---------- 0         0         512.00 KiB      0.00 bytes      .journal
+17        file       ---------- 0         0         4.00 KiB        0.00 bytes      .journal_info_block
+----------------------------------------------------------------------------------------------------
+                                                    516.00 KiB      0.00 bytes
+   Folders: 4          Data forks: 2          Hard links: 0
+     Files: 2          RSRC forks: 0            Symlinks: 0
 
 $ hfsinspect -d ./fstest -P /.journal
 
@@ -374,7 +407,7 @@ $ hfsinspect -s -V /Volumes/Titania/
 
           <p class="repo-owner"><a href="https://github.com/ahknight/hfsinspect"></a> is maintained by <a href="https://github.com/ahknight">ahknight</a>.</p>
 
-          <p>This page was generated by <a href="pages.github.com">GitHub Pages</a> using the Architect theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.</p>
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
         </aside>
       </div>
     </div>
