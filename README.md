@@ -26,6 +26,13 @@ You'll need the @uuid-dev@ package for the @libuuid@ headers (in Ubuntu at least
 
 Haven't tried.  Please do and report back.  As it works on OS X and Linux I would hope it functions on at least FreeBSD.
 
+## Testing in VitualBox
+
+One thing to note when testing in VirtualBox is that it doesn't pass-through SSE4 instructions by default, so only the software CRC32C path can be tested.  As of VirtualBox 4.3.8, however, there is a [semi-hidden option](https://www.virtualbox.org/manual/ch09.html#sse412passthrough) to enable this:
+
+    VBoxManage setextradata "VM name" VBoxInternal/CPUM/SSE4.1 1
+    VBoxManage setextradata "VM name" VBoxInternal/CPUM/SSE4.2 1
+
 ## Examples
 
     $ hfsinspect -d ./fstest -P /

@@ -36,12 +36,22 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: $provision_script
   
   config.vm.define :linux32 do |linux32|
-    linux32.vm.box = "trusty32"
+    linux32.vm.box = "ubuntu/trusty32"
     linux32.vm.network :private_network, ip: "10.8.8.10"
+    
+    linux32.vm.provider "virtualbox" do |v|
+      v.customize ["setextradata", :id, "VBoxInternal/CPUM/SSE4.1", "1"]
+      v.customize ["setextradata", :id, "VBoxInternal/CPUM/SSE4.2", "1"]
+    end
   end
 
   config.vm.define :linux64 do |linux64|
-    linux64.vm.box = "trusty64"
+    linux64.vm.box = "ubuntu/trusty64"
     linux64.vm.network :private_network, ip: "10.8.8.11"
+    
+    linux64.vm.provider "virtualbox" do |v|
+      v.customize ["setextradata", :id, "VBoxInternal/CPUM/SSE4.1", "1"]
+      v.customize ["setextradata", :id, "VBoxInternal/CPUM/SSE4.2", "1"]
+    end
   end
 end

@@ -18,6 +18,21 @@ static uint32_t crc32c_CPUDetection(uint32_t crc, const void* data, size_t lengt
 
 CRC32CFunctionPtr crc32c = crc32c_CPUDetection;
 
+// Use the compiler's cpuid, if it exists.
+#if (defined __GNUC__) || (defined __clang__)
+#include <cpuid.h>
+
+static uint32_t cpuid(uint32_t functionInput) {
+  uint32_t eax;
+  uint32_t ebx;
+  uint32_t ecx;
+  uint32_t edx;
+  __cpuid(functionInput, eax, ebx, ecx, edx);
+  return ecx;
+}
+
+#else
+// Basic implementation.  Seems to only cover x86, not x64.
 static uint32_t cpuid(uint32_t functionInput) {
     uint32_t eax;
     uint32_t ebx;
@@ -35,6 +50,7 @@ static uint32_t cpuid(uint32_t functionInput) {
 #endif
     return ecx;
 }
+#endif
 
 CRC32CFunctionPtr detectBestCRC32C() {
     static const int SSE42_BIT = 20;
