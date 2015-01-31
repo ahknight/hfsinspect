@@ -9,11 +9,10 @@
 #ifndef hfsinspect_logging_h
 #define hfsinspect_logging_h
 
-#include "debug.h"      //print_trace
-#include <stdio.h>      //FILE*
 #include <stdint.h>     //uint#_t etc.
+#include <stdio.h>      //FILE*
 #include <stdbool.h>    //bool
-#include <signal.h>     //raise
+#include "debug.h"      //print_trace
 
 void critical(char* format, ...) __attribute((format(printf,1,2), noreturn));
 #define critical(...)   { PrintLine(L_CRITICAL, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); exit(1); }
@@ -46,10 +45,6 @@ enum LogLevel {
     L_INFO,
     L_DEBUG
 };
-
-void _print_reset(FILE* f);
-void _print_gray(FILE* f, uint8_t gray, bool background);
-void _print_color(FILE* f, uint8_t red, uint8_t green, uint8_t blue, bool background);
 
 int LogLine(enum LogLevel level, const char* format, ...)
     __attribute__((format(printf, 2, 3)));

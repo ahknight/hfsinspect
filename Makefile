@@ -1,37 +1,69 @@
-CFLAGS += -std=c1x -Isrc -include src/hfsinspect-Prefix.pch -Wall -msse4.2
+CFLAGS += -std=c1x -Isrc -Isrc/vendor -Isrc/vendor/crc-32c -Wall -msse4.2
 CFLAGS += -g -O0 #debug
+# CFLAGS += -Os
 
 OS := $(shell uname -s)
 MACHINE := $(shell uname -m)
 include Makefile.$(OS)
 
 BINARYNAME = hfsinspect
-BINARYPATH = $(BINDIR)/$(BINARYNAME)
 BUILDDIR = build/$(OS)-$(MACHINE)
-BINDIR = $(BUILDDIR)
+BINARYPATH = $(BUILDDIR)/$(BINARYNAME)
 OBJDIR = $(BUILDDIR)/obj
 
-SOURCES := $(shell find src -name *.c)
-OBJECTS := $(patsubst src/%, $(OBJDIR)/%, $(SOURCES:.c=.o))
+AUXFILES := Makefile Makefile.Darwin Makefile.Linux README.md
+PROJDIRS := src/hfsinspect src/hfs src/hfsplus src/logging src/vendor/memdmp src/vendor/crc-32c/crc32c src/volumes
+SRCFILES := $(shell find $(PROJDIRS) -type f -name *.c)
+HDRFILES := $(shell find $(PROJDIRS) -type f -name *.h)
+OBJFILES := $(patsubst src/%.c, $(OBJDIR)/%.o, $(SRCFILES))
+DEPFILES := $(patsubst src/%.c, $(OBJDIR)/%.d, $(SRCFILES))
+ALLFILES := $(SRCFILES) $(HDRFILES) $(AUXFILES)
 
 INSTALL = $(shell which install)
 PREFIX = /usr/local
 
-vpath %.c src
 .PHONY: all test docs clean distclean
-.NOTPARALLEL:
 
-all: $(BINARYPATH)
+all: depend $(BINARYPATH)
 everything: $(BINARYPATH) docs
 clean: clean-hfsinspect
 distclean: clean-test clean-docs
 	$(RM) -r build
 
-$(OBJDIR)/%.o : %.c
+depend: .depend
+
+.depend: $(SRCFILES)
+	@echo "Building dependancy graph"
+	@rm -f ./.depend
+	@$(CC) $(CFLAGS) -MM $^>>./.depend;
+
+-include .depend
+
+$(OBJDIR)/%.o : src/%.c
 	@echo Compiling $<
 	@mkdir -p `dirname $@`
 	@$(COMPILE.c) $< -o $@
 
+$(BINARYPATH): $(OBJFILES)
+	@echo "Building hfsinspect."
+	@mkdir -p `dirname $(BINARYPATH)`
+	@$(LINK.c) -o $(BINARYPATH) $^ $(LIBS)
+
+docs:
+	@echo "Building documentation."
+	@doxygen docs/doxygen.config
+
+install: $(BINARYPATH)
+	@echo "Installing hfsinspect in $(PREFIX)"
+	@mkdir -p $(PREFIX)/bin
+	@$(INSTALL) $(BINARYPATH) $(PREFIX)/bin
+	@echo "Installing manpage in $(PREFIX)"
+	@mkdir -p $(PREFIX)/share/man/man1
+	@$(INSTALL) docs/hfsinspect.1 $(PREFIX)/share/man/man1
+
+uninstall:
+	$(RM) $(PREFIX)/bin/$(BINARYNAME)
+	$(RM) $(PREFIX)/share/man/man1/hfsinspect.1
 
 test: all
 	gunzip < images/test.img.gz > images/test.img
@@ -40,35 +72,11 @@ test: all
 clean-test:
 	$(RM) "images/test.img" "images/MBR.dmg"
 
-
-
-$(BINARYPATH): $(OBJECTS)
-	@echo "Building hfsinspect."
-	@mkdir -p `dirname $(BINARYPATH)`
-	@$(LINK.c) -o $(BINARYPATH) $^ $(LIBS)
-
 clean-hfsinspect:
-	$(RM) -r "$(BUILDDIR)"
-
-
-
-install: $(BINARYPATH)
-	@echo "Installing hfsinspect in $(PREFIX)"
-	@mkdir -p $(PREFIX)/bin
-	@$(INSTALL) $(BINARYPATH) $(PREFIX)/bin
-	@echo "Installing manpage in $(PREFIX)"
-	@mkdir -p $(PREFIX)/share/man/man1
-	@$(INSTALL) src/hfsinspect.1 $(PREFIX)/share/man/man1
-
-uninstall:
-	$(RM) $(PREFIX)/bin/$(BINARYNAME)
-	$(RM) $(PREFIX)/share/man/man1/hfsinspect.1
-
-
-
-docs:
-	@echo "Building documentation."
-	@doxygen docs/doxygen.config
+	$(RM) -r "$(BUILDDIR)" ./.depend
 
 clean-docs:
 	$(RM) -r docs/html docs/doxygen.log
+
+dist.tgz: $(ALLFILES)
+	tar -czf dist.tgz $^

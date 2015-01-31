@@ -6,24 +6,31 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "volume.h"
-#include "misc/output.h"
-
+#include <unistd.h>
+#include <errno.h>              // errno/perror
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <libgen.h>
 
-#if defined (__APPLE__)
-#include <sys/disk.h>
-#elif defined (__linux__)
-#include <sys/ioctl.h>
-#include <sys/mount.h>
+#include <string.h>             // memcpy, strXXX, etc.
+#if defined(__linux__)
+    #include <bsd/string.h>     // strlcpy, etc.
 #endif
+
+#if defined (__APPLE__)
+    #include <sys/disk.h>
+#elif defined (__linux__)
+    #include <sys/ioctl.h>
+    #include <sys/mount.h>
+#endif
+
+#include "volume.h"
+#include "hfsinspect/output.h"
+#include "logging/logging.h"    // console printing routines
 
 #define ASSERT_VOL(vol) { _assert(vol != NULL); _assert(vol->fp); }
 
-int vol_open(Volume* vol, const String path, int mode, off_t offset, size_t length, size_t block_size)
+int vol_open(Volume* vol, const char* path, int mode, off_t offset, size_t length, size_t block_size)
 {
     _assert(vol);
     _assert(path);
@@ -86,9 +93,9 @@ int vol_open(Volume* vol, const String path, int mode, off_t offset, size_t leng
     return 0;
 }
 
-Volume* vol_qopen(const String path)
+Volume* vol_qopen(const char* path)
 {
-    Volume *vol;
+    Volume *vol = NULL;
     ALLOC(vol, sizeof(Volume));
     
     if ( vol_open(vol, path, O_RDONLY, 0, 0, 0) < 0 ) {
@@ -106,7 +113,7 @@ int vol_blk_get(const Volume *vol, off_t start, size_t count, void *buf)
     unsigned blksz = vol->sector_size;
     off_t off = start*blksz + vol->offset;
     
-    debug("Seeking to %llu then reading %zu blocks of size %u.", off, count, blksz);
+    debug("Seeking to %llu then reading %zu blocks of size %u.", (unsigned long long)off, count, blksz);
     if ( (rval = fseeko(vol->fp, off, SEEK_SET)) < 0 )
         return rval;
     return fread(buf, blksz, count, vol->fp);
@@ -196,7 +203,7 @@ Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t lengt
 {
     { if (vol == NULL || vol->fp == NULL) { errno = EINVAL; return NULL; } }
     
-    Volume* newvol;
+    Volume* newvol = NULL;
     ALLOC(newvol, sizeof(Volume));
     
     if( (newvol->fd = dup(vol->fd)) < 0) {

@@ -6,18 +6,26 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include <string.h>             // memcpy, strXXX, etc.
+#if defined(__linux__)
+    #include <bsd/string.h>     // strlcpy, etc.
+#endif
+
+#include <stdbool.h>
 #include <math.h>
+
 #include "gpt.h"
-#include "misc/_endian.h"
-#include "misc/output.h"
-#include "misc/stringtools.h"
+#include "hfsinspect/output.h"
+#include "volumes/_endian.h"
 #include "crc32/crc32.h"
+#include "logging/logging.h"    // console printing routines
+
 
 void        _gpt_swap_uuid          (uuid_t *uuid_p, const uuid_t* uuid);
 const char* _gpt_partition_type_str (uuid_t uuid, VolType* hint);
 int         _gpt_valid_header       (GPTHeader header);
 int         _gpt_valid_pmap         (GPTHeader header, const GPTPartitionRecord *pmap);
-int         _gpt_load_header        (Volume *vol, GPTHeader *gpt, GPTPartitionRecord *entries) _NONNULL;
+int         _gpt_load_header        (Volume *vol, GPTHeader *gpt, GPTPartitionRecord *entries) __attribute__((nonnull));
 void        _gpt_print_header       (const GPTHeader *header_p, const Volume *vol);
 void        _gpt_print_partitions   (const GPTHeader *header_p, const GPTPartitionRecord *entries_p, Volume *vol);
 

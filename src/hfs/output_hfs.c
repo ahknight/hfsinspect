@@ -6,14 +6,21 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "hfs/output_hfs.h"
+#include <sys/stat.h>
 
-#include "misc/output.h"
-#include "misc/stringtools.h"
-#include "hfs/hfs_types.h"
+#include <string.h>             // memcpy, strXXX, etc.
+#if defined(__linux__)
+    #include <bsd/string.h>     // strlcpy, etc.
+#endif
+
+#include "hfs/output_hfs.h"
+#include "hfsinspect/output.h"
+#include "hfsinspect/stringtools.h"
+#include "hfs/unicode.h"
+#include "hfs/types.h"
 #include "hfs/catalog.h"
 #include "hfs/hfs.h"
-#include <sys/stat.h>
+#include "logging/logging.h"    // console printing routines
 
 static HFS *volume = NULL;
 void set_hfs_volume(HFS *v) { volume = v; }
@@ -278,7 +285,7 @@ void PrintExtentList(const ExtentList* list, uint32_t totalBlocks)
         }
     }
     
-    char sumLine[50];
+    char sumLine[50] = {'\0'};
     memset(sumLine, '-', 38);
     PrintAttribute("", sumLine);
     

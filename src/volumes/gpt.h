@@ -13,6 +13,11 @@
 #include "mbr.h"
 #include <uuid/uuid.h>
 
+#ifndef _UUID_STRING_T
+#define _UUID_STRING_T
+typedef char	uuid_string_t[37];
+#endif /* _UUID_STRING_T */
+
 #pragma mark - Structures
 
 #define GPT_SIG "EFI PART"
@@ -63,7 +68,7 @@ typedef struct GPTPartitionName {
     VolType         volsubtype;
 } GPTPartitionName;
 
-static GPTPartitionName gpt_partition_types[] _UNUSED = {
+static GPTPartitionName gpt_partition_types[] __attribute__((unused)) = {
     {"00000000-0000-0000-0000-000000000000", "Unused",                          kVolTypeSystem,         kSysFreeSpace},
     
     {"024DEE41-33E7-11D3-9D69-0008C781F39F", "MBR Partition Scheme",            kVolTypePartitionMap,   kPMTypeMBR},
@@ -83,40 +88,40 @@ static GPTPartitionName gpt_partition_types[] _UNUSED = {
     {{0}, {0}, 0, 0},
 };
 
-static uint64_t kGPTRequired            _UNUSED = 0x0000000000000001; //0 - "required", "system disk"
-static uint64_t kGPTNoBlockIO           _UNUSED = 0x0000000000000002; //1 - "not mapped", "no block IO"
-static uint64_t kGPTLegacyBIOSBootable  _UNUSED = 0x0000000000000004; //2
+static uint64_t kGPTRequired        __attribute__((unused)) = 0x0000000000000001; //0 - "required", "system disk"
+static uint64_t kGPTNoBlockIO       __attribute__((unused)) = 0x0000000000000002; //1 - "not mapped", "no block IO"
+static uint64_t kGPTLegacyBIOSBootable  __attribute__((unused)) = 0x0000000000000004; //2
 
 // http://msdn.microsoft.com/en-us/library/windows/desktop/aa365449(v=vs.85).aspx
-static uint64_t kGPTMSReadOnly          _UNUSED = 0x1000000000000000; //60
-static uint64_t kGPTMSShadowCopy        _UNUSED = 0x2000000000000000; //61
-static uint64_t kGPTMSHidden            _UNUSED = 0x4000000000000000; //62
-static uint64_t kGPTMSNoAutomount       _UNUSED = 0x8000000000000000; //63
+static uint64_t kGPTMSReadOnly      __attribute__((unused)) = 0x1000000000000000; //60
+static uint64_t kGPTMSShadowCopy    __attribute__((unused)) = 0x2000000000000000; //61
+static uint64_t kGPTMSHidden        __attribute__((unused)) = 0x4000000000000000; //62
+static uint64_t kGPTMSNoAutomount   __attribute__((unused)) = 0x8000000000000000; //63
 
 
 #pragma mark - Functions
 
 extern PartitionOps gpt_ops;
 
-void        gpt_swap_uuid           (uuid_t *uuid_p, const uuid_t* uuid) _NONNULL;
+void        gpt_swap_uuid           (uuid_t *uuid_p, const uuid_t* uuid) __attribute__((nonnull));
 const char* gpt_partition_type_str  (uuid_t uuid, VolType* hint);
 
 /**
  Tests a volume to see if it contains a GPT partition map.
  @return Returns -1 on error (check errno), 0 for NO, 1 for YES.
  */
-int gpt_test(Volume *vol) _NONNULL;
+int gpt_test(Volume *vol) __attribute__((nonnull));
 
 /**
  Updates a volume with sub-volumes for any defined partitions.
  @return Returns -1 on error (check errno), 0 for success.
  */
-int gpt_load(Volume *vol) _NONNULL;
+int gpt_load(Volume *vol) __attribute__((nonnull));
 
 /**
  Prints a description of the GPT structure and partition information to stdout.
  @return Returns -1 on error (check errno), 0 for success.
  */
-int gpt_dump(Volume *vol) _NONNULL;
+int gpt_dump(Volume *vol) __attribute__((nonnull));
 
 #endif

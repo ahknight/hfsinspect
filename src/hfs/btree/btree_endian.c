@@ -6,11 +6,14 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "hfs/btree/btree_endian.h"
+#include <errno.h>              // errno/perror
 
-#include "misc/_endian.h"
-#include "misc/output.h"
-#include "hfs/output_hfs.h"
+#include "hfs/btree/btree_endian.h"
+#include "volumes/_endian.h"
+
+#include "hfsinspect/cdefs.h"
+#include "logging/logging.h"    // console printing routines
+
 
 void swap_BTNodeDescriptor(BTNodeDescriptor *record)
 {

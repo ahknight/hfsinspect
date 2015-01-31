@@ -6,12 +6,18 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include <errno.h>              // errno/perror
+#include <string.h>             // memcpy, strXXX, etc.
+
 #include "hfs/extents.h"
 
-#include "misc/_endian.h"
-#include "misc/output.h"
+#include "hfsinspect/cdefs.h"
+#include "hfsinspect/output.h"
+#include "hfsinspect/utilities.h"     // commonly-used utility functions
 #include "hfs/hfs_io.h"
 #include "hfs/output_hfs.h"
+#include "logging/logging.h"    // console printing routines
+
 
 int hfs_get_extents_btree(BTreePtr *tree, const HFS *hfs)
 {

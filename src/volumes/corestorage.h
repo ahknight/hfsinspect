@@ -107,26 +107,26 @@ typedef struct CSVolumeGroupsDescriptor {
 
 extern PartitionOps cs_ops;
 
-void cs_print_block_header(CSBlockHeader* header) _NONNULL;
+void cs_print_block_header(CSBlockHeader* header) __attribute__((nonnull));
 
 /**
  Tests a volume to see if it contains a CS partition map.
  @return Returns -1 on error (check errno), 0 for NO, 1 for YES.
  */
-int cs_test(Volume *vol) _NONNULL;
+int cs_test(Volume *vol) __attribute__((nonnull));
 
-int cs_get_volume_header(Volume *vol, CSVolumeHeader* header) _NONNULL;
+int cs_get_volume_header(Volume *vol, CSVolumeHeader* header) __attribute__((nonnull));
 
 /**
  Updates a volume with sub-volumes for any defined partitions.
  @return Returns -1 on error (check errno), 0 for success.
  */
-int cs_load(Volume *vol) _NONNULL;
+int cs_load(Volume *vol) __attribute__((nonnull));
 
 /**
  Prints a description of the CS structure and partition information to stdout.
  @return Returns -1 on error (check errno), 0 for success.
  */
-int cs_dump(Volume *vol) _NONNULL;
+int cs_dump(Volume *vol) __attribute__((nonnull));
 
 #endif

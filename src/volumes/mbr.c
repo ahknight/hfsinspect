@@ -6,9 +6,19 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include <errno.h>              // errno/perror
+
+#include <string.h>             // memcpy, strXXX, etc.
+#if defined(__linux__)
+    #include <bsd/string.h>     // strlcpy, etc.
+#endif
+
 #include "mbr.h"
-#include "misc/output.h"
-#include "misc/_endian.h"
+#include "hfsinspect/output.h"
+#include "volumes/_endian.h"
+
+#include "logging/logging.h"    // console printing routines
+
 
 int mbr_load_header(Volume *vol, MBR *mbr);
 

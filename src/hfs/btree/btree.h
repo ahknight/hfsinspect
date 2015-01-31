@@ -9,7 +9,13 @@
 #ifndef hfsinspect_hfs_btree_btree_h
 #define hfsinspect_hfs_btree_btree_h
 
-#include "misc/cache.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+
+#include "hfsinspect/cdefs.h"
+
+#include "hfsinspect/cache.h"
 #include "hfs/Apple/hfs_format.h"
 #include "hfs/Apple/hfs_macos_defs.h"
 
@@ -27,9 +33,9 @@ typedef struct _BTree *BTreePtr;
 typedef struct _BTreeNode *BTreeNodePtr;
 //typedef struct _BTreeNodeRecord BTreeRecord;
 
-typedef int(*btree_key_compare_func)(const BTreeKey *, const BTreeKey *) _NONNULL;
-typedef bool(*btree_walk_func)(const BTreePtr tree, const BTreeNodePtr node) _NONNULL;
-typedef int(*btree_get_node_func)(BTreeNodePtr *node, const BTreePtr bTree, bt_nodeid_t nodeNum) _NONNULL;
+typedef int(*btree_key_compare_func)(const BTreeKey *, const BTreeKey *) __attribute__((nonnull));
+typedef bool(*btree_walk_func)(const BTreePtr tree, const BTreeNodePtr node) __attribute__((nonnull));
+typedef int(*btree_get_node_func)(BTreeNodePtr *node, const BTreePtr bTree, bt_nodeid_t nodeNum) __attribute__((nonnull));
 
 enum {
     kBTHFSTreeType = 0,
@@ -90,20 +96,20 @@ struct _BTNodeRecord {
     uint16_t        valueLen;
 };
 
-int btree_init          (BTreePtr btree, FILE *fp) _NONNULL;
-int btree_get_node      (BTreeNodePtr *outNode, const BTreePtr tree, bt_nodeid_t nodeNumber) _NONNULL;
+int btree_init          (BTreePtr btree, FILE *fp) __attribute__((nonnull));
+int btree_get_node      (BTreeNodePtr *outNode, const BTreePtr tree, bt_nodeid_t nodeNumber) __attribute__((nonnull));
 void btree_free_node    (BTreeNodePtr node);
-int btree_get_record    (BTreeKeyPtr * key, Bytes * data, const BTreeNodePtr node, BTRecNum recordID) NONNULL(1,3);
-int btree_walk          (const BTreePtr btree, const BTreeNodePtr node, btree_walk_func walker) _NONNULL;
-int btree_search        (BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, const void * searchKey) _NONNULL;
-int btree_search_node   (BTRecNum *index, const BTreePtr btree, const BTreeNodePtr node, const void * searchKey) _NONNULL;
+int btree_get_record    (BTreeKeyPtr * key, Bytes * data, const BTreeNodePtr node, BTRecNum recordID) __attribute__((nonnull(1,3)));
+int btree_walk          (const BTreePtr btree, const BTreeNodePtr node, btree_walk_func walker) __attribute__((nonnull));
+int btree_search        (BTreeNodePtr *node, BTRecNum *recordID, const BTreePtr btree, const void * searchKey) __attribute__((nonnull));
+int btree_search_node   (BTRecNum *index, const BTreePtr btree, const BTreeNodePtr node, const void * searchKey) __attribute__((nonnull));
 
-BTRecOffset BTGetRecordOffset       (const BTreeNodePtr node, uint8_t recNum) _NONNULL;
-Bytes       BTGetRecord             (const BTreeNodePtr node, uint8_t recNum) _NONNULL;
-uint16_t    BTGetRecordKeyLength    (const BTreeNodePtr node, uint8_t recNum) _NONNULL;
-int         BTGetBTNodeRecord       (BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum recNum) _NONNULL;
+BTRecOffset BTGetRecordOffset       (const BTreeNodePtr node, uint8_t recNum) __attribute__((nonnull));
+Bytes       BTGetRecord             (const BTreeNodePtr node, uint8_t recNum) __attribute__((nonnull));
+uint16_t    BTGetRecordKeyLength    (const BTreeNodePtr node, uint8_t recNum) __attribute__((nonnull));
+int         BTGetBTNodeRecord       (BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum recNum) __attribute__((nonnull));
 
-bool        BTIsBlockUsed           (uint32_t thisAllocationBlock, void *allocationFileContents, size_t length) _NONNULL;
-bool        BTIsNodeUsed            (const BTreePtr bTree, bt_nodeid_t nodeNum) _NONNULL;
+bool        BTIsBlockUsed           (uint32_t thisAllocationBlock, void *allocationFileContents, size_t length) __attribute__((nonnull));
+bool        BTIsNodeUsed            (const BTreePtr bTree, bt_nodeid_t nodeNum) __attribute__((nonnull));
 
 #endif

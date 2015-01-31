@@ -6,14 +6,22 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "logging.h"
+#include <stdlib.h>
 #include <stdarg.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <signal.h>     //raise
 #include <sys/param.h>  //MIN/MAX
 
+#include <string.h>             // memcpy, strXXX, etc.
+#if defined(__linux__)
+    #include <bsd/string.h>     // strlcpy, etc.
+#endif
+
+#include "logging.h"
 #include "prefixstream.h"
 #include "nullstream.h"
+#include "memdmp/output.h"
 
 bool DEBUG = false;
 
@@ -33,37 +41,6 @@ struct _colorState {
 };
 typedef struct _colorState colorState;
 
-bool _useColor(FILE* f)
-{
-    return ( isatty(fileno(f)) == 1 && getenv("NOCOLOR") == NULL );
-}
-
-void _print_reset(FILE* f)
-{
-    if (_useColor(f) == false) return;
-    fprintf(f, "\x1b[0m");
-}
-
-void _print_gray(FILE* f, uint8_t gray, bool background)
-{
-    if (_useColor(f) == false) return;
-    // values must be from 0-23.
-    int color = 232 + gray;
-    fprintf(f, "\x1b[%u;5;%um", (background?48:38), color);
-}
-
-void _print_color(FILE* f, uint8_t red, uint8_t green, uint8_t blue, bool background)
-{
-    if (_useColor(f) == false) return;
-    // values must be from 0-5.
-    if (red == green && green == blue) {
-        _print_gray(f, red, background);
-        return;
-    }
-    
-    int color = 16 + (36 * red) + (6 * green) + blue;
-    fprintf(f, "\x1b[%u;5;%um", (background?48:38), color);
-}
 
 void _printColor(FILE* f, unsigned level)
 {

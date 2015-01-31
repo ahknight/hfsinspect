@@ -6,16 +6,25 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include <string.h>             // memcpy, strXXX, etc.
+#if defined(__linux__)
+    #include <bsd/string.h>     // strlcpy, etc.
+#endif
+
+#include <errno.h>              // errno/perror
+#include <wchar.h>
+
 #include "hfs/catalog.h"
 
 #include "hfs/hfs_io.h"
 #include "hfs/output_hfs.h"
 #include "hfs/Apple/hfs_unicode.h" // Apple's FastUnicodeCompare and conversion table.
 #include "hfs/hfs_endian.h"
-#include "misc/_endian.h"
-#include "misc/stringtools.h"
+#include "hfsinspect/cdefs.h"
+#include "hfs/unicode.h"
+#include "hfsinspect/utilities.h"     // commonly-used utility functions
+#include "logging/logging.h"    // console printing routines
 
-#include <wchar.h>
 
 const uint32_t kAliasCreator       = 'MACS';
 const uint32_t kFileAliasType      = 'alis';
@@ -288,13 +297,13 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord *out_ca
     
     int         found = 0;
     hfs_cnid_t  parentID = kHFSRootFolderID, last_parentID = 0;
-    char        *file_path, *dup;
+    char        *file_path, *dup_path;
     char        *segment = NULL;
     char        last_segment[PATH_MAX] = "";
     
     HFSPlusCatalogRecord    catalogRecord = {0};
     
-    file_path = dup = strdup(path);
+    file_path = dup_path = strdup(path);
     
     while ( (segment = strsep(&file_path, "/")) != NULL ) {
         debug("Segment: %d:%s", parentID, segment);
@@ -341,7 +350,7 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord *out_ca
         if (out_catalogRecord != NULL) *out_catalogRecord = catalogRecord;
     }
     
-    FREE(dup);
+    FREE(dup_path);
     
     debug("found: %u", found);
     return (found ? 0 : -1);

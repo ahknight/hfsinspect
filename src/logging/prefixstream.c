@@ -6,9 +6,17 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "prefixstream.h"
-#include "string.h"
+#include <stdlib.h>
+#include <stdint.h>
 #include <sys/param.h>
+
+#include <string.h>             // memcpy, strXXX, etc.
+#if defined(__linux__)
+    #include <bsd/string.h>     // strlcpy, etc.
+#endif
+
+#include "prefixstream.h"
+#include "hfsinspect/cdefs.h"
 
 struct prefixstream_context {
     FILE*   fp;
@@ -60,7 +68,8 @@ ssize_t prefixstream_write(void * c, const char * buf, size_t nbytes)
 
 FILE* prefixstream(FILE* fp, char* prefix)
 {
-    struct prefixstream_context *context = calloc(1, sizeof(struct prefixstream_context));
+    struct prefixstream_context *context = NULL;
+    ALLOC(context, sizeof(struct prefixstream_context));
     context->fp = fp;
     context->newline = 1;
     (void)strlcpy(context->prefix, prefix, 80);

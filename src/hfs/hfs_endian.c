@@ -8,11 +8,12 @@
 
 #include "hfs/hfs_endian.h"
 
-#include "misc/output.h"
-#include "misc/_endian.h"
-#include "hfs/hfs_types.h"
+#include "hfsinspect/output.h"
+#include "hfsinspect/cdefs.h"
+#include "hfs/types.h"
 #include "hfs/btree/btree_endian.h"
 #include "hfs/catalog.h"
+#include "logging/logging.h"    // console printing routines
 
 void swap_HFSExtentDescriptor(HFSExtentDescriptor* record)
 {

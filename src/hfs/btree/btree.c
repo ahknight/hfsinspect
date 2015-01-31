@@ -6,13 +6,26 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include <stdio.h>
+#include <errno.h>              // errno/perror
+#include <string.h>             // memcpy, strXXX, etc.
+#include <search.h>
+
+#if defined(__linux__)
+    #include <malloc.h>
+    #define malloc_size malloc_usable_size
+#else
+    #include <malloc/malloc.h>      // malloc_size
+#endif
+
 #include "hfs/btree/btree.h"
 #include "hfs/btree/btree_endian.h"
-#include "misc/output.h"
-#include "misc/stringtools.h"
+#include "hfsinspect/output.h"
+#include "hfsinspect/stringtools.h" // memdump
+#include "hfs/unicode.h"
+#include "hfsinspect/utilities.h"   // commonly-used utility functions
+#include "logging/logging.h"        // console printing routines
 
-#include <stdio.h>
-#include <search.h>
 
 bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
 {
@@ -250,7 +263,7 @@ int btree_get_node(BTreeNodePtr *outNode, const BTreePtr tree, bt_nodeid_t nodeN
         return 0;
     }
     
-    BTreeNodePtr node;
+    BTreeNodePtr node = NULL;
     ALLOC(node, sizeof(struct _BTreeNode));
     
     node->nodeSize      = tree->headerRecord.nodeSize;
@@ -270,16 +283,20 @@ int btree_get_node(BTreeNodePtr *outNode, const BTreePtr tree, bt_nodeid_t nodeN
     }
     
     if (result < 1) {
+        assert(node->data != NULL);
         result = fpread(node->bTree->fp, node->data, node->nodeSize, node->nodeOffset);
-        if (result && tree->nodeCache != NULL)
-            result = cache_set(tree->nodeCache, (char*)node->data, node->nodeSize, nodeNumber);
+        if (result != node->nodeSize) {
+            warning("node read failed: expected %zd bytes, got %zd", node->nodeSize, result);
+        } else {
+            if (result && tree->nodeCache != NULL)
+                result = cache_set(tree->nodeCache, (char*)node->data, node->nodeSize, nodeNumber);
+        }
     }
     
     if (result < 0) {
         error("Error reading from fork.");
         btree_free_node(node);
         return result;
-        
     }
     
     if ( swap_BTreeNode(node) < 0 ) {

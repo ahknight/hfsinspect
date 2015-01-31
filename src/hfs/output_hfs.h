@@ -9,12 +9,16 @@
 #ifndef hfsinspect_output_hfs_h
 #define hfsinspect_output_hfs_h
 
-#include "misc/output.h"
-#include "hfs/hfs_types.h"
+#include <stdint.h>
+
+#include "hfsinspect/output.h"
+#include "hfs/types.h"
 #include "hfs/hfs_extentlist.h"
 #include "hfs/Apple/vfs_journal.h"
 
 #define MAC_GMT_FACTOR 2082844800UL
+
+#define _NONNULL __attribute__((nonnull))
 
 void set_hfs_volume                 (HFS *v) _NONNULL;
 

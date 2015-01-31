@@ -7,7 +7,9 @@
 //
 
 #include "volumes.h"
-#include "misc/output.h"
+#include "hfsinspect/output.h"
+#include "logging/logging.h"    // console printing routines
+
 
 PartitionOps* partitionTypes[] = {
     &gpt_ops,

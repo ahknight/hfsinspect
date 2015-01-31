@@ -1,0 +1,6 @@
+[submodule "src/vendor/memdmp"]
+	path = src/vendor/memdmp
+	url = https://bitbucket.org/codepoet/memdmp
+[submodule "src/vendor/crc-32c"]
+	path = src/vendor/crc-32c
+	url = https://bitbucket.org/codepoet/crc-32c

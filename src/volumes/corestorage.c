@@ -6,11 +6,26 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include "hfsinspect/cdefs.h"
+
+#include <string.h>             // memcpy, strXXX, etc.
+
+#if defined(__linux__)
+    #include <malloc.h>
+    #define malloc_size malloc_usable_size
+#else
+    #include <malloc/malloc.h>      // malloc_size
+#endif
+
 #include "volumes/corestorage.h"
-#include "misc/output.h"
-#include "misc/stringtools.h"
-#include "hfs/output_hfs.h"
+
+#include "hfsinspect/output.h"
+#include "hfsinspect/stringtools.h"
+
 #include "crc32c/crc32c.h"
+#include "logging/logging.h"    // console printing routines
+#include "memdmp/memdmp.h"
+
 
 void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh);
 
@@ -48,7 +63,8 @@ int cs_verify_block(const CSVolumeHeader* vh, const Byte* block, size_t nbytes)
 int cs_get_volume_header(Volume* vol, CSVolumeHeader* header)
 {
     size_t buf_size = sizeof(CSVolumeHeader);
-    Byte buf[buf_size]; ZERO_STRUCT(buf);
+    Byte buf[buf_size];
+    memset(&buf, 0, sizeof(buf));
     
     if ( vol_read(vol, buf, buf_size, 0) < 0 )
         return -1;
@@ -136,7 +152,7 @@ void cs_print_volume_header(CSVolumeHeader* header)
     PrintDataLength (header, physical_size);
     PrintRawAttribute(header, field_14, 16);
     
-    PrintHFSChar    (header, signature);
+    PrintUIChar     (header, signature);
     PrintUI         (header, checksum_algo);
     
     PrintUI         (header, md_count);
@@ -216,7 +232,8 @@ int cs_dump(Volume* vol)
     cs_print_volume_header(header);
 
     size_t block_size = header->md_block_size;
-    Byte* buf = calloc(4, block_size);
+    Byte* buf = NULL;
+    ALLOC(buf, block_size);
     
     FOR_UNTIL(i, header->md_count) {
         uint64_t block_number = header->md_blocks[i];
@@ -273,7 +290,8 @@ int cs_dump(Volume* vol)
 void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh)
 {
     size_t block_size = vh->md_block_size;
-    Byte* buf = calloc(1, block_size);
+    Byte* buf = NULL;
+    ALLOC(buf, block_size);
     uint64_t block_number = vh->md_blocks[0];
     uint64_t total_blocks = (vh->physical_size / vh->md_block_size);
     

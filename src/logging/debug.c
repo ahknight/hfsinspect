@@ -9,7 +9,10 @@
 // http://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Backtraces.html
 
 #include "debug.h"
+#include <stdlib.h>
+#include <stdio.h>
 #include <execinfo.h>
+#include "hfsinspect/cdefs.h"
 
 int print_trace(FILE* fp, unsigned offset)
 {

@@ -6,12 +6,15 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "apm.h"
+#include <errno.h>              // errno/perror
+#include <string.h>             // memcpy, strXXX, etc.
 
-#include "misc/_endian.h"
-#include "hfs/hfs_io.h"
-#include "misc/output.h"
-#include "hfs/output_hfs.h"
+#include "apm.h"
+#include "logging/logging.h"    // console printing routines
+
+#include "hfsinspect/cdefs.h"
+#include "volumes/_endian.h"
+#include "hfsinspect/output.h"
 
 void swap_APMHeader(APMHeader* record)
 {
@@ -63,7 +66,7 @@ int apm_test(Volume* vol)
 {
     debug("APM test");
     
-    uint8_t *buf;
+    uint8_t *buf = NULL;
     ALLOC(buf, 4096);
     
     if ( vol_read(vol, buf, 4096, 0) < 0 )
@@ -95,7 +98,7 @@ int apm_dump(Volume* vol)
     
     unsigned partitionID = 1;
     
-    APMHeader* header;
+    APMHeader* header = NULL;
     ALLOC(header, sizeof(APMHeader));
     
     BeginSection("Apple Partition Map");
@@ -107,7 +110,7 @@ int apm_dump(Volume* vol)
         char str[33] = "";
         
         BeginSection("Partition %d", partitionID);
-        PrintHFSChar        (header, signature);
+        PrintUIChar         (header, signature);
         PrintUI             (header, partition_count);
         PrintUI             (header, partition_start);
         PrintDataLength     (header, partition_length*vol->sector_size);

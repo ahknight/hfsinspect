@@ -6,7 +6,12 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "hfs.h"
+#include <errno.h>              // errno/perror
+#include <string.h>         // memcpy, strXXX, etc.
+
+#include "hfs/hfs.h"
+#include "logging/logging.h"    // console printing routines
+
 
 #pragma mark Volume Abstractions
 
@@ -62,7 +67,7 @@ int hfs_open(HFS* hfs, Volume *vol)
     }
     
     // Clear the HFSVolume struct (hope you didn't need that)
-    ZERO_STRUCT(*hfs);
+    memset(hfs, 0, sizeof(struct HFS));
     
     // Handle wrapped volumes.
     if (type == kFSTypeWrappedHFSPlus) {
@@ -158,7 +163,7 @@ Volume* hfs_find(Volume* vol)
 bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFS* hfs)
 {
     if (hfs->vol) {
-        char* buffer;
+        char* buffer = NULL;
         ALLOC(buffer, 2048)
         
         ssize_t size = hfs_read(buffer, hfs, 2048, 0);
@@ -184,7 +189,7 @@ bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFS* hfs
 bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFS* hfs)
 {
     if (hfs->vol) {
-        char* buffer;
+        char* buffer = NULL;
         ALLOC(buffer, 2048)
         
         ssize_t size = hfs_read(buffer, hfs, 2048, 0);
@@ -210,7 +215,7 @@ bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFS* hfs)
 bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFS* hfs)
 {
     if (hfs->vh.journalInfoBlock) {
-        char* buffer;
+        char* buffer = NULL;
         ALLOC(buffer, hfs->block_size);
         
         ssize_t read = hfs_read_blocks(buffer, hfs, 1, hfs->vh.journalInfoBlock);

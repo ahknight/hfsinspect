@@ -6,6 +6,8 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include <stdint.h>
+
 #include "hfs/Apple/hfs_unicode.h"
 
 /*

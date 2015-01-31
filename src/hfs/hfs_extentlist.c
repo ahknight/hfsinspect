@@ -6,8 +6,13 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "misc/range.h"
+#include <errno.h>              // errno/perror
+
+#include "hfsinspect/range.h"
 #include "hfs/hfs_extentlist.h"
+#include "hfs/output_hfs.h"
+#include "logging/logging.h"    // console printing routines
+
 
 #if defined(__linux__)
 // Copied from OS X's sys/queue.h. Covered by the APSL 2.0 and/or the original BSD license (ie. "Copyright (c) 1991, 1993 The Regents of the University of California.  All rights reserved." etc.)
@@ -21,7 +26,7 @@
 
 ExtentList* extentlist_make(void)
 {
-    ExtentList *retval;
+    ExtentList *retval = NULL;
     ALLOC(retval, sizeof(ExtentList));
     retval->tqh_first = NULL;
     retval->tqh_last = &retval->tqh_first; // Ensure this is pointing to the value on the heap, not the stack.
@@ -33,7 +38,7 @@ void extentlist_add(ExtentList *list, size_t startBlock, size_t blockCount)
 {
     if (blockCount == 0) return;
     
-    Extent *newExtent;
+    Extent *newExtent = NULL;
     ALLOC(newExtent, sizeof(Extent));
     newExtent->startBlock = startBlock;
     newExtent->blockCount = blockCount;

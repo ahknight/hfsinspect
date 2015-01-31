@@ -6,11 +6,16 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include <errno.h>              // errno/perror
+#include <string.h>             // memcpy, strXXX, etc.
+
 #include "hfs/hfs_io.h"
 
-#include "misc/range.h"
+#include "hfsinspect/range.h"
 #include "hfs/extents.h"
 #include "hfs/output_hfs.h"
+#include "logging/logging.h"    // console printing routines
+
 
 #define ASSERT_PTR(st) if (st == NULL) { errno = EINVAL; return -1; }
 
@@ -98,9 +103,10 @@ int hfs_closefn(void * c)
 
 FILE* fopen_hfs(HFS* hfs)
 {
-    HFSVolumeCookie *cookie = calloc(1, sizeof(HFSVolumeCookie));
-    cookie->hfs = calloc(1, sizeof(HFS));
-    *cookie->hfs = *hfs;
+    HFSVolumeCookie *cookie = NULL;
+    ALLOC(cookie, sizeof(HFSVolumeCookie));
+    ALLOC(cookie->hfs, sizeof(HFS));
+    *cookie->hfs = *hfs; // copy
     
 #if defined(BSD)
     return funopen(cookie, hfs_readfn, NULL, hfs_seekfn, hfs_closefn);
@@ -242,7 +248,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork *fork, size_t block_count, siz
         debug("Trimmed request to (%zu, %zu) (file only has %d blocks)", request.start, request.count, fork->totalBlocks);
     }
     
-    char* read_buffer;
+    char* read_buffer = NULL;
     ALLOC(read_buffer, block_count * fork->hfs->block_size);
     ExtentList *extentList = fork->extents;;
     
@@ -410,9 +416,10 @@ int fork_closefn(void * c)
 
 FILE* fopen_hfsfork(HFSFork* fork)
 {
-    HFSForkCookie *cookie = calloc(1, sizeof(HFSForkCookie));
-    cookie->fork = calloc(1, sizeof(HFSFork));
-    *cookie->fork = *fork;
+    HFSForkCookie *cookie = NULL;
+    ALLOC(cookie, sizeof(HFSForkCookie));
+    ALLOC(cookie->fork, sizeof(HFSFork));
+    *cookie->fork = *fork; // copy
     
 #if defined(BSD)
     return funopen(cookie, fork_readfn, NULL, fork_seekfn, fork_closefn);

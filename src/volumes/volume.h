@@ -9,8 +9,15 @@
 #ifndef volumes_volume_h
 #define volumes_volume_h
 
+#include <stdio.h>
+#include <stdint.h>
 #include <sys/param.h>          //PATH_MAX
-#include "types.h"
+
+typedef struct Volume Volume;
+typedef struct PartitionOps PartitionOps;
+
+#include "hfs/types.h"
+#include "hfsinspect/types.h"
 
 #pragma mark - Structures
 
@@ -56,7 +63,6 @@ enum {
     kFSTypeNTFS                 = 'NTFS',
 };
 
-typedef struct Volume Volume;
 struct Volume {
     int                 fd;                 // POSIX file descriptor
     FILE                *fp;                // C Stream pointer
@@ -84,12 +90,12 @@ struct Volume {
 // For partition/filesytem-specific volume load/modify operations.
 typedef int (*volop) (Volume* vol);
 
-typedef struct PartitionOps {
+struct PartitionOps {
     char    name[32];
     volop   test;
     volop   load;
     volop   dump;
-} PartitionOps;
+};
 
 #pragma mark - Functions
 
@@ -104,14 +110,15 @@ typedef struct PartitionOps {
  @return Zero on success, -1 on failure (check errno and reference open(2) for details).
  @see {@link vol_qopen}
  */
-int vol_open(Volume* vol, const String path, int mode, off_t offset, size_t length, size_t block_size) _NONNULL;
+int vol_open(Volume* vol, const char* path, int mode, off_t offset, size_t length, size_t block_size)
+    __attribute__((nonnull));
 
 /**
  Quickly open a whole source. Offset, length, and block_size are set to zero and auto-detected as needed.
  @param path The path to the source.
  @see {@link vol_open}
  */
-Volume* vol_qopen(const String path) _NONNULL;
+Volume* vol_qopen(const char* path) __attribute__((nonnull));
 
 /**
  Read from a volume, adjusting for the volume's source offset and length.
@@ -121,7 +128,7 @@ Volume* vol_qopen(const String path) _NONNULL;
  @param offset The offset within the volume to read from. Do not compensate for the volume's physical location or block size -- that's what this function is for.
  @see read(2)
  */
-ssize_t vol_read        (const Volume *vol, void* buf, size_t size, off_t offset) __attribute__((nonnull(1,2)));
+ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset) __attribute__((nonnull(1,2)));
 int vol_blk_get(const Volume *vol, off_t start, size_t count, void *buf);
 
 /**
@@ -139,11 +146,11 @@ int vol_blk_get(const Volume *vol, off_t start, size_t count, void *buf);
  @param vol The Volume to close.
  @see close(2)
  */
-int vol_close(Volume *vol) _NONNULL;
+int vol_close(Volume *vol) __attribute__((nonnull));
 
 /**
  */
-Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t length) _NONNULL;
-void vol_dump(Volume* vol) _NONNULL;
+Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t length) __attribute__((nonnull));
+void vol_dump(Volume* vol) __attribute__((nonnull));
 
 #endif

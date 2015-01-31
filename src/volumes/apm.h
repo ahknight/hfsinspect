@@ -9,7 +9,14 @@
 #ifndef volumes_apm_h
 #define volumes_apm_h
 
-#include "hfs/hfs_types.h"
+#define _UNUSED     __attribute__((unused))
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#include "volume.h"
+
+#include "hfs/types.h"
 
 #pragma mark - Structures
 
@@ -96,29 +103,29 @@ static uint32_t kAPMStatusIsStartup             _UNUSED = 0x80000000;
 
 extern PartitionOps apm_ops;
 
-void        swap_APMHeader          (APMHeader* record) _NONNULL;
+void swap_APMHeader (APMHeader* record) __attribute__((nonnull));
 
-bool        apm_sniff               (HFS* hfs)          _NONNULL;
-void        apm_print               (HFS* hfs)          _NONNULL;
+bool apm_sniff (HFS* hfs) __attribute__((nonnull));
+void apm_print (HFS* hfs) __attribute__((nonnull));
 
 /**
  Tests a volume to see if it contains an APM partition map.
  @return Returns -1 on error (check errno), 0 for NO, 1 for YES.
  */
-int apm_test(Volume *vol)                               _NONNULL;
+int apm_test(Volume *vol) __attribute__((nonnull));
 
-int apm_load_header(Volume *vol, APMHeader* apm)        _NONNULL;
+int apm_load_header(Volume *vol, APMHeader* apm) __attribute__((nonnull));
 
 /**
  Updates a volume with sub-volumes for any defined partitions.
  @return Returns -1 on error (check errno), 0 for success.
  */
-int apm_load(Volume *vol)                               _NONNULL;
+int apm_load(Volume *vol) __attribute__((nonnull));
 
 /**
  Prints a description of the APM structure and partition information to stdout.
  @return Returns -1 on error (check errno), 0 for success.
  */
-int apm_dump(Volume *vol)                               _NONNULL;
+int apm_dump(Volume *vol) __attribute__((nonnull));
 
 #endif

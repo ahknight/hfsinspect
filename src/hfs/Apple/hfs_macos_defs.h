@@ -29,6 +29,7 @@
 #ifndef __HFS_MACOS_TYPES__
 #define __HFS_MACOS_TYPES__
 
+#include <stdlib.h>
 
 /****** START OF MACOSTYPES *********/
 

@@ -6,10 +6,14 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "volume.h"
-
 #ifndef volumes_mbr_h
 #define volumes_mbr_h
+
+#include "volume.h"
+
+#include <stdint.h>
+#include <stdbool.h>
+
 
 #pragma mark - Structures
 
@@ -58,9 +62,9 @@ typedef struct MBR {
     .signature = {0} \
     })
 
-static unsigned kMBRTypeGPTProtective _UNUSED   = 0xEE;
-static unsigned kMBRTypeAppleBoot _UNUSED       = 0xAB;
-static unsigned kMBRTypeAppleHFS _UNUSED        = 0xAF;
+static unsigned kMBRTypeGPTProtective __attribute__((unused))   = 0xEE;
+static unsigned kMBRTypeAppleBoot __attribute__((unused))       = 0xAB;
+static unsigned kMBRTypeAppleHFS __attribute__((unused))        = 0xAF;
 
 struct MBRPartitionName {
     uint16_t        type;
@@ -71,7 +75,7 @@ struct MBRPartitionName {
 };
 typedef struct MBRPartitionName MBRPartitionName;
 
-static MBRPartitionName mbr_partition_types[] _UNUSED = {
+static MBRPartitionName mbr_partition_types[] __attribute__((unused)) = {
     {0x00, 0, "Free",                           kVolTypeSystem,         kSysFreeSpace},
     {0x01, 0, "MS FAT12",                       kVolTypeUserData,       kFSTypeFAT12},
     {0x04, 0, "MS FAT16",                       kVolTypeUserData,       kFSTypeFAT16},
@@ -110,21 +114,21 @@ extern PartitionOps mbr_ops;
  Tests a volume to see if it contains an MBR partition map.
  @return Returns -1 on error (check errno), 0 for NO, 1 for YES.
  */
-int mbr_test(Volume *vol) _NONNULL;
+int mbr_test(Volume *vol) __attribute__((nonnull));
 
-int mbr_load_header(Volume *vol, MBR* mbr) _NONNULL;
+int mbr_load_header(Volume *vol, MBR* mbr) __attribute__((nonnull));
 
 /**
  Updates a volume with sub-volumes for any defined partitions.
  @return Returns -1 on error (check errno), 0 for success.
  */
-int mbr_load(Volume *vol) _NONNULL;
+int mbr_load(Volume *vol) __attribute__((nonnull));
 
 /**
  Prints a description of the MBR structure and partition information to stdout.
  @return Returns -1 on error (check errno), 0 for success.
  */
-int mbr_dump(Volume *vol) _NONNULL;
+int mbr_dump(Volume *vol) __attribute__((nonnull));
 
 const char* mbr_partition_type_str(uint16_t type, VolType* hint);
 
