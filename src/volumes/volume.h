@@ -59,7 +59,7 @@ enum {
 typedef struct Volume Volume;
 struct Volume {
     int                 fd;                 // POSIX file descriptor
-    FILE                *fp;                // C file handle
+    FILE                *fp;                // C Stream pointer
     char                source[PATH_MAX];   // path to source file
     mode_t              mode;               // mode of source file
     
@@ -122,8 +122,7 @@ Volume* vol_qopen(const String path) _NONNULL;
  @see read(2)
  */
 ssize_t vol_read        (const Volume *vol, void* buf, size_t size, off_t offset) __attribute__((nonnull(1,2)));
-ssize_t vol_read_blocks (const Volume *vol, void* buf, ssize_t block_count, ssize_t start_block) __attribute__((nonnull(1,2)));
-ssize_t vol_read_raw    (const Volume *vol, void* buf, size_t nbyte, off_t offset) __attribute__((nonnull(1,2)));
+int vol_blk_get(const Volume *vol, off_t start, size_t count, void *buf);
 
 /**
  Write to a volume, adjusting for the volume's source offset and length.
@@ -133,7 +132,7 @@ ssize_t vol_read_raw    (const Volume *vol, void* buf, size_t nbyte, off_t offse
  @param offset The offset within the volume to write to. Do not compensate for the volume's physical location -- that's what this function is for.
  @see write(2)
  */
-ssize_t vol_write(Volume *vol, const void* buf, size_t nbyte, off_t offset) __attribute__((nonnull(1,2)));
+// ssize_t vol_write(Volume *vol, const void* buf, size_t nbyte, off_t offset) __attribute__((nonnull(1,2)));
 
 /**
  Closes the file descriptor and releases the memory used by the Volume structure.

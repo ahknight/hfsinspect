@@ -98,6 +98,8 @@ void usage(int status)
     "    -l,         --list          If the specified FSOB is a folder, list the contents. \n"
     "    -D,         --disk-info     Show any available information about the disk, including partitions and volume headers.\n"
     "    -0,         --freespace     Show a summary of the used/free space and extent count based on the allocation file.\n"
+    "    -F                          Locate a record by Carbon-style FSSpec (parent:name).\n"
+    "    -P                          Locate a record by filesystem path.\n"
     "\n"
     "OUTPUT: \n"
     "    You can optionally have hfsinspect dump any fork it finds as the result of an operation. This includes B-Trees or file forks.\n"
@@ -417,6 +419,7 @@ OPEN:
     vol = vol_qopen(options.device_path);
     if (vol == NULL) {
         if (errno == EBUSY) {
+#if defined(__APPLE__)
             // If the device is busy, see if we can use the raw disk instead (and aren't already).
             if (strstr(options.device_path, "/dev/disk") != NULL) {
                 String newDevicePath;
@@ -429,7 +432,7 @@ OPEN:
                 goto OPEN;
             }
             die(errno, "vol_qopen");
-            
+#endif
         } else {
             error("could not open %s", options.device_path);
             die(errno, "vol_qopen");

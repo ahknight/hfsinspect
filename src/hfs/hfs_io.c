@@ -33,8 +33,7 @@ ssize_t hfs_read_blocks(void* buffer, const HFS *hfs, size_t block_count, size_t
     ASSERT_PTR(buffer);
     ASSERT_PTR(hfs);
     
-    unsigned ratio = MAX(1, (hfs->block_size / hfs->vol->sector_size));
-    return vol_read_blocks(hfs->vol, buffer, block_count*ratio, start_block*ratio);
+    return vol_read(hfs->vol, buffer, block_count * hfs->block_size, start_block * hfs->block_size);
 }
 
 #pragma mark funopen - HFSVolume

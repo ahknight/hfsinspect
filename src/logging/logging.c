@@ -167,12 +167,12 @@ int LogLine(enum LogLevel level, const char* format, ...)
         "ℹ️",
         "🐞 ",
 #else
-        "! ",
-        "E ",
-        "W ",
+        "[CRIT] ",
+        "[ERR] ",
+        "[WARN] ",
         "  ",
-        "I ",
-        "D ",
+        "[INFO] ",
+        "[DEBUG] ",
 #endif
     };
     

@@ -997,6 +997,13 @@ void PrintNode(const BTreeNodePtr node)
     BeginSection("Node %u (offset %llu; length: %zu)", node->nodeNumber, node->nodeOffset, node->nodeSize);
     PrintBTNodeDescriptor(node->nodeDescriptor);
     
+//    uint16_t *records = ((uint16_t*)(node->data + node->bTree->headerRecord.nodeSize) - node->nodeDescriptor->numRecords);
+//    for (int i = node->nodeDescriptor->numRecords-1; i >= 0; --i) {
+//        char label[50] = "";
+//        sprintf(label, "Record Offset #%u", node->nodeDescriptor->numRecords - i);
+//        PrintAttribute(label, "%u", records[i]);
+//    }
+    
     for (int recordNumber = 0; recordNumber < node->nodeDescriptor->numRecords; recordNumber++) {
         PrintNodeRecord(node, recordNumber);
     }
@@ -1257,7 +1264,7 @@ void PrintNodeRecord(const BTreeNodePtr node, int recordNumber)
                     HFSPlusExtentKey keyStruct = *( (HFSPlusExtentKey*) record->key );
                     VisualizeHFSPlusExtentKey(&keyStruct, "Extent Key", 0);
                     
-                    if (record->keyLen != kHFSPlusExtentKeyMaximumLength)
+                    if ( (record->keyLen - sizeof(keyStruct.keyLength)) != kHFSPlusExtentKeyMaximumLength)
                         goto INVALID_KEY;
                     
                     break;
@@ -1266,10 +1273,10 @@ void PrintNodeRecord(const BTreeNodePtr node, int recordNumber)
                 case kHFSAttributesFileID:
                 {
                     HFSPlusAttrKey *keyStruct = (HFSPlusAttrKey*) record->key;
+                    VisualizeHFSPlusAttrKey(keyStruct, "Attributes Key", 0);
+                    
                     if (record->keyLen < kHFSPlusAttrKeyMinimumLength || record->keyLen > kHFSPlusAttrKeyMaximumLength)
                         goto INVALID_KEY;
-                    
-                    VisualizeHFSPlusAttrKey(keyStruct, "Attributes Key", 0);
                     
                     break;
                 }

@@ -117,13 +117,13 @@
             isEnabled = "YES">
          </AdditionalOption>
          <AdditionalOption
-            key = "OBJC_PRINT_EXCEPTIONS"
-            value = "YES"
+            key = "USERBREAK"
+            value = "1"
             isEnabled = "YES">
          </AdditionalOption>
          <AdditionalOption
-            key = "USERBREAK"
-            value = "1"
+            key = "OBJC_PRINT_EXCEPTIONS"
+            value = "YES"
             isEnabled = "YES">
          </AdditionalOption>
          <AdditionalOption

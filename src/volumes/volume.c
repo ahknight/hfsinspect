@@ -28,19 +28,19 @@ int vol_open(Volume* vol, const String path, int mode, off_t offset, size_t leng
     _assert(vol);
     _assert(path);
     
-    int fd = 0;
-    char* modestr = NULL;
     struct stat s = {0};
+    FILE *f = NULL;
     
-    mode = O_RDONLY;
-    modestr = "r";
+    if ( (f = fopen(path, "rb")) == NULL) {
+        return -errno;
+    }
     
-    fd = open(path, mode);
-    if (fd < 0) return -1;
-    if ( fstat(fd, &s) < 0 ) return -1;
+    vol->fp = f;
+    vol->fd = fileno(f);
+    
+    if ( fstat(vol->fd, &s) < 0 )
+        return -errno;
         
-    vol->fd = fd;
-    if ( (vol->fp = fdopen(fd, modestr)) == NULL ) return -1;
     (void)strlcpy(vol->source, path, PATH_MAX);
     vol->offset = offset;
     
@@ -54,32 +54,30 @@ int vol_open(Volume* vol, const String path, int mode, off_t offset, size_t leng
         vol->sector_count   = s.st_blocks;
     }
     
-    if (S_ISBLK(vol->mode) || S_ISCHR(vol->mode)) {
+    if (block_size == 0 && (S_ISBLK(vol->mode) || S_ISCHR(vol->mode))) {
         // Try and get the real hardware sector size and use that.
         // Note that this helps with devices, but not with disk images.
         
-        if (block_size == 0) {
 #if defined (__APPLE__)
-            blkcnt_t  bc = 0;
-            blksize_t bs = 0;
-            ioctl(vol->fd, DKIOCGETBLOCKCOUNT, &bc);
-            ioctl(vol->fd, DKIOCGETBLOCKSIZE, &bs);
-            
-            vol->sector_count    = ( (bc != 0) ? bc : s.st_blocks);
-            vol->sector_size     = ( (bs != 0) ? bs : S_BLKSIZE);
-            
+        blkcnt_t  bc = 0;
+        blksize_t bs = 0;
+        ioctl(vol->fd, DKIOCGETBLOCKCOUNT, &bc);
+        ioctl(vol->fd, DKIOCGETBLOCKSIZE, &bs);
+        
+        vol->sector_count    = ( (bc != 0) ? bc : s.st_blocks);
+        vol->sector_size     = ( (bs != 0) ? bs : S_BLKSIZE);
+        
 #elif defined (__linux__)
-            unsigned int bs = 0;
-            unsigned long ds = 0;
-            
-            ioctl(vol->fd, BLKSSZGET, &bs);     // BLKBSZGET is the physical sector size; BLKSSZGET is the logical. Probably.
-            ioctl(vol->fd, BLKGETSIZE64, &ds);  // Logical device size in bytes
-            
-            vol->sector_size = ( (bs != 0) ? bs : S_BLKSIZE);
-            vol->length = ( (ds != 0) ? ds : s.st_size);
-            vol->sector_count = vol->length / vol->sector_size;
+        unsigned int bs = 0;
+        unsigned long ds = 0;
+        
+        ioctl(vol->fd, BLKSSZGET, &bs);     // BLKBSZGET is the physical sector size; BLKSSZGET is the logical. Probably.
+        ioctl(vol->fd, BLKGETSIZE64, &ds);  // Logical device size in bytes
+        
+        vol->sector_size = ( (bs != 0) ? bs : S_BLKSIZE);
+        vol->length = ( (ds != 0) ? ds : s.st_size);
+        vol->sector_count = vol->length / vol->sector_size;
 #endif
-        }
     }
     
     if (length == 0 && vol->sector_size && vol->sector_count)
@@ -95,15 +93,31 @@ Volume* vol_qopen(const String path)
     
     if ( vol_open(vol, path, O_RDONLY, 0, 0, 0) < 0 ) {
         FREE(vol);
-        perror("vol_open");
+        // perror("vol_open");
         return NULL;
     }
     
     return vol;
 }
 
+int vol_blk_get(const Volume *vol, off_t start, size_t count, void *buf)
+{
+    int rval;
+    unsigned blksz = vol->sector_size;
+    off_t off = start*blksz + vol->offset;
+    
+    debug("Seeking to %llu then reading %zu blocks of size %u.", off, count, blksz);
+    if ( (rval = fseeko(vol->fp, off, SEEK_SET)) < 0 )
+        return rval;
+    return fread(buf, blksz, count, vol->fp);
+}
+
 ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
 {
+    size_t start_block, byte_offset, block_count;
+    ssize_t read_blocks;
+    Bytes read_buffer;
+    
     ASSERT_VOL(vol);
 
     debug("Reading from volume %s+%ju at (%jd, %zu)", basename((char*)&vol->source), (uintmax_t)vol->offset, (intmax_t)offset, size);
@@ -124,93 +138,33 @@ ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
         return 0;
     }
     
-    // The range starts somewhere in this block.
-    size_t start_block = (size_t)(offset / vol->sector_size);
-    
-    // Offset of the request within the start block.
-    size_t byte_offset = (offset % vol->sector_size);
-    
     // Add a block to the read if the offset is not block-aligned.
-    size_t block_count = (size / vol->sector_size) + ( ((offset + size) % vol->sector_size) ? 1 : 0);
+    block_count = (size / vol->sector_size) + ( ((offset + size) % vol->sector_size) ? 1 : 0);
     
     // Use the calculated size instead of the passed size to account for block alignment.
-    Bytes read_buffer; ALLOC(read_buffer, block_count * vol->sector_size);
+    ALLOC(read_buffer, block_count * vol->sector_size);
+    
+    // The range starts somewhere in this block.
+    start_block = (size_t)(offset / vol->sector_size);
+    
+    // Offset of the request within the start block.
+    byte_offset = (offset % vol->sector_size);
     
     // Fetch the data into a read buffer (it may fail).
-    ssize_t read_blocks = vol_read_blocks(vol, read_buffer, block_count, start_block);
+    // read_blocks = vol_read_blocks(vol, read_buffer, block_count, start_block);
+    read_blocks = vol_blk_get(vol, start_block, block_count, read_buffer);
     
     // Adjust for truncated reads.
-    size = MIN( (read_blocks * vol->sector_size) - byte_offset, size);
+    size = MIN( (read_blocks * vol->sector_size) - byte_offset, size );
     
     // On success, copy the output.
     if (read_blocks) memcpy(buf, read_buffer + byte_offset, size);
-//    debug("Copied %zu bytes.", size);
     
     // Clean up.
     FREE(read_buffer);
     
     // The amount we added to the buffer.
     return size;
-}
-
-ssize_t vol_read_blocks (const Volume *vol, void* buf, ssize_t block_count, ssize_t start_block)
-{
-    ASSERT_VOL(vol);
-    
-//    debug("Reading %u blocks starting at block %u", block_count, start_block);
-    if (vol->sector_count && start_block > vol->sector_count)
-        return 0;
-    
-    // Trim to fit.
-    if (vol->sector_count && vol->sector_count < (start_block + block_count)) {
-        block_count = vol->sector_count - start_block;
-    }
-    
-    if (block_count < 0)
-        return 0;
-    
-    ssize_t bytes_read = 0;
-    size_t  offset  = start_block * vol->sector_size;
-    size_t  size    = block_count * vol->sector_size;
-    
-//    debug("Reading %zd bytes at volume offset %zd.", size, offset);
-    if ( (bytes_read = vol_read_raw(vol, buf, size, offset)) < 0) {
-        perror("vol_read_raw");
-        return bytes_read;
-    }
-
-//    debug("read %zd bytes", bytes_read);
-    
-    // Blocks in, blocks out.
-    ssize_t blocks_read = 0;
-    if (bytes_read > 0) {
-        blocks_read = MAX(bytes_read / vol->sector_size, 1);
-    }
-    return blocks_read;
-}
-
-ssize_t vol_read_raw (const Volume *vol, void* buf, size_t nbyte, off_t offset)
-{
-    ASSERT_VOL(vol);
-    
-    ssize_t result;
-    if ( (result = pread(vol->fd, buf, nbyte, (offset + vol->offset))) < 0)
-        perror("pread");
-    
-//    debug("Read %zu bytes.", result);
-
-    return result;
-}
-
-ssize_t vol_write(Volume *vol, const void* buf, size_t nbyte, off_t offset)
-{
-    ASSERT_VOL(vol);
-    
-    ssize_t result;
-    if ( (result = pwrite(vol->fd, buf, nbyte, (offset + vol->offset))) < 0)
-        perror("pwrite");
-    
-    return result;
 }
 
 int vol_close(Volume *vol)

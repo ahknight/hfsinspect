@@ -235,10 +235,10 @@
 		9BA332AF183C6E7700F55322 /* crc32c */ = {
 			isa = PBXGroup;
 			children = (
-				9BA332B1183C6EC600F55322 /* crc32c_tables.c */,
 				9BA332B2183C6EC600F55322 /* crc32c_tables.h */,
-				9BA332B3183C6EC600F55322 /* crc32c.c */,
+				9BA332B1183C6EC600F55322 /* crc32c_tables.c */,
 				9BA332B4183C6EC600F55322 /* crc32c.h */,
+				9BA332B3183C6EC600F55322 /* crc32c.c */,
 			);
 			path = crc32c;
 			sourceTree = "<group>";
@@ -301,10 +301,10 @@
 		9BC1D07F182BE84900D9B301 /* volumes */ = {
 			isa = PBXGroup;
 			children = (
-				9BC1D08F182BFF5E00D9B301 /* volume.h */,
-				9BC1D090182BFF6200D9B301 /* volume.c */,
 				9BC1D08C182BE93F00D9B301 /* volumes.h */,
 				9BC1D08D182BE94400D9B301 /* volumes.c */,
+				9BC1D08F182BFF5E00D9B301 /* volume.h */,
+				9BC1D090182BFF6200D9B301 /* volume.c */,
 				9BC1D080182BE8B800D9B301 /* mbr.h */,
 				9BC1D084182BE8D200D9B301 /* mbr.c */,
 				9BC1D081182BE8BD00D9B301 /* gpt.h */,
@@ -541,6 +541,7 @@
 		9BBA850F1735AFD400273AE9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_STRCPY = YES;
@@ -552,10 +553,8 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_WARN_PEDANTIC = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				ONLY_ACTIVE_ARCH = YES;
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				SDKROOT = macosx;
-				VALID_ARCHS = "i386 x86_64 ppc64 ppc";
 				WARNING_CFLAGS = "-Wall";
 			};
 			name = Debug;
@@ -563,6 +562,7 @@
 		9BBA85101735AFD400273AE9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND = YES;
 				CLANG_ANALYZER_SECURITY_INSECUREAPI_STRCPY = YES;
@@ -576,7 +576,6 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				SDKROOT = macosx;
-				VALID_ARCHS = "i386 x86_64 ppc64 ppc";
 				WARNING_CFLAGS = "-Wall";
 			};
 			name = Release;

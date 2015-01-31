@@ -33,6 +33,8 @@ int cs_verify_block(const CSVolumeHeader* vh, const Byte* block, size_t nbytes)
         if (crc != bh->checksum) {
             warning("corrupt CS block: CRC: %#x; expected: %#x\n", crc, bh->checksum);
             return -1;
+        } else {
+            debug("block checksum valid");
         }
         
         return 0;

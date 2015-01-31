@@ -27,7 +27,7 @@ ssize_t extractFork(const HFSFork* fork, const String extractPath)
     fseeko(f_in, 0, SEEK_SET);
     
     off_t offset        = 0;
-    size_t chunkSize    = fork->hfs->block_size*1024; //4-8MB, generally.
+    size_t chunkSize    = fork->hfs->block_size*256; //1-2MB, generally.
     Bytes chunk        = calloc(1, chunkSize);
     ssize_t nbytes      = 0;
     
