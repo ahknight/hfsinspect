@@ -10,3 +10,5 @@ images/*.dmg
 images/*.img
 tmp/
 xcuserdata
+*.xccheckout
+

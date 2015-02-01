@@ -132,7 +132,7 @@ void show_version()
 
 String deviceAtPath(String path)
 {
-#if defined(__APPLE__)
+#if defined(__BSD__)
     static struct statfs stats;
     int result = statfs(path, &stats);
     if (result < 0) {
@@ -151,11 +151,10 @@ String deviceAtPath(String path)
 
 bool resolveDeviceAndPath(String path_in, String device_out, String path_out)
 {
-#if defined(__APPLE__)
+#if defined(__BSD__)
     String path = realpath(path_in, NULL);
     if (path == NULL) {
-        perror("realpath");
-        die(1, "Target not found: %s", path_in);
+        die(1, path_in);
         return false;
     }
     
@@ -207,12 +206,14 @@ void die(int val, String format, ...)
     vsnprintf(str, 1024, format, args);
     va_end(args);
     
-    if (errno > 0) perror(str);
+    if (errno > 0)
+        perror(str);
+    else
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
     
-    error(str);
+        error(str);
     
 #pragma GCC diagnostic pop
     

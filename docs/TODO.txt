@@ -1,5 +1,0 @@
-volumes:
-    Byte/Bytes
-    use fread(buf, blocks, block size, fp) instead of _raw
-    Try to remove file descriptors and use file pointers alone (portability)
-    
