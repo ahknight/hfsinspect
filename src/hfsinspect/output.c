@@ -242,7 +242,11 @@ int format_blocks(char* out, size_t blocks, size_t block_size, size_t length)
 int format_time(char* out, time_t gmt_time, size_t length)
 {
     struct tm *t = gmtime(&gmt_time);
+#if defined(__APPLE__)
     return (int)strftime(out, length, "%c %Z", t);
+#else
+    return (int)strftime(out, length, "%c", t);
+#endif
 }
 
 int format_uint_oct(char* out, uint64_t value, uint8_t padding, size_t length)

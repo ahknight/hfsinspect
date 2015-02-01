@@ -193,7 +193,7 @@ int LogLine(enum LogLevel level, const char* format, ...)
     }
     
     if (!DEBUG && level == L_CRITICAL)
-        exit(1);
+        abort();
     
     return nchars;
 }

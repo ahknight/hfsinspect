@@ -121,9 +121,9 @@ int vol_blk_get(const Volume *vol, off_t start, size_t count, void *buf)
 
 ssize_t vol_read (const Volume *vol, void* buf, size_t size, off_t offset)
 {
-    size_t start_block, byte_offset, block_count;
-    ssize_t read_blocks;
-    Bytes read_buffer;
+    size_t start_block = 0, byte_offset = 0, block_count = 0;
+    ssize_t read_blocks = 0;
+    Bytes read_buffer = NULL;
     
     ASSERT_VOL(vol);
 

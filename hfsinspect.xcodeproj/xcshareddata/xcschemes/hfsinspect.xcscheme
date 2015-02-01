@@ -43,8 +43,8 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
-      useCustomWorkingDirectory = "NO"
-      customWorkingDirectory = "/Volumes/Code/c/hfsinspect"
+      useCustomWorkingDirectory = "YES"
+      customWorkingDirectory = "/Volumes/Data/code/c/hfsinspect"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "NO"
@@ -77,12 +77,12 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-0"
+            argument = "-d images/test.img"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-d images/test.img"
-            isEnabled = "NO">
+            argument = "-0"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-D"
@@ -110,11 +110,6 @@
          </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>
-         <AdditionalOption
-            key = "USERBREAK"
-            value = "1"
-            isEnabled = "YES">
-         </AdditionalOption>
          <AdditionalOption
             key = "OBJC_PRINT_EXCEPTIONS"
             value = "YES"

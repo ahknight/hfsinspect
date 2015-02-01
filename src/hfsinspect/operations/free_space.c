@@ -13,7 +13,7 @@
 void showFreeSpace(HIOptions *options)
 {
     HFSFork *fork = NULL;
-    if ( hfsfork_get_special(&fork, &options->hfs, kHFSAllocationFileID) < 0 )
+    if ( hfsfork_get_special(&fork, options->hfs, kHFSAllocationFileID) < 0 )
         die(1, "Couldn't get a reference to the volume allocation file.");
     
     char *data = NULL;
@@ -56,9 +56,9 @@ void showFreeSpace(HIOptions *options)
     // The first allocation block is used by the VH.
     struct extent currentExtent = {1,0,1};
     
-    for (size_t i = 0; i < options->hfs.vh.totalBlocks; i++) {
+    for (size_t i = 0; i < options->hfs->vh.totalBlocks; i++) {
         bool used = BTIsBlockUsed(i, data, fork->logicalSize);
-        if (used == currentExtent.used && (i != (options->hfs.vh.totalBlocks - 1))) {
+        if (used == currentExtent.used && (i != (options->hfs->vh.totalBlocks - 1))) {
             currentExtent.length++;
             continue;
         }

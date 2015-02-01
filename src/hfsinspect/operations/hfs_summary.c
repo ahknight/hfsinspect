@@ -27,7 +27,7 @@ VolumeSummary generateVolumeSummary(HIOptions *options)
      */
     
     VolumeSummary summary = {0};
-    HFS *hfs = &options->hfs;
+    HFS *hfs = options->hfs;
     
     BTreePtr catalog = NULL;
     hfs_get_catalog_btree(&catalog, hfs);
@@ -160,7 +160,7 @@ void generateForkSummary(HIOptions *options, ForkSummary* forkSummary, const HFS
     }
     
     HFSFork *hfsfork;
-    if ( hfsfork_make(&hfsfork, &options->hfs, *fork, type, file->fileID) < 0 ) {
+    if ( hfsfork_make(&hfsfork, options->hfs, *fork, type, file->fileID) < 0 ) {
         die(1, "Could not create fork reference for fileID %u", file->fileID);
     }
     

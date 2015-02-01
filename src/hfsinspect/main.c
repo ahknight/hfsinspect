@@ -223,19 +223,19 @@ void loadBTree(HIOptions *options)
 {
     // Load the tree
     if (options->tree_type == BTreeTypeCatalog) {
-        if ( hfs_get_catalog_btree(&options->tree, &options->hfs) < 0)
+        if ( hfs_get_catalog_btree(&options->tree, options->hfs) < 0)
             die(1, "Could not get Catalog B-Tree!");
     
     } else if (options->tree_type == BTreeTypeExtents) {
-        if ( hfs_get_extents_btree(&options->tree, &options->hfs) < 0)
+        if ( hfs_get_extents_btree(&options->tree, options->hfs) < 0)
             die(1, "Could not get Extents B-Tree!");
     
     } else if (options->tree_type == BTreeTypeAttributes) {
-        if ( hfs_get_attribute_btree(&options->tree, &options->hfs) < 0)
+        if ( hfs_get_attribute_btree(&options->tree, options->hfs) < 0)
             die(1, "Could not get Attribute B-Tree!");
     
     } else if (options->tree_type == BTreeTypeHotfiles) {
-        if ( hfs_get_hotfiles_btree(&options->tree, &options->hfs) < 0)
+        if ( hfs_get_hotfiles_btree(&options->tree, options->hfs) < 0)
             die(1, "Hotfiles B-Tree not found. Target must be a hard drive with a copy of Mac OS X that has successfully booted to create this file (it will not be present on SSDs).");
     } else {
         die(1, "Unsupported tree: %s", options->tree_type);
@@ -245,6 +245,7 @@ void loadBTree(HIOptions *options)
 int main (int argc, String const *argv)
 {
     HIOptions options = {0};
+    ALLOC(options.hfs, sizeof(struct HFS));
     
     (void)strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
     
@@ -466,8 +467,8 @@ OPEN:
         vol = tmp;
     }
     
-    if (hfs_open(&options.hfs, vol) < 0) {
-        die(1, "hfs_attach");
+    if (hfs_open(options.hfs, vol) < 0) {
+        die(1, "hfs_open");
     }
     
     uid_t uid = 99;
@@ -504,7 +505,7 @@ OPEN:
 #pragma mark Yank FS
     // Pull the essential files from the disk for inspection or transport.
 	if (check_mode(&options, HIModeYankFS)) {
-        if (options.hfs.vol == NULL) {
+        if (options.hfs->vol == NULL) {
             error("No HFS+ volume detected; can't extract FS.");
             goto NOPE;
         }
@@ -569,21 +570,21 @@ OPEN:
             char            *path;
         } files[5] = {
             // Extents Overflow
-            { options.hfs.vh.extentsFile,     kHFSExtentsFileID,      extentsPath},
+            { options.hfs->vh.extentsFile,     kHFSExtentsFileID,      extentsPath},
             // Catalog
-            { options.hfs.vh.catalogFile,     kHFSCatalogFileID,      catalogPath},
+            { options.hfs->vh.catalogFile,     kHFSCatalogFileID,      catalogPath},
             // Allocation Bitmap (HFS+)
-            { options.hfs.vh.allocationFile,  kHFSAllocationFileID,   allocationPath},
+            { options.hfs->vh.allocationFile,  kHFSAllocationFileID,   allocationPath},
             // Startup (HFS+)
-            { options.hfs.vh.startupFile,     kHFSStartupFileID,      startupPath},
+            { options.hfs->vh.startupFile,     kHFSStartupFileID,      startupPath},
             // Attributes (HFS+)
-            { options.hfs.vh.attributesFile,  kHFSAttributesFileID,   attributesPath},
+            { options.hfs->vh.attributesFile,  kHFSAttributesFileID,   attributesPath},
         };
         
         FOR_UNTIL(i, 5) {
             if (files[i].forkData.logicalSize < 1) continue;
             
-            hfsfork_make(&fork, &options.hfs, files[i].forkData, HFSDataForkType, files[i].cnid);
+            hfsfork_make(&fork, options.hfs, files[i].forkData, HFSDataForkType, files[i].cnid);
             (void)extractFork(fork, files[i].path);
             hfsfork_free(fork);
             fork = NULL;
@@ -592,24 +593,24 @@ OPEN:
         // Hotfiles
         HFSPlusCatalogRecord catalogRecord = {0};
         
-        if ( HFSPlusGetCatalogInfoByPath(NULL, &catalogRecord, "/.hotfiles.btree", &options.hfs) ) {
-            hfsfork_make(&fork, &options.hfs, catalogRecord.catalogFile.dataFork, HFSDataForkType, catalogRecord.catalogFile.fileID);
+        if ( HFSPlusGetCatalogInfoByPath(NULL, &catalogRecord, "/.hotfiles.btree", options.hfs) ) {
+            hfsfork_make(&fork, options.hfs, catalogRecord.catalogFile.dataFork, HFSDataForkType, catalogRecord.catalogFile.fileID);
             (void)extractFork(fork, hotfilesPath);
             hfsfork_free(fork);
             fork = NULL;
         }
         
         // Journal Info Block
-        if ( HFSPlusGetCatalogInfoByPath(NULL, &catalogRecord, "/.journal_info_block", &options.hfs) ) {
-            hfsfork_make(&fork, &options.hfs, catalogRecord.catalogFile.dataFork, HFSDataForkType, catalogRecord.catalogFile.fileID);
+        if ( HFSPlusGetCatalogInfoByPath(NULL, &catalogRecord, "/.journal_info_block", options.hfs) ) {
+            hfsfork_make(&fork, options.hfs, catalogRecord.catalogFile.dataFork, HFSDataForkType, catalogRecord.catalogFile.fileID);
             (void)extractFork(fork, journalBlockPath);
             hfsfork_free(fork);
             fork = NULL;
         }
         
         // Journal File
-        if ( HFSPlusGetCatalogInfoByPath(NULL, &catalogRecord, "/.journal", &options.hfs) ) {
-            hfsfork_make(&fork, &options.hfs, catalogRecord.catalogFile.dataFork, HFSDataForkType, catalogRecord.catalogFile.fileID);
+        if ( HFSPlusGetCatalogInfoByPath(NULL, &catalogRecord, "/.journal", options.hfs) ) {
+            hfsfork_make(&fork, options.hfs, catalogRecord.catalogFile.dataFork, HFSDataForkType, catalogRecord.catalogFile.fileID);
             (void)extractFork(fork, journalPath);
             hfsfork_free(fork);
             fork = NULL;
@@ -620,12 +621,12 @@ NOPE:
     
 #pragma mark Load Volume Data
     
-    set_hfs_volume(&options.hfs); // Set the context for certain output_hfs.h calls.
+    set_hfs_volume(options.hfs); // Set the context for certain output_hfs.h calls.
         
 #pragma mark Volume Requests
     
     // Always detail what volume we're working on at the very least
-    PrintVolumeInfo(&options.hfs);
+    PrintVolumeInfo(options.hfs);
     
     // Default to volume info if there are no other specifiers.
     if (options.mode == 0) set_mode(&options, HIModeShowVolumeInfo);
@@ -640,20 +641,20 @@ NOPE:
     // Show volume info
     if (check_mode(&options, HIModeShowVolumeInfo)) {
         debug("Printing volume header.");
-        PrintVolumeHeader(&options.hfs.vh);
+        PrintVolumeHeader(&options.hfs->vh);
     }
     
     // Journal info
     if (check_mode(&options, HIModeShowJournalInfo)) {
-        if (options.hfs.vh.attributes & kHFSVolumeJournaledMask) {
-            if (options.hfs.vh.journalInfoBlock != 0) {
+        if (options.hfs->vh.attributes & kHFSVolumeJournaledMask) {
+            if (options.hfs->vh.journalInfoBlock != 0) {
                 JournalInfoBlock block = {0};
-                bool success = hfs_get_JournalInfoBlock(&block, &options.hfs);
+                bool success = hfs_get_JournalInfoBlock(&block, options.hfs);
                 if (!success) die(1, "Could not get the journal info block!");
                 PrintJournalInfoBlock(&block);
                 
                 journal_header header = {0};
-                success = hfs_get_journalheader(&header, block, &options.hfs);
+                success = hfs_get_journalheader(&header, block, options.hfs);
                 if (!success) die(1, "Could not get the journal header!");
                 PrintJournalHeader(&header);
                 
@@ -682,7 +683,7 @@ NOPE:
     if (check_mode(&options, HIModeShowCatalogRecord)) {
         debug("Finding catalog record for %d:%s", options.record_parent, options.record_filename);
         FSSpec spec = {
-            .hfs = &options.hfs,
+            .hfs = options.hfs,
             .parentID = options.record_parent,
             .name = strtohfsuc(options.record_filename)
         };
@@ -693,7 +694,7 @@ NOPE:
     if (check_mode(&options, HIModeShowCNID)) {
         debug("Showing CNID %d", options.cnid);
         FSSpec spec = {
-            .hfs = &options.hfs,
+            .hfs = options.hfs,
             .parentID = options.cnid,
             .name = {0}
         };
@@ -775,23 +776,24 @@ NOPE:
     if (check_mode(&options, HIModeExtractFile)) {
         if (options.extract_HFSFork == NULL && options.tree && options.tree->treeID != 0) {
             HFSFork *fork;
-            hfsfork_get_special(&fork, &options.hfs, options.tree->treeID);
+            hfsfork_get_special(&fork, options.hfs, options.tree->treeID);
             options.extract_HFSFork = fork;
         }
         
         // Extract any found data, if requested.
         if (options.extract_path != NULL && strlen(options.extract_path) != 0) {
             debug("Extracting data.");
-            if (options.extract_HFSPlusCatalogFile.fileID != 0) {
-                extractHFSPlusCatalogFile(&options.hfs, &options.extract_HFSPlusCatalogFile, options.extract_path);
-            } else if (options.extract_HFSFork != NULL) {
+//            if (options.extract_HFSPlusCatalogFile->fileID != 0) {
+//                extractHFSPlusCatalogFile(options.hfs, options.extract_HFSPlusCatalogFile, options.extract_path);
+//            } else
+            if (options.extract_HFSFork != NULL) {
                 extractFork(options.extract_HFSFork, options.extract_path);
             }
         }
     }
     
     // Clean up
-    hfs_close(&options.hfs); // also perorms vol_close(vol), though perhaps it shouldn't?
+    hfs_close(options.hfs); // also perorms vol_close(vol), though perhaps it shouldn't?
     
     debug("Clean exit.");
     

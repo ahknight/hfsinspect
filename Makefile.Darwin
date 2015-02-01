@@ -1,2 +1,2 @@
 # Presumes LLVM/Clang
-CFLAGS += -Wpedantic -Wno-four-char-constants -funroll-loops -fvectorize -fstrict-enums
+CFLAGS += -Wpedantic -Wno-four-char-constants

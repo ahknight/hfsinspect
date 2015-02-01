@@ -21,7 +21,7 @@ void showPathInfo(HIOptions *options)
     FSSpec                  spec = {0};
     HFSPlusCatalogRecord    catalogRecord = {0};
     
-    if ( HFSPlusGetCatalogInfoByPath(&spec, &catalogRecord, options->file_path, &options->hfs) < 0) {
+    if ( HFSPlusGetCatalogInfoByPath(&spec, &catalogRecord, options->file_path, options->hfs) < 0) {
         error("Path not found: %s", options->file_path);
         return;
     }
@@ -31,7 +31,7 @@ void showPathInfo(HIOptions *options)
     showCatalogRecord(options, spec, false);
     
     if (catalogRecord.record_type == kHFSFileRecord) {
-        options->extract_HFSPlusCatalogFile = catalogRecord.catalogFile;
+        options->extract_HFSPlusCatalogFile = &catalogRecord.catalogFile;
     }
 }
 

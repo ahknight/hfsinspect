@@ -60,7 +60,7 @@ void showCatalogRecord(HIOptions *options, FSSpec spec, bool followThreads)
         PrintNodeRecord(node, recordID);
         
         // Set extract file
-        options->extract_HFSPlusCatalogFile = catalogRecord.catalogFile;
+        options->extract_HFSPlusCatalogFile = &catalogRecord.catalogFile;
         
     } else if (type == kHFSPlusFolderRecord) {
         if (check_mode(options, HIModeListFolder)) {

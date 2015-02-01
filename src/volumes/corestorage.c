@@ -96,7 +96,7 @@ READ:
             *buf = realloc(*buf, buf_size);
             if (*buf == NULL) {
                 perror("realloc");
-                exit(1);
+                abort();
             }
         }
         goto READ;

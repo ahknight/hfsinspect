@@ -13,9 +13,9 @@
 #include <stdio.h>
 #include <errno.h>
 
-//#include <assert.h>             // assert()
-#define _assert( condition ) { if ( ! (condition) ) { fprintf(stderr, "%s:%d assertation failed: %s", __FILE__, __LINE__, #condition); exit(1); } }
-#define assert( condition ) _assert( (condition) )
+#include <assert.h>             // assert()
+#define _assert( condition ) { if ( ! (condition) ) { fprintf(stderr, "%s:%d assertation failed: %s", __FILE__, __LINE__, #condition); abort(); } }
+//#define assert( condition ) _assert( (condition) )
 
 // Tired of typing this? Me too.
 #ifndef FOR_UNTIL
@@ -24,7 +24,7 @@
 
 // This, too.
 #ifndef ALLOC
-#define ALLOC(name, size) { (name) = calloc((size), 1); if ((name) == NULL) { perror("calloc"); exit(errno); }; }
+#define ALLOC(name, size) { (name) = calloc((size), 1); if ((name) == NULL) { perror("calloc"); abort(); }; }
 #endif
 
 // Also this.

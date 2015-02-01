@@ -15,7 +15,7 @@
 #include "debug.h"      //print_trace
 
 void critical(char* format, ...) __attribute((format(printf,1,2), noreturn));
-#define critical(...)   { PrintLine(L_CRITICAL, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); exit(1); }
+#define critical(...)   { PrintLine(L_CRITICAL, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); abort(); }
 
 void error(char* format, ...) __attribute((format(printf,1,2)));
 #define error(...)      PrintLine(L_ERROR, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
