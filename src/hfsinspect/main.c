@@ -7,18 +7,19 @@
 //
 
 #include <stdarg.h>
-#include <getopt.h>         //getopt_long
-#include <libgen.h>         //basename
-#include <locale.h>         //setlocale
+#include <getopt.h>         // getopt_long
+#include <libgen.h>         // basename
+#include <locale.h>         // setlocale
 #include <errno.h>          // errno/perror
-#include <sys/stat.h>       //stat
+#include <sys/stat.h>       // stat
+#include <sys/param.h>      // system definitions
 
-#include <string.h>             // memcpy, strXXX, etc.
+#include <string.h>         // memcpy, strXXX, etc.
 #if defined(__linux__)
-    #include <bsd/string.h>     // strlcpy, etc.
+    #include <bsd/string.h> // strlcpy, etc.
 #endif
 
-#if defined(__APPLE__)
+#if defined(BSD)
     #include <sys/mount.h>  //statfs
 #endif
 
@@ -31,7 +32,7 @@
 #include "hfsinspect/operations/operations.h"
 #include "hfs/unicode.h"
 #include "hfsinspect/types.h"
-#include "hfsinspect/utilities.h"     // commonly-used utility functions
+#include "volumes/utilities.h"     // commonly-used utility functions
 
 
 #pragma mark - Function Declarations
@@ -40,7 +41,7 @@ void usage (int status) __attribute__(( noreturn ));
 void show_version (void) __attribute__(( noreturn ));
 
 String deviceAtPath (String path) __attribute__((nonnull));
-bool resolveDeviceAndPath (String path_in, String device_out, String path_out) __attribute__((nonnull));
+bool   resolveDeviceAndPath (String path_in, String device_out, String path_out) __attribute__((nonnull));
 
 
 #pragma mark - Variable Definitions
@@ -55,12 +56,12 @@ char PROGRAM_NAME[PATH_MAX];
 void usage(int status)
 {
     /* hfsdebug-lite args remaining...
-     -0,        --freespace     display all free extents on the volume
-     -e,        --examples      display some usage examples
-     -f,        --fragmentation display all fragmented files on the volume
-     -H,        --hotfiles      display the hottest files on the volume; requires
+       -0,        --freespace     display all free extents on the volume
+       -e,        --examples      display some usage examples
+       -f,        --fragmentation display all fragmented files on the volume
+       -H,        --hotfiles      display the hottest files on the volume; requires
                                     the -t (--top=TOP) option for the number to list
-     -l TYPE,   --list=TYPE     specify an HFS+ B-Tree's leaf nodes' type, where
+       -l TYPE,   --list=TYPE     specify an HFS+ B-Tree's leaf nodes' type, where
                                      TYPE is one of "file", "folder", "filethread", or
                                      "folderthread" for the Catalog B-Tree; one of
                                      "hfcfile" or "hfcthread" for the Hot Files B-Tree
@@ -68,57 +69,58 @@ void usage(int status)
                                      You can use the type "any" if you wish to display
                                      all node types. Currently, "any" is the only
                                      type supported for the Attributes B-Tree
-     -m,        --mountdata     display a mounted volume's in-memory data
-     -S,        --summary_rsrc  calculate and display volume usage summary
-     -t TOP,    --top=TOP       specify the number of most fragmented files
+       -m,        --mountdata     display a mounted volume's in-memory data
+       -S,        --summary_rsrc  calculate and display volume usage summary
+       -t TOP,    --top=TOP       specify the number of most fragmented files
                                      to display (when used with the --fragmentation
                                      option), or the number of largest files to display
                                      (when used with the --summary option)
-     -x FILTERDYLIB, --filter=FILTERDYLIB
+       -x FILTERDYLIB, --filter=FILTERDYLIB
                                  run the filter implemented in the dynamic library
                                      whose path is FILTERDYLIB. Alternatively,
                                      FILTERDYLIB can be 'builtin:<name>', where <name>
                                      specifies one of the built-in filters: atime,
                                      crtime, dirhardlink, hardlink, mtime, and sxid
-     -X FILTERARGS, --filter_args=FILTERARGS
+       -X FILTERARGS, --filter_args=FILTERARGS
                                  pass this argument string to the filter callback
      */
     String help = "[-hvjs] [-d file] [-V volumepath] [ [-b btree] [-n nodeid] ] [-p path] [-P absolutepath] [-F parent:name] [-o file] [--version] [path]\n"
-    "\n"
-    "SOURCES: \n"
-    "hfsinspect will use the root filesystem by default, or the filesystem containing a target file in some cases. If you wish to\n"
-    "specify a specific device or volume, you can with the following options:\n"
-    "\n"
-    "    -d DEV,     --device DEV    Path to device or file containing a bare HFS+ filesystem (no partition map or HFS wrapper) \n"
-    "    -V VOLUME   --volume VOLUME Use the path to a mounted disk or any file on the disk to use a mounted volume. \n"
-    "\n"
-    "INFO: \n"
-    "    By default, hfsinspect will just show you the volume header and quit.  Use the following options to get more specific data.\n"
-    "\n"
-    "    -h,         --help          Show help and quit. \n"
-    "    -v,         --version       Show version information and quit. \n"
-    "    -b NAME,    --btree NAME    Specify which HFS+ B-Tree to work with. Supported options: attributes, catalog, extents, or hotfiles. \n"
-    "    -n ID,      --node ID       Dump an HFS+ B-Tree node by ID (must specify tree with -b). \n"
-    "    -r,         --volumeheader  Dump the volume header. \n"
-    "    -j,         --journal       Dump the volume's journal info block structure. \n"
-    "    -c CNID,    --cnid CNID     Lookup and display a record by its catalog node ID. \n"
-    "    -l,         --list          If the specified FSOB is a folder, list the contents. \n"
-    "    -D,         --disk-info     Show any available information about the disk, including partitions and volume headers.\n"
-    "    -0,         --freespace     Show a summary of the used/free space and extent count based on the allocation file.\n"
-    "    -F                          Locate a record by Carbon-style FSSpec (parent:name).\n"
-    "    -P                          Locate a record by filesystem path.\n"
-    "    -y DIR                      Yank all the filesystem files and put then in the specified directory.\n"
-    "\n"
-    "OUTPUT: \n"
-    "    You can optionally have hfsinspect dump any fork it finds as the result of an operation. This includes B-Trees or file forks.\n"
-    "    Use a command like \"-b catalog -o catalog.dump\" to extract the catalog file from the boot drive, for instance.\n"
-    "\n"
-    "    -o PATH,    --output PATH   Use with -b or -p to dump a raw data fork (when used with -b, will dump the HFS+ tree file). \n"
-    "\n"
-    "ENVIRONMENT: \n"
-"    Set NOCOLOR to hide ANSI colors (TODO: check terminal for support, etc.). \n"
-"    Set DEBUG to be overwhelmed with useless data. \n"
-"\n";
+                  "\n"
+                  "SOURCES: \n"
+                  "hfsinspect will use the root filesystem by default, or the filesystem containing a target file in some cases. If you wish to\n"
+                  "specify a specific device or volume, you can with the following options:\n"
+                  "\n"
+                  "    -d DEV,     --device DEV    Path to device or file containing a bare HFS+ filesystem (no partition map or HFS wrapper) \n"
+                  "    -V VOLUME   --volume VOLUME Use the path to a mounted disk or any file on the disk to use a mounted volume. \n"
+                  "\n"
+                  "INFO: \n"
+                  "    By default, hfsinspect will just show you the volume header and quit.  Use the following options to get more specific data.\n"
+                  "\n"
+                  "    -h,         --help          Show help and quit. \n"
+                  "    -v,         --version       Show version information and quit. \n"
+                  "    -b NAME,    --btree NAME    Specify which HFS+ B-Tree to work with. Supported options: attributes, catalog, extents, or hotfiles. \n"
+                  "    -n ID,      --node ID       Dump an HFS+ B-Tree node by ID (must specify tree with -b). \n"
+                  "    -r,         --volumeheader  Dump the volume header. \n"
+                  "    -j,         --journal       Dump the volume's journal info block structure. \n"
+                  "    -c CNID,    --cnid CNID     Lookup and display a record by its catalog node ID. \n"
+                  "    -l,         --list          If the specified FSOB is a folder, list the contents. \n"
+                  "    -D,         --disk-info     Show any available information about the disk, including partitions and volume headers.\n"
+                  "    -0,         --freespace     Show a summary of the used/free space and extent count based on the allocation file.\n"
+                  "    -s,         --summary       Show a summary of the files on the disk.\n"
+                  "    -F                          Locate a record by Carbon-style FSSpec (parent:name).\n"
+                  "    -P                          Locate a record by filesystem path.\n"
+                  "    -y DIR                      Yank all the filesystem files and put then in the specified directory.\n"
+                  "\n"
+                  "OUTPUT: \n"
+                  "    You can optionally have hfsinspect dump any fork it finds as the result of an operation. This includes B-Trees or file forks.\n"
+                  "    Use a command like \"-b catalog -o catalog.dump\" to extract the catalog file from the boot drive, for instance.\n"
+                  "\n"
+                  "    -o PATH,    --output PATH   Use with -b or -p to dump a raw data fork (when used with -b, will dump the HFS+ tree file). \n"
+                  "\n"
+                  "ENVIRONMENT: \n"
+                  "    Set NOCOLOR to hide ANSI colors (TODO: check terminal for support, etc.). \n"
+                  "    Set DEBUG to be overwhelmed with useless data. \n"
+                  "\n";
     fprintf(stderr, "usage: %s %s", PROGRAM_NAME, help);
     exit(status);
 }
@@ -132,16 +134,16 @@ void show_version()
 
 String deviceAtPath(String path)
 {
-#if defined(__BSD__)
+#if defined(BSD)
     static struct statfs stats;
-    int result = statfs(path, &stats);
+    int                  result = statfs(path, &stats);
     if (result < 0) {
         perror("statfs");
         return NULL;
     }
-    
+
     debug("statfs: from %s to %s", stats.f_mntonname, stats.f_mntfromname);
-    
+
     return stats.f_mntfromname;
 #else
     warning("%s: not supported on this platform", __FUNCTION__);
@@ -157,40 +159,40 @@ bool resolveDeviceAndPath(String path_in, String device_out, String path_out)
         die(1, path_in);
         return false;
     }
-    
+
     struct statfs stats;
-    int result = statfs(path_in, &stats);
+    int           result = statfs(path_in, &stats);
     if (result < 0) {
         perror("statfs");
         return false;
     }
-    
+
     debug("Device: %s", stats.f_mntfromname);
     debug("Mounted at: %s", stats.f_mntonname);
     debug("Path: %s", path);
-    
-    String device = stats.f_mntfromname;
+
+    String device     = stats.f_mntfromname;
     String mountPoint = stats.f_mntonname;
-    
+
     if (strncmp(mountPoint, "/", PATH_MAX) != 0) {
         // Remove mount point from path name (rather blindly, yes)
         size_t len = strlen(mountPoint);
         path = &path[len];
     }
-    
+
     // If we were given a directory that was the root of a mounted volume, set the path to the root of that volume.
-    if ( path_in[strlen(path_in) - 1] == '/' && strlen(path) == 0) {
+    if ((path_in[strlen(path_in) - 1] == '/') && (strlen(path) == 0)) {
         path[0] = '/';
         path[1] = '\0';
     }
-    
+
     (void)strlcpy(path_out, path, PATH_MAX);
     (void)strlcpy(device_out, device, PATH_MAX);
-    
+
     debug("Path in: %s", path_in);
     debug("Device out: %s", device_out);
     debug("Path out: %s", path_out);
-    
+
     return true;
 #else
     warning("%s: not supported on this platform", __FUNCTION__);
@@ -202,39 +204,41 @@ void die(int val, String format, ...)
 {
     va_list args;
     va_start(args, format);
-    char str[1024];
+    char    str[1024];
     vsnprintf(str, 1024, format, args);
     va_end(args);
-    
-    if (errno > 0)
+
+    if (errno > 0) {
         perror(str);
-    else
+    } else
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
-    
+
+    {
         error(str);
-    
+    }
+
 #pragma GCC diagnostic pop
-    
+
     exit(val);
 }
 
-void loadBTree(HIOptions *options)
+void loadBTree(HIOptions* options)
 {
     // Load the tree
     if (options->tree_type == BTreeTypeCatalog) {
         if ( hfs_get_catalog_btree(&options->tree, options->hfs) < 0)
             die(1, "Could not get Catalog B-Tree!");
-    
+
     } else if (options->tree_type == BTreeTypeExtents) {
         if ( hfs_get_extents_btree(&options->tree, options->hfs) < 0)
             die(1, "Could not get Extents B-Tree!");
-    
+
     } else if (options->tree_type == BTreeTypeAttributes) {
         if ( hfs_get_attribute_btree(&options->tree, options->hfs) < 0)
             die(1, "Could not get Attribute B-Tree!");
-    
+
     } else if (options->tree_type == BTreeTypeHotfiles) {
         if ( hfs_get_hotfiles_btree(&options->tree, options->hfs) < 0)
             die(1, "Hotfiles B-Tree not found. Target must be a hard drive with a copy of Mac OS X that has successfully booted to create this file (it will not be present on SSDs).");
@@ -243,21 +247,21 @@ void loadBTree(HIOptions *options)
     }
 }
 
-int main (int argc, String const *argv)
+int main (int argc, String const* argv)
 {
     HIOptions options = {0};
     ALLOC(options.hfs, sizeof(struct HFS));
-    
+
     (void)strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
-    
+
     if (argc == 1) usage(0);
-    
+
     setlocale(LC_ALL, "");
-    
+
     DEBUG = getenv("DEBUG");
-    
+
 #pragma mark Process Options
-    
+
     /* options descriptor */
     struct option longopts[] = {
         { "help",           no_argument,            NULL,                   'h' },
@@ -278,70 +282,123 @@ int main (int argc, String const *argv)
         { "disk-info",      no_argument,            NULL,                   'D' },
         { "freespace",      no_argument,            NULL,                   '0' },
         { "si",             no_argument,            NULL,                   'S' },
+        { "debug",          no_argument,            NULL,                   'B' },
         { NULL,             0,                      NULL,                   0   }
     };
-    
+
     /* short options */
-    String shortopts = "0ShvjlrsDd:n:b:p:P:F:V:c:o:y:";
-    
-    char opt;
+    String        shortopts = "0ShvjlrsDd:n:b:p:P:F:V:c:o:y:";
+
+    char          opt;
     while ((opt = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
         switch (opt) {
-                // Unknown option
-            case '?': exit(1);
-                
+            // Unknown option
+            case '?':
+            {
                 // Missing argument
-            case ':': exit(1);
-                
+                exit(1);
+            }
+
+            case ':':
+            {
                 // Value set or index returned
-            case 0: break;
-                
-            case 'S': output_set_uses_decimal_blocks(true); break;
-            
-            case 'l': set_mode(&options, HIModeListFolder); break;
-                
-            case 'v': show_version(); break;       // Exits
-                
-            case 'h': usage(0); break;                              // Exits
-                
-            case 'j': set_mode(&options, HIModeShowJournalInfo); break;
-                
-            case 'D': set_mode(&options, HIModeShowDiskInfo); break;
-                
-                // Set device with path to file or device
-            case 'd': (void)strlcpy(options.device_path, optarg, PATH_MAX); break;
-                
+                exit(1);
+            }
+
+            case 0:
+            {
+                break;
+            }
+
+            case 'B':
+            {
+                DEBUG = 1;
+                break;
+            }
+
+            case 'S':
+            {
+                output_set_uses_decimal_blocks(true);
+                break;
+            }
+
+            case 'l':
+            {
+                set_mode(&options, HIModeListFolder);
+                break;
+            }
+
+            case 'v':
+            {
+                show_version();
+                break;               // Exits
+            }
+
+            case 'h':
+            {
+                usage(0);
+                break;                                      // Exits
+            }
+
+            case 'j':
+            {
+                set_mode(&options, HIModeShowJournalInfo);
+                break;
+            }
+
+            case 'D':
+            {
+                set_mode(&options, HIModeShowDiskInfo);
+                break;
+            }
+
+            // Set device with path to file or device
+            case 'd':
+            {
+                (void)strlcpy(options.device_path, optarg, PATH_MAX);
+                break;
+            }
+
             case 'V':
             {
                 String str = deviceAtPath(optarg);
                 (void)strlcpy(options.device_path, str, PATH_MAX);
                 if (options.device_path == NULL) fatal("Unable to determine device. Does the path exist?");
-            }
                 break;
-                
-            case 'r': set_mode(&options, HIModeShowVolumeInfo); break;
-                
+            }
+
+            case 'r':
+            {
+                set_mode(&options, HIModeShowVolumeInfo);
+                break;
+            }
+
             case 'p':
+            {
                 set_mode(&options, HIModeShowPathInfo);
                 char device[PATH_MAX] = {0}, file[PATH_MAX] = {0};
-                
-                bool success = resolveDeviceAndPath(optarg, device, file);
-                
+
+                bool success          = resolveDeviceAndPath(optarg, device, file);
+
                 if (device != NULL) (void)strlcpy(options.device_path, device, PATH_MAX);
                 if (file != NULL)   (void)strlcpy(options.file_path, file, PATH_MAX);
-                
+
                 if ( !success || !strlen(options.device_path ) ) fatal("Device could not be determined. Specify manually with -d/--device.");
                 if ( !strlen(options.file_path) ) fatal("Path must be an absolute path from the root of the target filesystem.");
-                
+
                 break;
-                
+            }
+
             case 'P':
+            {
                 set_mode(&options, HIModeShowPathInfo);
                 (void)strlcpy(options.file_path, optarg, PATH_MAX);
                 if (options.file_path[0] != '/') fatal("Path given to -P/--path_abs must be an absolute path from the root of the target filesystem.");
                 break;
-                
+            }
+
             case 'b':
+            {
                 set_mode(&options, HIModeShowBTreeInfo);
                 if (strcmp(optarg, BTreeOptionAttributes) == 0) options.tree_type = BTreeTypeAttributes;
                 else if (strcmp(optarg, BTreeOptionCatalog) == 0) options.tree_type = BTreeTypeCatalog;
@@ -349,82 +406,103 @@ int main (int argc, String const *argv)
                 else if (strcmp(optarg, BTreeOptionHotfiles) == 0) options.tree_type = BTreeTypeHotfiles;
                 else fatal("option -b/--btree must be one of: attributes, catalog, extents, or hotfiles (not %s).", optarg);
                 break;
-                
+            }
+
             case 'F':
+            {
                 set_mode(&options, HIModeShowCatalogRecord);
-                
+
                 memset(&options.record_filename, 0, sizeof(options.record_filename));
                 options.record_parent = 0;
-                
-                String option    = strdup(optarg);
-                String parent    = strsep(&option, ":");
-                String filename  = strsep(&option, ":");
-                
+
+                String option   = strdup(optarg);
+                String parent   = strsep(&option, ":");
+                String filename = strsep(&option, ":");
+
                 if (parent && strlen(parent)) sscanf(parent, "%u", &options.record_parent);
                 if (filename) (void)strlcpy(options.record_filename, filename, PATH_MAX);
-                
+
                 FREE(option);
-                
-                if (options.record_filename == NULL || options.record_parent == 0) fatal("option -F/--fsspec requires a parent ID and file (eg. 2:.journal)");
-                
+
+                if ((options.record_filename == NULL) || (options.record_parent == 0)) fatal("option -F/--fsspec requires a parent ID and file (eg. 2:.journal)");
+
                 break;
-                
+            }
+
             case 'y':
+            {
                 set_mode(&options, HIModeYankFS);
                 (void)strlcpy(options.extract_path, optarg, PATH_MAX);
                 break;
-                
+            }
+
             case 'o':
+            {
                 set_mode(&options, HIModeExtractFile);
                 (void)strlcpy(options.extract_path, optarg, PATH_MAX);
                 break;
-                
+            }
+
             case 'n':
+            {
                 set_mode(&options, HIModeShowBTreeNode);
-                
+
                 int count = sscanf(optarg, "%u", &options.node_id);
                 if (count == 0) fatal("option -n/--node requires a numeric argument");
-                
+
                 break;
-                
+            }
+
             case 'c':
             {
                 set_mode(&options, HIModeShowCNID);
-                
+
                 int count = sscanf(optarg, "%u", &options.cnid);
                 if (count == 0) fatal("option -c/--cnid requires a numeric argument");
-                
+
                 break;
             }
-                
-            case 's': set_mode(&options, HIModeShowSummary); break;
-                
-            case '0': set_mode(&options, HIModeFreeSpace); break;
-            
-            default: debug("Unhandled argument '%c' (default case).", opt); usage(1); break;
-        };
-    };
-    
+
+            case 's':
+            {
+                set_mode(&options, HIModeShowSummary);
+                break;
+            }
+
+            case '0':
+            {
+                set_mode(&options, HIModeFreeSpace);
+                break;
+            }
+
+            default:
+            {
+                debug("Unhandled argument '%c' (default case).", opt); usage(1);
+                break;
+            }
+        }
+    }
+
 #pragma mark Prepare Input and Outputs
-    
+
     // If no device path was given, use the volume of the CWD.
     if ( EMPTY_STRING(options.device_path) ) {
         info("No device specified. Trying to use the root device.");
-        
+
         char device[PATH_MAX];
         (void)strlcpy(device, deviceAtPath("."), PATH_MAX);
         if (device != NULL)
             (void)strlcpy(options.device_path, device, PATH_MAX);
-        
+
         if ( EMPTY_STRING(options.device_path) ) {
             error("Device could not be determined. Specify manually with -d/--device.");
             exit(1);
         }
         debug("Found device %s", options.device_path);
     }
-    
+
     // Load the device
-    Volume *vol = NULL;
+    Volume* vol = NULL;
 OPEN:
     vol = vol_qopen(options.device_path);
     if (vol == NULL) {
@@ -441,7 +519,7 @@ OPEN:
                 goto OPEN;
             }
             die(errno, "vol_qopen");
-            
+
         } else {
             error("could not open %s", options.device_path);
             die(errno, "vol_qopen");
@@ -449,7 +527,7 @@ OPEN:
     }
 
 #pragma mark Disk Summary
-    
+
     if (check_mode(&options, HIModeShowDiskInfo)) {
         volumes_dump(vol);
     } else {
@@ -457,44 +535,44 @@ OPEN:
     }
 
 #pragma mark Find HFS Volume
-    
+
     // Device loaded. Find the first HFS+ filesystem.
     debug("Looking for HFS filesystems on %s.", basename((char*)&vol->source));
-    Volume *tmp = hfs_find(vol);
+    Volume* tmp = hfs_find(vol);
     if (tmp == NULL) {
         // No HFS Plus volumes found.
         die(1, "No HFS+ filesystems found.");
     } else {
         vol = tmp;
     }
-    
+
     if (hfs_open(options.hfs, vol) < 0) {
         die(1, "hfs_open");
     }
-    
+
     uid_t uid = 99;
     gid_t gid = 99;
-    
+
     // If extracting, determine the UID to become by checking the owner of the output directory (so we can create any requested files later).
     if (check_mode(&options, HIModeExtractFile) || check_mode(&options, HIModeYankFS)) {
         String dir = strdup(dirname(options.extract_path));
         if ( !strlen(dir) ) {
             die(1, "Output file directory does not exist: %s", dir);
         }
-        
+
         struct stat dirstat = {0};
-        int result = stat(dir, &dirstat);
+        int         result  = stat(dir, &dirstat);
         if (result == -1) {
             die(errno, "stat");
         }
-        
+
         uid = dirstat.st_uid;
         gid = dirstat.st_gid;
         FREE(dir);
     }
 
 #pragma mark Drop Permissions
-    
+
     // If we're root, drop down.
     if (geteuid() == 0) {
         debug("Dropping privs");
@@ -502,73 +580,74 @@ OPEN:
         if (seteuid(uid) != 0) die(1, "Failed to drop user privs.");
         info("Was running as root.  Now running as %u/%u.", geteuid(), getegid());
     }
-    
+
 #pragma mark Yank FS
     // Pull the essential files from the disk for inspection or transport.
-	if (check_mode(&options, HIModeYankFS)) {
+    if (check_mode(&options, HIModeYankFS)) {
         if (options.hfs->vol == NULL) {
             error("No HFS+ volume detected; can't extract FS.");
             goto NOPE;
         }
-        
-		char path[PATH_MAX] = "";
-		strncpy(path, options.extract_path, PATH_MAX);
-        
-        int result = mkdir(options.extract_path, 0777);
-        if (result < 0 && errno != EEXIST) {
+
+        char path[PATH_MAX] = "";
+        strlcpy(path, options.extract_path, PATH_MAX);
+
+        int  result         = mkdir(options.extract_path, 0777);
+        if ((result < 0) && (errno != EEXIST)) {
             die(0, "mkdir");
         }
-		
-		char headerPath         [PATH_MAX+1] = "";
-		char allocationPath     [PATH_MAX+1] = "";
-		char extentsPath        [PATH_MAX+1] = "";
-		char catalogPath        [PATH_MAX+1] = "";
-		char attributesPath     [PATH_MAX+1] = "";
-		char startupPath        [PATH_MAX+1] = "";
-		char hotfilesPath       [PATH_MAX+1] = "";
-		char journalBlockPath   [PATH_MAX+1] = "";
-        char journalPath        [PATH_MAX+1] = "";
-        
-        strncpy(headerPath,         options.extract_path,           PATH_MAX);
-        strncpy(allocationPath,     headerPath,                     PATH_MAX);
-        strncpy(extentsPath,        headerPath,                     PATH_MAX);
-        strncpy(catalogPath,        headerPath,                     PATH_MAX);
-        strncpy(attributesPath,     headerPath,                     PATH_MAX);
-        strncpy(startupPath,        headerPath,                     PATH_MAX);
-        strncpy(hotfilesPath,       headerPath,                     PATH_MAX);
-        strncpy(journalBlockPath,   headerPath,                     PATH_MAX);
-        strncpy(journalPath,        headerPath,                     PATH_MAX);
-        
-        strncat(headerPath,         "/header.block",                PATH_MAX);
-        strncat(allocationPath,     "/allocation.bmap",             PATH_MAX);
-        strncat(extentsPath,        "/extents.btree",               PATH_MAX);
-        strncat(catalogPath,        "/catalog.btree",               PATH_MAX);
-        strncat(attributesPath,     "/attributes.btree",            PATH_MAX);
-        strncat(startupPath,        "/startupFile",                 PATH_MAX);
-        strncat(hotfilesPath,       "/hotfiles.btree",              PATH_MAX);
-        strncat(journalBlockPath,   "/journal.block",               PATH_MAX);
-        strncat(journalPath,        "/journal.buf",                 PATH_MAX);
 
-        HFSFork *fork = NULL;
+        char headerPath         [PATH_MAX+1] = "";
+        char allocationPath     [PATH_MAX+1] = "";
+        char extentsPath        [PATH_MAX+1] = "";
+        char catalogPath        [PATH_MAX+1] = "";
+        char attributesPath     [PATH_MAX+1] = "";
+        char startupPath        [PATH_MAX+1] = "";
+        char hotfilesPath       [PATH_MAX+1] = "";
+        char journalBlockPath   [PATH_MAX+1] = "";
+        char journalPath        [PATH_MAX+1] = "";
+
+        strlcpy(headerPath,         options.extract_path,           PATH_MAX);
+        strlcpy(allocationPath,     headerPath,                     PATH_MAX);
+        strlcpy(extentsPath,        headerPath,                     PATH_MAX);
+        strlcpy(catalogPath,        headerPath,                     PATH_MAX);
+        strlcpy(attributesPath,     headerPath,                     PATH_MAX);
+        strlcpy(startupPath,        headerPath,                     PATH_MAX);
+        strlcpy(hotfilesPath,       headerPath,                     PATH_MAX);
+        strlcpy(journalBlockPath,   headerPath,                     PATH_MAX);
+        strlcpy(journalPath,        headerPath,                     PATH_MAX);
+
+        strlcat(headerPath,         "/header.block",                PATH_MAX);
+        strlcat(allocationPath,     "/allocation.bmap",             PATH_MAX);
+        strlcat(extentsPath,        "/extents.btree",               PATH_MAX);
+        strlcat(catalogPath,        "/catalog.btree",               PATH_MAX);
+        strlcat(attributesPath,     "/attributes.btree",            PATH_MAX);
+        strlcat(startupPath,        "/startupFile",                 PATH_MAX);
+        strlcat(hotfilesPath,       "/hotfiles.btree",              PATH_MAX);
+        strlcat(journalBlockPath,   "/journal.block",               PATH_MAX);
+        strlcat(journalPath,        "/journal.buf",                 PATH_MAX);
+
+        HFSFork* fork        = NULL;
 
         // Volume Header Blocks
         unsigned sectorCount = 16;
-        size_t readSize = vol->sector_size*sectorCount;
-        Bytes buf = NULL;
-        int nbytes = 0;
-        
+        size_t   readSize    = vol->sector_size*sectorCount;
+        Bytes    buf         = NULL;
+        int      nbytes      = 0;
+
         ALLOC(buf, readSize);
+        assert(buf != NULL);
         nbytes = vol_read(vol, (Bytes)buf, readSize, 0);
         if (nbytes < 0) die(0, "reading volume header");
-        
-        FILE *fp = fopen(headerPath, "w");
+
+        FILE* fp = fopen(headerPath, "w");
         (void)fwrite(buf, 1, readSize, fp);
         fclose(fp);
-        
+
         struct {
             HFSPlusForkData forkData;
             bt_nodeid_t     cnid;
-            char            *path;
+            char*           path;
         } files[5] = {
             // Extents Overflow
             { options.hfs->vh.extentsFile,     kHFSExtentsFileID,      extentsPath},
@@ -581,26 +660,26 @@ OPEN:
             // Attributes (HFS+)
             { options.hfs->vh.attributesFile,  kHFSAttributesFileID,   attributesPath},
         };
-        
+
         FOR_UNTIL(i, 5) {
             if (files[i].forkData.logicalSize < 1) continue;
-            
+
             hfsfork_make(&fork, options.hfs, files[i].forkData, HFSDataForkType, files[i].cnid);
             (void)extractFork(fork, files[i].path);
             hfsfork_free(fork);
             fork = NULL;
         }
-        
+
         // Hotfiles
         HFSPlusCatalogRecord catalogRecord = {0};
-        
+
         if ( HFSPlusGetCatalogInfoByPath(NULL, &catalogRecord, "/.hotfiles.btree", options.hfs) ) {
             hfsfork_make(&fork, options.hfs, catalogRecord.catalogFile.dataFork, HFSDataForkType, catalogRecord.catalogFile.fileID);
             (void)extractFork(fork, hotfilesPath);
             hfsfork_free(fork);
             fork = NULL;
         }
-        
+
         // Journal Info Block
         if ( HFSPlusGetCatalogInfoByPath(NULL, &catalogRecord, "/.journal_info_block", options.hfs) ) {
             hfsfork_make(&fork, options.hfs, catalogRecord.catalogFile.dataFork, HFSDataForkType, catalogRecord.catalogFile.fileID);
@@ -608,7 +687,7 @@ OPEN:
             hfsfork_free(fork);
             fork = NULL;
         }
-        
+
         // Journal File
         if ( HFSPlusGetCatalogInfoByPath(NULL, &catalogRecord, "/.journal", options.hfs) ) {
             hfsfork_make(&fork, options.hfs, catalogRecord.catalogFile.dataFork, HFSDataForkType, catalogRecord.catalogFile.fileID);
@@ -616,62 +695,62 @@ OPEN:
             hfsfork_free(fork);
             fork = NULL;
         }
-	}
-    
+    }
+
 NOPE:
-    
+
 #pragma mark Load Volume Data
-    
+
     set_hfs_volume(options.hfs); // Set the context for certain output_hfs.h calls.
-        
+
 #pragma mark Volume Requests
-    
+
     // Always detail what volume we're working on at the very least
     PrintVolumeInfo(options.hfs);
-    
+
     // Default to volume info if there are no other specifiers.
     if (options.mode == 0) set_mode(&options, HIModeShowVolumeInfo);
-    
+
     // Volume summary
     if (check_mode(&options, HIModeShowSummary)) {
         debug("Printing summary.");
         VolumeSummary summary = generateVolumeSummary(&options);
         PrintVolumeSummary(&summary);
     }
-    
+
     // Show volume info
     if (check_mode(&options, HIModeShowVolumeInfo)) {
         debug("Printing volume header.");
         PrintVolumeHeader(&options.hfs->vh);
     }
-    
+
     // Journal info
     if (check_mode(&options, HIModeShowJournalInfo)) {
         if (options.hfs->vh.attributes & kHFSVolumeJournaledMask) {
             if (options.hfs->vh.journalInfoBlock != 0) {
-                JournalInfoBlock block = {0};
-                bool success = hfs_get_JournalInfoBlock(&block, options.hfs);
+                JournalInfoBlock block   = {0};
+                bool             success = hfs_get_JournalInfoBlock(&block, options.hfs);
                 if (!success) die(1, "Could not get the journal info block!");
                 PrintJournalInfoBlock(&block);
-                
-                journal_header header = {0};
+
+                journal_header   header  = {0};
                 success = hfs_get_journalheader(&header, block, options.hfs);
                 if (!success) die(1, "Could not get the journal header!");
                 PrintJournalHeader(&header);
-                
+
             } else {
                 warning("Consistency error: volume attributes indicate it is journaled but the journal info block is empty!");
             }
         }
     }
-    
+
 #pragma mark Allocation Requests
     // Show volume's free space extents
     if (check_mode(&options, HIModeFreeSpace)) {
         debug("Show free space.");
         showFreeSpace(&options);
     }
-    
+
 #pragma mark Catalog Requests
 
     // Show a path's series of records
@@ -679,110 +758,110 @@ NOPE:
         debug("Show path info.");
         showPathInfo(&options);
     }
-    
+
     // Show a catalog record by FSSpec
     if (check_mode(&options, HIModeShowCatalogRecord)) {
         debug("Finding catalog record for %d:%s", options.record_parent, options.record_filename);
         FSSpec spec = {
-            .hfs = options.hfs,
+            .hfs      = options.hfs,
             .parentID = options.record_parent,
-            .name = strtohfsuc(options.record_filename)
+            .name     = strtohfsuc(options.record_filename)
         };
         showCatalogRecord(&options, spec, false);
     }
-    
+
     // Show a catalog record by its CNID (file/folder ID)
     if (check_mode(&options, HIModeShowCNID)) {
         debug("Showing CNID %d", options.cnid);
         FSSpec spec = {
-            .hfs = options.hfs,
+            .hfs      = options.hfs,
             .parentID = options.cnid,
-            .name = {0}
+            .name     = {0}
         };
         showCatalogRecord(&options, spec, true);
     }
-    
+
 #pragma mark B-Tree Requests
 
     // Show B-Tree info
     if (check_mode(&options, HIModeShowBTreeInfo)) {
         debug("Printing tree info.");
-        
+
         loadBTree(&options);
-        
+
         if (options.tree->treeID == kHFSCatalogFileID) {
             BeginSection("Catalog B-Tree Header");
-            
+
         } else if (options.tree->treeID == kHFSExtentsFileID) {
             BeginSection("Extents B-Tree Header");
-            
+
         } else if (options.tree->treeID == kHFSAttributesFileID) {
             BeginSection("Attributes B-Tree Header");
-            
+
         } else if (options.tree_type == BTreeTypeHotfiles) {
             BeginSection("Hotfiles B-Tree Header");
-            
+
         } else {
             die(1, "Unknown tree type: %d", options.tree_type);
         }
-        
+
         PrintTreeNode(options.tree, 0);
         EndSection();
     }
-    
+
     // Show a B-Tree node by ID
     if (check_mode(&options, HIModeShowBTreeNode)) {
         debug("Printing tree node.");
-        
+
         loadBTree(&options);
-        
+
         if (options.tree_type == BTreeTypeCatalog) {
             BeginSection("Catalog B-Tree Node %d", options.node_id);
-            
+
         } else if (options.tree_type == BTreeTypeExtents) {
             BeginSection("Extents B-Tree Node %d", options.node_id);
-            
+
         } else if (options.tree_type == BTreeTypeAttributes) {
             BeginSection("Attributes B-Tree Node %d", options.node_id);
-            
+
         } else if (options.tree_type == BTreeTypeHotfiles) {
             BeginSection("Hotfiles B-Tree Node %d", options.node_id);
-            
+
         } else {
             die(1, "Unknown tree type: %s", options.tree_type);
         }
-        
+
         bool showHex = 0;
-        
+
         if (showHex) {
             size_t length = options.tree->headerRecord.nodeSize;
-            off_t offset = length * options.node_id;
-            Bytes buf = NULL;
+            off_t  offset = length * options.node_id;
+            Bytes  buf    = NULL;
             ALLOC(buf, length);
             fpread(options.tree->fp, buf, length, offset);
             VisualizeData(buf, length);
             FREE(buf);
-            
+
         } else {
             PrintTreeNode(options.tree, options.node_id);
         }
-        
+
         EndSection();
-        
+
     }
-    
+
 #pragma mark Extract File Requests
 
     // Extract any found files (not complete; FIXME: dropping perms breaks right now)
     if (check_mode(&options, HIModeExtractFile)) {
-        if (options.extract_HFSFork == NULL && options.tree && options.tree->treeID != 0) {
-            HFSFork *fork;
+        if ((options.extract_HFSFork == NULL) && options.tree && (options.tree->treeID != 0)) {
+            HFSFork* fork;
             hfsfork_get_special(&fork, options.hfs, options.tree->treeID);
             options.extract_HFSFork = fork;
         }
-        
+
         // Extract any found data, if requested.
-        if (options.extract_path != NULL && strlen(options.extract_path) != 0) {
+        if ((options.extract_path != NULL) && (strlen(options.extract_path) != 0)) {
             debug("Extracting data.");
 //            if (options.extract_HFSPlusCatalogFile->fileID != 0) {
 //                extractHFSPlusCatalogFile(options.hfs, options.extract_HFSPlusCatalogFile, options.extract_path);
@@ -792,12 +871,12 @@ NOPE:
             }
         }
     }
-    
+
     // Clean up
     hfs_close(options.hfs); // also perorms vol_close(vol), though perhaps it shouldn't?
-    
+
     debug("Clean exit.");
-    
+
     return 0;
 }
 

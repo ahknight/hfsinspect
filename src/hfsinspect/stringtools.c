@@ -9,7 +9,6 @@
 #include "hfsinspect/stringtools.h"
 
 #include <string.h>             // memcpy, strXXX, etc.
-// #include <errno.h>              // errno
 #include <sys/param.h>          // MIN/MAX
 #include <math.h>               // log
 
@@ -21,17 +20,17 @@
 void memdump(FILE* file, const void* data, size_t length, uint8_t base, uint8_t width, uint8_t groups, unsigned mode)
 {
     // Length of a line
-    int line_width = width * groups;
-    
-    off_t offset = 0;
+    int   line_width = width * groups;
+
+    off_t offset     = 0;
     while (length > offset) {
         // Starting position for the line
         const uint8_t* line = &((uint8_t*)data)[offset];
-        
-        if ( (offset - line_width) > 0 && (offset + line_width) < length) {
+
+        if (((offset - line_width) > 0) && ((offset + line_width) < length)) {
             const uint8_t* prevLine = &((uint8_t*)data)[offset - line_width];
             const uint8_t* nextLine = &((uint8_t*)data)[offset + line_width];
-            
+
             // Do we match the previous line?
             if (memcmp(prevLine, line, line_width) == 0) {
                 // How about the next one?
@@ -46,14 +45,14 @@ void memdump(FILE* file, const void* data, size_t length, uint8_t base, uint8_t 
                 }
             }
         }
-        
+
         // Length of this line (considering the last line may not be a full line)
         size_t lineMax = MIN((length - offset), line_width);
-        
+
         // Line header/prefix
         if (mode & DUMP_ADDRESS) fprintf(file, "%12p", &line[0]);
         if (mode & DUMP_OFFSET)  fprintf(file, "%#10jx", (intmax_t)offset);
-        
+
         // Print numeric representation
         if (mode & DUMP_ENCODED) {
             fprintf(file, " ");
@@ -63,12 +62,10 @@ void memdump(FILE* file, const void* data, size_t length, uint8_t base, uint8_t 
                     if ((c % width) == 0) fprintf(file, " ");
                     char group[100] = "";
                     if (line[c] == 0)
-                    { memset(group, '0', size); _print_gray(file, 5, 0); }
-                    else
-                    { memstr(group, base, &line[c], 1, size); _print_color(file, 2, 3, 5, 0); }
-                    
+                    { memset(group, '0', size); _print_gray(file, 5, 0); }else {                                                      memstr(group, base, &line[c], 1, size); _print_color(file, 2, 3, 5, 0); }
+
                     fprintf(file, "%s%s", group, ((mode & DUMP_PADDING) ? " " : ""));
-                    
+
                     _print_reset(file);
 
                 } else {
@@ -76,7 +73,7 @@ void memdump(FILE* file, const void* data, size_t length, uint8_t base, uint8_t 
                 }
             }
         }
-        
+
         // Print ASCII representation
         if (mode & DUMP_ASCII) {
             fprintf(file, " |");
@@ -86,16 +83,17 @@ void memdump(FILE* file, const void* data, size_t length, uint8_t base, uint8_t 
                     chr = ' ';
                 else if (chr > 127) // ASCII unprintable
                     chr = '?';
-                else if (chr < 32) // ASCII control characters
+                else if (chr < 32)  // ASCII control characters
                     chr = '.';
                 fprintf(file, "%c", chr);
             }
             fprintf(file, "|");
         }
-        
+
         fprintf(file, "\n");
-        
-    NEXT:
+
+NEXT:
         offset += line_width;
     }
 }
+

@@ -10,26 +10,26 @@
 #define hfsinspect_types_h
 
 #include <stdint.h>
-#include "hfs/Apple/hfs_macos_defs.h"
+#include "hfs/Apple/hfs_types.h"
 
 typedef BytePtr Bytes;
 typedef char*   String;
 
 // For volume statistics
 typedef struct Rank {
-    uint64_t    measure;
-    uint32_t    cnid;
+    uint64_t measure;
+    uint32_t cnid;
 } Rank;
 
 typedef struct ForkSummary {
-    uint64_t    count;
-    uint64_t    fragmentedCount;
-    uint64_t    blockCount;
-    uint64_t    logicalSpace;
-    uint64_t    extentRecords;
-    uint64_t    extentDescriptors;
-    uint64_t    overflowExtentRecords;
-    uint64_t    overflowExtentDescriptors;
+    uint64_t count;
+    uint64_t fragmentedCount;
+    uint64_t blockCount;
+    uint64_t logicalSpace;
+    uint64_t extentRecords;
+    uint64_t extentDescriptors;
+    uint64_t overflowExtentRecords;
+    uint64_t overflowExtentDescriptors;
 } ForkSummary;
 
 typedef struct VolumeSummary {
@@ -44,10 +44,10 @@ typedef struct VolumeSummary {
     uint64_t    invisibleFileCount;
     uint64_t    emptyFileCount;
     uint64_t    emptyDirectoryCount;
-    
+
     Rank        largestFiles[10];
     Rank        mostFragmentedFiles[10];
-    
+
     ForkSummary dataFork;
     ForkSummary resourceFork;
 } VolumeSummary;

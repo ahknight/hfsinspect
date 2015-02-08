@@ -20,105 +20,105 @@
 #include "logging/logging.h"    // console printing routines
 
 
-int mbr_load_header(Volume *vol, MBR *mbr);
+int mbr_load_header(Volume* vol, MBR* mbr);
 
-int mbr_load_header(Volume *vol, MBR *mbr)
+int mbr_load_header(Volume* vol, MBR* mbr)
 {
     if ( vol_read(vol, (Bytes)mbr, sizeof(MBR), 0) < 0 )
         return -1;
-    
+
     return 0;
 }
 
-int mbr_test(Volume *vol)
+int mbr_test(Volume* vol)
 {
     debug("MBR test");
-    
-    MBR mbr = {{0}};
-    
+
+    MBR  mbr        = {{0}};
     char mbr_sig[2] = { 0x55, 0xaa };
-    
+
     if ( mbr_load_header(vol, &mbr) < 0 )
         return -1;
-    
+
     if (memcmp(&mbr_sig, &mbr.signature, 2) == 0) { debug("Found an MBR pmap."); return 1; }
-    
+
     return 0;
 }
 
-int mbr_load(Volume *vol)
+int mbr_load(Volume* vol)
 {
     debug("MBR load");
-    
-    vol->type = kVolTypePartitionMap;
+
+    vol->type    = kVolTypePartitionMap;
     vol->subtype = kPMTypeMBR;
-    
+
     MBR mbr = {{0}};
-    
+
     if ( mbr_load_header(vol, &mbr) < 0)
         return -1;
-    
+
     FOR_UNTIL(i, 4) {
         if (mbr.partitions[i].type) {
-            Volume* v = NULL;
+            Volume*      v      = NULL;
             MBRPartition p;
-            VolType hint = kVolTypeSystem;
-            off_t offset = 0;
-            size_t length = 0;
-            
-            p = mbr.partitions[i];
+            VolType      hint   = kVolTypeSystem;
+            off_t        offset = 0;
+            size_t       length = 0;
+
+            p      = mbr.partitions[i];
             offset = p.first_sector_lba * vol->sector_size;
             length = p.sector_count * vol->sector_size;
-            
-            v = vol_make_partition(vol, i, offset, length);
-            
+
+            v      = vol_make_partition(vol, i, offset, length);
+
             const char* name = mbr_partition_type_str(p.type, &hint);
             if (name != NULL) {
                 v->type = hint;
             }
         }
     }
-    
+
     return 0;
 }
 
 const char* mbr_partition_type_str(uint16_t type, VolType* hint)
 {
     static char type_str[100];
-    
+
     FOR_UNTIL(i, 256) {
         if (mbr_partition_types[i].type == type) {
             if (hint != NULL) *hint = mbr_partition_types[i].voltype;
             (void)strlcpy(type_str, mbr_partition_types[i].name, 99);
         }
     }
-    
+
     if (type_str == NULL)
         (void)strlcpy(type_str, "unknown", 100);
-    
+
     return type_str;
 }
 
-int mbr_dump(Volume *vol)
+int mbr_dump(Volume* vol)
 {
     debug("MBR dump");
-    
+
     const char* type_str = NULL;
-    MBR *mbr = NULL;
+    MBR*        mbr      = NULL;
+
     ALLOC(mbr, sizeof(MBR));
-    
+
     if ( mbr_load_header(vol, mbr) < 0)
         return -1;
-    
+
     BeginSection("Master Boot Record");
     PrintAttribute("signature", "%#x", be16toh(*(uint16_t*)mbr->signature));
-    
+
     FOR_UNTIL(i, 4) {
         MBRPartition* partition = &mbr->partitions[i];
         if (partition->type == 0) continue;
-        
+
         type_str = mbr_partition_type_str(partition->type, NULL);
-        
+
         BeginSection("Partition %d", i + 1);
         PrintUIHex  (partition, status);
         PrintUI     (partition, first_sector.head);
@@ -133,9 +133,9 @@ int mbr_dump(Volume *vol)
         _PrintDataLength("(size)", (partition->sector_count * vol->sector_size));
         EndSection();
     }
-    
+
     EndSection();
-    
+
     return 0;
 }
 

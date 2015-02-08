@@ -1,6 +1,6 @@
 //
 //  crc32.c
-//  hfsinspect
+//  volumes
 //
 //  Created by Adam Knight on 3/28/14.
 //  Copyright (c) 2014 Adam Knight. All rights reserved.
@@ -64,14 +64,15 @@ static const uint32_t crc32_table_enet[256] = {
     0x2d02ef8dL
 };
 
-uint32_t crc32 (uint32_t crc, const void *buf, size_t len)
+uint32_t crc32 (uint32_t crc, const void* buf, size_t len)
 {
-    const uint8_t *buf_p = buf;
-    const uint8_t *buf_end = buf_p + len;
-    
+    const uint8_t* buf_p   = buf;
+    const uint8_t* buf_end = buf_p + len;
+
     crc = ~crc;
     while (buf_p < buf_end)
         crc = crc32_table_enet[(crc ^ *buf_p++) & 0xff] ^ (crc >> 8);
-    
+
     return ~crc;
 }
+

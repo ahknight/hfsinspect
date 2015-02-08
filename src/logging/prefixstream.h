@@ -11,6 +11,6 @@
 
 #include <stdio.h>
 
-FILE* prefixstream(FILE* fp, char* prefix);
+FILE* prefixstream(FILE* fp, char* prefix) __attribute__((nonnull));
 
 #endif

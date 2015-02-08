@@ -15,14 +15,14 @@
 #pragma mark Range Helpers
 
 typedef struct range {
-    size_t  start;
-    size_t  count;
+    size_t start;
+    size_t count;
 } range;
 typedef range* range_ptr;
 
-range   make_range          (size_t start, size_t count);
-bool    range_contains      (size_t pos, range test);
-size_t  range_max           (range r);
-range   range_intersection  (range a, range b);
+range  make_range          (size_t start, size_t count);
+bool   range_contains      (size_t pos, range test);
+size_t range_max           (range r);
+range  range_intersection  (range a, range b);
 
 #endif

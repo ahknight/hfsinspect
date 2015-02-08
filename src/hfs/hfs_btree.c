@@ -11,38 +11,42 @@
 #include "hfs/hfs_btree.h"
 #include "hfs/hfs_io.h"
 
-int hfs_get_btree(BTreePtr *btree, const HFS *hfs, hfs_cnid_t cnid)
+int hfs_get_btree(BTreePtr* btree, const HFS* hfs, hfs_cnid_t cnid)
 {
 //    static BTreePtr trees[16] = {{0}};
     BTreePtr tree = NULL;
-    HFSFork *fork = NULL;
-    
+    HFSFork* fork = NULL;
+
     ALLOC(tree, sizeof(struct _BTree));
-    
+
     if ( hfsfork_get_special(&fork, hfs, cnid) < 0 )
         goto ERR;
-    
-    FILE *fp = NULL;
+
+    FILE* fp = NULL;
     if ( (fp = fopen_hfsfork(fork)) == NULL )
         goto ERR;
-    
+
     if (btree_init(tree, fp) < 0)
         goto ERR;
 
     tree->treeID = cnid;
     switch (cnid) {
         case kHFSAttributesFileID:
+        {
 //            tree->keyCompare = (btree_key_compare_func)hfs_attributes_compare_keys;
             break;
-            
+        }
+
         default:
+        {
             break;
+        }
     }
 //    tree->keyCompare = (btree_key_compare_func)hfs_attributes_compare_keys;
-    
-    
+
+
     return 0;
-    
+
 ERR:
     FREE(tree);
     return -1;

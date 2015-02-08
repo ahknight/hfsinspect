@@ -64,6 +64,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		9B682FA61A867EE8000E8995 /* hfs_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_types.h; sourceTree = "<group>"; };
 		9B711846184D62A8008B9DB2 /* Makefile.Darwin */ = {isa = PBXFileReference; lastKnownFileType = text; path = Makefile.Darwin; sourceTree = "<group>"; };
 		9B711847184D62A8008B9DB2 /* Makefile.Linux */ = {isa = PBXFileReference; lastKnownFileType = text; path = Makefile.Linux; sourceTree = "<group>"; };
 		9B9F2001184B27AC005D7271 /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = SOURCE_ROOT; };
@@ -97,7 +98,7 @@
 		9BB422121A7DEFCD000E8995 /* output_hfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = output_hfs.h; sourceTree = "<group>"; };
 		9BB422151A7DEFCD000E8995 /* cache.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = cache.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BB422161A7DEFCD000E8995 /* cache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cache.h; sourceTree = "<group>"; };
-		9BB422171A7DEFCD000E8995 /* cdefs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cdefs.h; sourceTree = "<group>"; };
+		9BB422171A7DEFCD000E8995 /* cdefs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = cdefs.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		9BB422181A7DEFCD000E8995 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		9BB4221A1A7DEFCD000E8995 /* cnid.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cnid.c; sourceTree = "<group>"; };
 		9BB4221B1A7DEFCD000E8995 /* extract_file.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = extract_file.c; sourceTree = "<group>"; };
@@ -106,7 +107,7 @@
 		9BB4221E1A7DEFCD000E8995 /* operations.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = operations.c; sourceTree = "<group>"; };
 		9BB4221F1A7DEFCD000E8995 /* operations.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = operations.h; sourceTree = "<group>"; };
 		9BB422201A7DEFCD000E8995 /* path_info.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = path_info.c; sourceTree = "<group>"; };
-		9BB422211A7DEFCD000E8995 /* output.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = output.c; sourceTree = "<group>"; };
+		9BB422211A7DEFCD000E8995 /* output.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = output.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BB422221A7DEFCD000E8995 /* output.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = output.h; sourceTree = "<group>"; };
 		9BB422231A7DEFCD000E8995 /* range.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = range.c; sourceTree = "<group>"; };
 		9BB422241A7DEFCD000E8995 /* range.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = range.h; sourceTree = "<group>"; };
@@ -156,7 +157,7 @@
 		9BF00F7E1A7E950F000E8995 /* types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = types.h; sourceTree = "<group>"; };
 		9BF00F7F1A7E950F000E8995 /* unicode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = unicode.c; sourceTree = "<group>"; };
 		9BF00F801A7E950F000E8995 /* unicode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = unicode.h; sourceTree = "<group>"; };
-		9BF00F821A7E9520000E8995 /* cdefs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cdefs.h; sourceTree = "<group>"; };
+		9BF00F821A7E9520000E8995 /* cdefs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = cdefs.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		9BF00F831A7E9546000E8995 /* _endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = _endian.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -177,8 +178,8 @@
 				9BB421F51A7DEFCD000E8995 /* Apple */,
 				9BB421FD1A7DEFCD000E8995 /* btree */,
 				9BF00F7E1A7E950F000E8995 /* types.h */,
-				9BF00F7F1A7E950F000E8995 /* unicode.c */,
 				9BF00F801A7E950F000E8995 /* unicode.h */,
+				9BF00F7F1A7E950F000E8995 /* unicode.c */,
 				9BB422071A7DEFCD000E8995 /* hfs.h */,
 				9BB422061A7DEFCD000E8995 /* hfs.c */,
 				9BB422031A7DEFCD000E8995 /* catalog.h */,
@@ -203,6 +204,7 @@
 		9BB421F51A7DEFCD000E8995 /* Apple */ = {
 			isa = PBXGroup;
 			children = (
+				9B682FA61A867EE8000E8995 /* hfs_types.h */,
 				9BB421F61A7DEFCD000E8995 /* APPLE_LICENSE */,
 				9BB421F71A7DEFCD000E8995 /* hfs_format.h */,
 				9BB421F81A7DEFCD000E8995 /* hfs_macos_defs.h */,
@@ -241,8 +243,6 @@
 				9BB422231A7DEFCD000E8995 /* range.c */,
 				9BB422261A7DEFCD000E8995 /* stringtools.h */,
 				9BB422251A7DEFCD000E8995 /* stringtools.c */,
-				9BB422291A7DEFCD000E8995 /* utilities.h */,
-				9BB422281A7DEFCD000E8995 /* utilities.c */,
 			);
 			name = hfsinspect;
 			path = src/hfsinspect;
@@ -251,12 +251,12 @@
 		9BB422191A7DEFCD000E8995 /* operations */ = {
 			isa = PBXGroup;
 			children = (
+				9BB4221F1A7DEFCD000E8995 /* operations.h */,
+				9BB4221E1A7DEFCD000E8995 /* operations.c */,
 				9BB4221A1A7DEFCD000E8995 /* cnid.c */,
 				9BB4221B1A7DEFCD000E8995 /* extract_file.c */,
 				9BB4221C1A7DEFCD000E8995 /* free_space.c */,
 				9BB4221D1A7DEFCD000E8995 /* hfs_summary.c */,
-				9BB4221E1A7DEFCD000E8995 /* operations.c */,
-				9BB4221F1A7DEFCD000E8995 /* operations.h */,
 				9BB422201A7DEFCD000E8995 /* path_info.c */,
 			);
 			path = operations;
@@ -311,6 +311,8 @@
 				9BB422421A7DEFCD000E8995 /* gpt.c */,
 				9BB422451A7DEFCD000E8995 /* mbr.h */,
 				9BB422441A7DEFCD000E8995 /* mbr.c */,
+				9BB422291A7DEFCD000E8995 /* utilities.h */,
+				9BB422281A7DEFCD000E8995 /* utilities.c */,
 			);
 			name = volumes;
 			path = src/volumes;

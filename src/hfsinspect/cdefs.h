@@ -9,13 +9,7 @@
 #ifndef hfsinspect_cdefs_h
 #define hfsinspect_cdefs_h
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-
-#include <assert.h>             // assert()
-#define _assert( condition ) { if ( ! (condition) ) { fprintf(stderr, "%s:%d assertation failed: %s", __FILE__, __LINE__, #condition); abort(); } }
-//#define assert( condition ) _assert( (condition) )
+#include <assert.h>             // assert
 
 // Tired of typing this? Me too.
 #ifndef FOR_UNTIL
@@ -24,17 +18,12 @@
 
 // This, too.
 #ifndef ALLOC
-#define ALLOC(name, size) { (name) = calloc((size), 1); if ((name) == NULL) { perror("calloc"); abort(); }; }
+#define ALLOC(name, size) { (name) = calloc(1, (size)); assert((name) != NULL); }
 #endif
 
 // Also this.
 #ifndef FREE
 #define FREE(name) { free((name)); (name) = NULL; }
 #endif
-
-#ifndef _UUID_STRING_T
-#define _UUID_STRING_T
-typedef char	uuid_string_t[37];
-#endif /* _UUID_STRING_T */
 
 #endif

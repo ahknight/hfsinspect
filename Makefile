@@ -22,13 +22,16 @@ ALLFILES := $(SRCFILES) $(HDRFILES) $(AUXFILES)
 INSTALL = $(shell which install)
 PREFIX = /usr/local
 
-.PHONY: all test docs clean distclean
+.PHONY: all test docs clean distclean pretty
 
 all: depend $(BINARYPATH)
 everything: $(BINARYPATH) docs
 clean: clean-hfsinspect
 distclean: clean-test clean-docs
 	$(RM) -r build
+
+pretty:
+	find src -iname '*.[hc]' -and \! -path '*vendor*' -and \! -path '*Apple*' | uncrustify -c uncrustify.cfg -F- --replace --no-backup --mtime -lC
 
 depend: .depend
 

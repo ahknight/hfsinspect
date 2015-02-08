@@ -20,11 +20,11 @@ void swap_HFSExtentDescriptor       (HFSExtentDescriptor* record) __attribute__(
 
 #pragma mark HFS Plus
 
-void swap_HFSPlusVolumeHeader       (HFSPlusVolumeHeader *vh) __attribute__((nonnull));
+void swap_HFSPlusVolumeHeader       (HFSPlusVolumeHeader* vh) __attribute__((nonnull));
 void swap_JournalInfoBlock          (JournalInfoBlock* record) __attribute__((nonnull));
-void swap_HFSPlusForkData           (HFSPlusForkData *fork) __attribute__((nonnull));
-void swap_HFSUniStr255              (HFSUniStr255 *unistr) __attribute__((nonnull));
+void swap_HFSPlusForkData           (HFSPlusForkData* fork) __attribute__((nonnull));
+void swap_HFSUniStr255              (HFSUniStr255* unistr) __attribute__((nonnull));
 void swap_HFSPlusExtentRecord       (HFSPlusExtentDescriptor record[]) __attribute__((nonnull));
-void swap_HFSPlusExtentDescriptor   (HFSPlusExtentDescriptor *extent) __attribute__((nonnull));
+void swap_HFSPlusExtentDescriptor   (HFSPlusExtentDescriptor* extent) __attribute__((nonnull));
 
 #endif

@@ -15,9 +15,9 @@
 
 #pragma mark UTF conversions
 
-int             hfsuctowcs (hfs_wc_str output, const HFSUniStr255* input) __attribute__((nonnull));
-HFSUniStr255    wcstohfsuc (const wchar_t* input) __attribute__((nonnull));
-HFSUniStr255    strtohfsuc (const char* input) __attribute__((nonnull));
+int          hfsuctowcs (hfs_wc_str output, const HFSUniStr255* input) __attribute__((nonnull));
+HFSUniStr255 wcstohfsuc (const wchar_t* input) __attribute__((nonnull));
+HFSUniStr255 strtohfsuc (const char* input) __attribute__((nonnull));
 
 // http://unicode.org/faq/utf_bom.html#utf16-3
 

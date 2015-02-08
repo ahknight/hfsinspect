@@ -3,7 +3,7 @@ syntax: glob
 .vagrant
 Makefile
 build
-docs/html
+docs/_build
 docs/doxygen.log
 images/*.bin
 images/*.dmg

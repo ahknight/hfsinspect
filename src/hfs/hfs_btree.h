@@ -12,6 +12,6 @@
 #include "hfs/types.h"
 #include "hfs/btree/btree.h"
 
-int hfs_get_btree(BTreePtr *btree, const HFS *hfs, hfs_cnid_t cnid) __attribute__((nonnull));
+int hfs_get_btree(BTreePtr* btree, const HFS* hfs, hfs_cnid_t cnid) __attribute__((nonnull));
 
 #endif

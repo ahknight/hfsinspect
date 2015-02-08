@@ -17,37 +17,37 @@
 #if defined(__linux__)
 // Copied from OS X's sys/queue.h. Covered by the APSL 2.0 and/or the original BSD license (ie. "Copyright (c) 1991, 1993 The Regents of the University of California.  All rights reserved." etc.)
 
-#define	TAILQ_FOREACH_REVERSE_SAFE(var, head, headname, field, tvar)	\
-	for ((var) = TAILQ_LAST((head), headname);			\
-	    (var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);	\
-	    (var) = (tvar))
+#define TAILQ_FOREACH_REVERSE_SAFE(var, head, headname, field, tvar)    \
+    for ((var) = TAILQ_LAST((head), headname);          \
+         (var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);  \
+         (var) = (tvar))
 
 #endif
 
 ExtentList* extentlist_make(void)
 {
-    ExtentList *retval = NULL;
+    ExtentList* retval = NULL;
     ALLOC(retval, sizeof(ExtentList));
     retval->tqh_first = NULL;
-    retval->tqh_last = &retval->tqh_first; // Ensure this is pointing to the value on the heap, not the stack.
+    retval->tqh_last  = &retval->tqh_first; // Ensure this is pointing to the value on the heap, not the stack.
     TAILQ_INIT(retval);
     return retval;
 }
 
-void extentlist_add(ExtentList *list, size_t startBlock, size_t blockCount)
+void extentlist_add(ExtentList* list, size_t startBlock, size_t blockCount)
 {
     if (blockCount == 0) return;
-    
-    Extent *newExtent = NULL;
+
+    Extent* newExtent = NULL;
     ALLOC(newExtent, sizeof(Extent));
     newExtent->startBlock = startBlock;
     newExtent->blockCount = blockCount;
-    
-    Extent *existingExtent = NULL;
-    
-    Extent *tmp = NULL;
+
+    Extent* existingExtent = NULL;
+
+    Extent* tmp            = NULL;
     TAILQ_FOREACH_REVERSE_SAFE(existingExtent, list, _ExtentList, extents, tmp) {
-        if (existingExtent != NULL && existingExtent->startBlock < startBlock) {
+        if ((existingExtent != NULL) && (existingExtent->startBlock < startBlock)) {
             break;
         }
 //        if (existingExtent != NULL && existingExtent->startBlock == startBlock) {
@@ -58,30 +58,30 @@ void extentlist_add(ExtentList *list, size_t startBlock, size_t blockCount)
 //            break;
 //        }
     }
-    
+
     if(existingExtent == NULL) {
         TAILQ_INSERT_HEAD(list, newExtent, extents);
         newExtent->logicalStart = 0;
     } else {
         TAILQ_INSERT_AFTER(list, existingExtent, newExtent, extents);
-        
-        int block = 0;
-        Extent *extent = NULL;
-        
+
+        int     block  = 0;
+        Extent* extent = NULL;
+
         // For large files, this takes a LONG time. Optimize to only do this when inserting in the middle.
         TAILQ_FOREACH(extent, list, extents) {
             extent->logicalStart = block;
-            block += extent->blockCount;
+            block               += extent->blockCount;
         }
     }
 }
 
-void extentlist_add_descriptor(ExtentList *list, const HFSPlusExtentDescriptor d)
+void extentlist_add_descriptor(ExtentList* list, const HFSPlusExtentDescriptor d)
 {
     extentlist_add(list, d.startBlock, d.blockCount);
 }
 
-void extentlist_add_record(ExtentList *list, const HFSPlusExtentRecord r)
+void extentlist_add_record(ExtentList* list, const HFSPlusExtentRecord r)
 {
     for(int i = 0; i < kHFSPlusExtentDensity; i++) {
         extentlist_add_descriptor(list, r[i]);
@@ -90,28 +90,28 @@ void extentlist_add_record(ExtentList *list, const HFSPlusExtentRecord r)
 
 bool extentlist_find(ExtentList* list, size_t logical_block, size_t* offset, size_t* length)
 {
-    Extent *extent = NULL;
+    Extent* extent = NULL;
     TAILQ_FOREACH(extent, list, extents) {
         range lrange = make_range(extent->logicalStart, extent->blockCount);
         if (range_contains(logical_block, lrange)) {
             break;
         }
     }
-    
+
     if (extent == NULL) {
         info("Extent for logical block %zu not found.", logical_block);
         return false;
     }
-    
+
     // Block offset within the extent; first block of request.
     size_t extentOffset = (logical_block - extent->logicalStart);
-    
+
     // Verify there are blocks after the first.
     if ( (int)(extent->blockCount - extentOffset) <= 0 ) {
         warning("Candidate extent for logical block %zu was too short.", logical_block);
         return false;
     }
-    
+
     if (offset != NULL) *offset = extent->startBlock + extentOffset;
     if (length != NULL) *length = extent->blockCount - extentOffset;
     return true;
@@ -119,10 +119,11 @@ bool extentlist_find(ExtentList* list, size_t logical_block, size_t* offset, siz
 
 void extentlist_free(ExtentList* list)
 {
-    Extent *e = NULL;
+    Extent* e = NULL;
     while ( (e = TAILQ_FIRST(list)) ) {
         TAILQ_REMOVE(list, e, extents);
         FREE(e);
     }
     FREE(list);
 }
+

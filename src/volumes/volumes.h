@@ -19,7 +19,7 @@
 
 #pragma mark - Functions
 
-int volumes_load (Volume *vol) __attribute__((nonnull));
-int volumes_dump (Volume *vol) __attribute__((nonnull));
+int volumes_load (Volume* vol) __attribute__((nonnull));
+int volumes_dump (Volume* vol) __attribute__((nonnull));
 
 #endif
