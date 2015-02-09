@@ -18,7 +18,7 @@
 
 #include "volumes/corestorage.h"
 
-#include "hfsinspect/output.h"
+#include "volumes/output.h"
 #include "hfsinspect/stringtools.h"
 
 #include "crc32c/crc32c.h"
@@ -123,101 +123,101 @@ int cs_test(Volume* vol)
     return 0;
 }
 
-void cs_print_block_header(CSBlockHeader* header)
+void PrintCSBlockHeader(out_ctx* ctx, CSBlockHeader* header)
 {
-    BeginSection("CS Block Header");
+    BeginSection(ctx, "CS Block Header");
 
-    PrintUIHex      (header, checksum);
-    PrintUIHex      (header, checksum_seed);
-    PrintUI         (header, version);
-    PrintUIHex      (header, block_type);
+    PrintUIHex      (ctx, header, checksum);
+    PrintUIHex      (ctx, header, checksum_seed);
+    PrintUI         (ctx, header, version);
+    PrintUIHex      (ctx, header, block_type);
 
-    PrintUIHex      (header, field_5);
-    PrintUIHex      (header, generation);
-    PrintUIHex      (header, field_7);
-    PrintUIHex      (header, field_8);
-    PrintUIHex      (header, field_9);
+    PrintUIHex      (ctx, header, field_5);
+    PrintUIHex      (ctx, header, generation);
+    PrintUIHex      (ctx, header, field_7);
+    PrintUIHex      (ctx, header, field_8);
+    PrintUIHex      (ctx, header, field_9);
 
-    PrintDataLength (header, block_size);
-    PrintUIHex      (header, field_11);
-    PrintUIHex      (header, field_12);
+    PrintDataLength (ctx, header, block_size);
+    PrintUIHex      (ctx, header, field_11);
+    PrintUIHex      (ctx, header, field_12);
 
-    EndSection();
+    EndSection(ctx);
 }
 
-void cs_print_volume_header(CSVolumeHeader* header)
+void PrintCSVolumeHeader(out_ctx* ctx, CSVolumeHeader* header)
 {
-    BeginSection("CS Volume Header");
+    BeginSection(ctx, "CS Volume Header");
 
-    cs_print_block_header(&header->block_header);
+    PrintCSBlockHeader(ctx, &header->block_header);
 
-    PrintDataLength (header, physical_size);
-    PrintRawAttribute(header, field_14, 16);
+    PrintDataLength (ctx, header, physical_size);
+    PrintRawAttribute(ctx, header, field_14, 16);
 
-    PrintUIChar     (header, signature);
-    PrintUI         (header, checksum_algo);
+    PrintUIChar     (ctx, header, signature);
+    PrintUI         (ctx, header, checksum_algo);
 
-    PrintUI         (header, md_count);
-    PrintDataLength (header, md_block_size);
-    PrintDataLength (header, md_size);
+    PrintUI         (ctx, header, md_count);
+    PrintDataLength (ctx, header, md_block_size);
+    PrintDataLength (ctx, header, md_size);
     FOR_UNTIL(i, 8) {
         if (header->md_blocks[i]) {
             char title[50] = "";
             sprintf(title, "md_blocks[%u]", i);
-            PrintAttribute(title, "%#x", header->md_blocks[i]);
+            PrintAttribute(ctx, title, "%#x", header->md_blocks[i]);
         }
     }
 
-    PrintDataLength (header, encryption_key_size);
-    PrintUI         (header, encryption_key_algo);
+    PrintDataLength (ctx, header, encryption_key_size);
+    PrintUI         (ctx, header, encryption_key_algo);
 
     char str[2048] = "";
     memstr(str, 16, &header->encryption_key_data[0], header->encryption_key_size, 1024);
-    PrintAttribute("encryption_key_data", str);
+    PrintAttribute(ctx, "encryption_key_data", str);
 
     memstr(str, 16, (char*)&header->physical_volume_uuid, 16, 1024);
-    PrintAttribute("physical_volume_uuid", str);
+    PrintAttribute(ctx, "physical_volume_uuid", str);
 
     memstr(str, 16, (char*)&header->logical_volume_group_uuid, 16, 1024);
-    PrintAttribute("logical_volume_group_uuid", str);
+    PrintAttribute(ctx, "logical_volume_group_uuid", str);
 
     //    memstr(str, 16, (char*)&header->reserved10[0], 176, 1024);
     //    VisualizeData((char*)&header->reserved10, 176);
-    //    PrintAttribute("reserved10", str);
+    //    PrintAttribute(ctx, "reserved10", str);
 
-    EndSection();
+    EndSection(ctx);
 }
 
-void cs_print_block_11(CSMetadataBlockType11* block)
+void PrintCSMetadataBlockType11(out_ctx* ctx, CSMetadataBlockType11* block)
 {
-    BeginSection("CS Metadata Block (Type 0x11)");
+    BeginSection(ctx, "CS Metadata Block (Type 0x11)");
 
-    cs_print_block_header(&block->block_header);
+    PrintCSBlockHeader(ctx, &block->block_header);
 
-    PrintDataLength (block, metadata_size);
-    PrintUIHex      (block, field_2);
-    PrintUIHex      (block, checksum);
-    PrintUIHex      (block, checksum_seed);
+    PrintDataLength (ctx, block, metadata_size);
+    PrintUIHex      (ctx, block, field_2);
+    PrintUIHex      (ctx, block, checksum);
+    PrintUIHex      (ctx, block, checksum_seed);
 
-    PrintUIHex      (block, vol_grps_desc_off);
-    PrintUIHex      (block, plist_offset);
-    PrintDataLength (block, plist_size);
-    PrintDataLength (block, plist_size_copy);
+    PrintUIHex      (ctx, block, vol_grps_desc_off);
+    PrintUIHex      (ctx, block, plist_offset);
+    PrintDataLength (ctx, block, plist_size);
+    PrintDataLength (ctx, block, plist_size_copy);
 
-    PrintUIHex      (block, field_10);
+    PrintUIHex      (ctx, block, field_10);
 
-    PrintUIHex      (block, secondary_vhb_off);
-    PrintUI         (block, ukwn_record_count);
+    PrintUIHex      (ctx, block, secondary_vhb_off);
+    PrintUI         (ctx, block, ukwn_record_count);
 
-    BeginSection("Unknown Records");
-    Print("%-12s %-12s %-12s", "Generation", "Curly", "Moe");
+    BeginSection(ctx, "Unknown Records");
+    Print(ctx, "%-12s %-12s %-12s", "Generation", "Curly", "Moe");
     for (int i = 0; i < block->ukwn_record_count; i++) {
         uint64_t* record = (void*)&block->ukwn_records[i];
-        Print("%-#12x %-#12x %-#12x", record[0], record[1], record[2]);
+        Print(ctx, "%-#12x %-#12x %-#12x", record[0], record[1], record[2]);
     }
-    EndSection(); // records
+    EndSection(ctx); // records
 
-    EndSection(); // block
+    EndSection(ctx); // block
 }
 
 int cs_dump(Volume* vol)
@@ -226,14 +226,15 @@ int cs_dump(Volume* vol)
     CSVolumeHeader* header        = (CSVolumeHeader*)&_header;
     size_t          block_size    = 0;
     Byte*           buf           = NULL;
+    out_ctx*        ctx           = vol->ctx;
 
     debug("CS dump");
 
     if ( cs_get_volume_header(vol, header) == -1)
         return -1;
 
-    BeginSection("Core Storage Volume");
-    cs_print_volume_header(header);
+    BeginSection(ctx, "Core Storage Volume");
+    PrintCSVolumeHeader(ctx, header);
 
     block_size = header->md_block_size;
     ALLOC(buf, block_size);
@@ -252,25 +253,25 @@ int cs_dump(Volume* vol)
 
         block_header = (CSBlockHeader*)buf;
 
-        BeginSection("CS Metadata Block %d (block %#llx; offset %#llx)", i, block_number, block_number * header->md_block_size);
+        BeginSection(ctx, "CS Metadata Block %d (block %#llx; offset %#llx)", i, block_number, block_number * header->md_block_size);
 
         switch (block_header->block_type) {
             case kCSVolumeHeaderBlock:
             {
-                cs_print_volume_header((void*)buf);
+                PrintCSVolumeHeader(ctx, (void*)buf);
                 break;
             }
 
             case kCSDiskLabelBlock:
             {
-                cs_print_block_11((void*)buf);
+                PrintCSMetadataBlockType11(ctx, (void*)buf);
 //                VisualizeData((void*)buf, header->md_block_size);
                 break;
             }
 
             default:
             {
-                cs_print_block_header(block_header);
+                PrintCSBlockHeader(ctx, block_header);
 //                VisualizeData((void*)buf, header->md_block_size);
                 break;
             }
@@ -286,16 +287,16 @@ int cs_dump(Volume* vol)
             }
         }
 
-        EndSection();
+        EndSection(ctx);
     }
 
     FREE(buf);
 
-//    BeginSection("Block Dump");
+//    BeginSection(ctx, "Block Dump");
 //    cs_dump_all_blocks(vol, header);
-//    EndSection();
+//    EndSection(ctx);
 
-    EndSection(); // volume
+    EndSection(ctx); // volume
 
     return 0;
 }
@@ -308,6 +309,7 @@ void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh)
     ALLOC(buf, block_size);
     uint64_t block_number = vh->md_blocks[0];
     uint64_t total_blocks = (vh->physical_size / vh->md_block_size);
+    out_ctx* ctx          = vol->ctx;
 
     for (; block_number < total_blocks; block_number++) {
         memset(buf, 0, malloc_size(buf));
@@ -320,30 +322,30 @@ void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh)
 
         CSBlockHeader* block_header = (CSBlockHeader*)buf;
 
-        BeginSection("CS Metadata Block %d (block %#jx)", -1, (intmax_t)block_number);
+        BeginSection(ctx, "CS Metadata Block %d (block %#jx)", -1, (intmax_t)block_number);
 
         switch (block_header->block_type) {
             case kCSVolumeHeaderBlock:
             {
-                cs_print_volume_header((void*)buf);
+                PrintCSVolumeHeader(ctx, (void*)buf);
                 break;
             }
 
             case kCSDiskLabelBlock:
             {
-                cs_print_block_11((void*)buf);
+                PrintCSMetadataBlockType11(ctx, (void*)buf);
                 break;
             }
 
             default:
             {
-                cs_print_block_header(block_header);
+                PrintCSBlockHeader(ctx, block_header);
                 VisualizeData((void*)buf, vh->md_block_size);
                 break;
             }
         }
 
-        EndSection();
+        EndSection(ctx);
     }
 
     FREE(buf);

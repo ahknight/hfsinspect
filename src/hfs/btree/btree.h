@@ -14,7 +14,7 @@
 #include <stdbool.h>
 
 #include "hfsinspect/cdefs.h"
-#include "hfsinspect/cache.h"
+#include "cache.h"
 
 #ifndef _UUID_STRING_T
 #define _UUID_STRING_T
@@ -47,9 +47,9 @@ typedef bool (*btree_walk_func)(const BTreePtr tree, const BTreeNodePtr node) __
 typedef int (*btree_get_node_func)(BTreeNodePtr* node, const BTreePtr bTree, bt_nodeid_t nodeNum) __attribute__((nonnull));
 
 enum {
-    kBTHFSTreeType      = 0,
-    kBTUserTreeType     = 128,
-    kBTReservedTreeType = 255,
+    kBTHFSTreeType      = 0x00,
+    kBTUserTreeType     = 0xF0,
+    kBTReservedTreeType = 0xFF,
 };
 
 

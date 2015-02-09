@@ -9,8 +9,10 @@
 #ifndef volumes_corestorage_h
 #define volumes_corestorage_h
 
-#include "volume.h"
 #include <uuid/uuid.h>
+
+#include "volume.h"
+#include "output.h"
 
 #pragma mark - Structures
 
@@ -107,7 +109,7 @@ typedef struct CSVolumeGroupsDescriptor {
 
 extern PartitionOps cs_ops;
 
-void cs_print_block_header(CSBlockHeader* header) __attribute__((nonnull));
+void PrintCSBlockHeader(out_ctx* ctx, CSBlockHeader* header) __attribute__((nonnull));
 
 /**
    Tests a volume to see if it contains a CS partition map.

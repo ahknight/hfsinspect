@@ -282,7 +282,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, siz
             TAILQ_FOREACH(extent, extentList, extents) {
                 print("%10zd: %10zd %10zd", extent->logicalStart, extent->startBlock, extent->blockCount);
             }
-            PrintExtentList(extentList, fork->totalBlocks);
+            PrintExtentList(fork->hfs->vol->ctx, extentList, fork->totalBlocks);
             critical("We're stuck in a read loop: request (%zd, %zd); remaining (%zd, %zd)", request.start, request.count, remaining.start, remaining.count);
         }
 
@@ -290,7 +290,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, siz
         range read_range;
         bool  found = extentlist_find(extentList, remaining.start, &read_range.start, &read_range.count);
         if (!found) {
-            PrintExtentList(extentList, fork->totalBlocks);
+            PrintExtentList(fork->hfs->vol->ctx, extentList, fork->totalBlocks);
             critical("Logical block %zd not found in the extents for CNID %d!", remaining.start, fork->cnid);
         }
 

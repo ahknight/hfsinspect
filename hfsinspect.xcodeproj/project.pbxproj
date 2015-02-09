@@ -36,7 +36,6 @@
 		9BB422641A7DEFCD000E8995 /* debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BB422321A7DEFCD000E8995 /* debug.c */; };
 		9BB422651A7DEFCD000E8995 /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BB422341A7DEFCD000E8995 /* logging.c */; };
 		9BB422661A7DEFCD000E8995 /* nullstream.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BB422361A7DEFCD000E8995 /* nullstream.c */; };
-		9BB422671A7DEFCD000E8995 /* prefixstream.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BB422381A7DEFCD000E8995 /* prefixstream.c */; };
 		9BB422681A7DEFCD000E8995 /* apm.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BB4223B1A7DEFCD000E8995 /* apm.c */; };
 		9BB422691A7DEFCD000E8995 /* corestorage.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BB4223D1A7DEFCD000E8995 /* corestorage.c */; };
 		9BB4226A1A7DEFCD000E8995 /* crc32.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BB422401A7DEFCD000E8995 /* crc32.c */; };
@@ -128,8 +127,6 @@
 		9BB422351A7DEFCD000E8995 /* logging.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = logging.h; sourceTree = "<group>"; };
 		9BB422361A7DEFCD000E8995 /* nullstream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nullstream.c; sourceTree = "<group>"; };
 		9BB422371A7DEFCD000E8995 /* nullstream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nullstream.h; sourceTree = "<group>"; };
-		9BB422381A7DEFCD000E8995 /* prefixstream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = prefixstream.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		9BB422391A7DEFCD000E8995 /* prefixstream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = prefixstream.h; sourceTree = "<group>"; };
 		9BB4223B1A7DEFCD000E8995 /* apm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = apm.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		9BB4223C1A7DEFCD000E8995 /* apm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apm.h; sourceTree = "<group>"; };
 		9BB4223D1A7DEFCD000E8995 /* corestorage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = corestorage.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -219,6 +216,8 @@
 		9BB421FD1A7DEFCD000E8995 /* btree */ = {
 			isa = PBXGroup;
 			children = (
+				9BB422161A7DEFCD000E8995 /* cache.h */,
+				9BB422151A7DEFCD000E8995 /* cache.c */,
 				9BB422011A7DEFCD000E8995 /* btree_endian.h */,
 				9BB422001A7DEFCD000E8995 /* btree_endian.c */,
 				9BB421FF1A7DEFCD000E8995 /* btree.h */,
@@ -235,10 +234,6 @@
 				9BB422191A7DEFCD000E8995 /* operations */,
 				9BB422171A7DEFCD000E8995 /* cdefs.h */,
 				9BB422271A7DEFCD000E8995 /* types.h */,
-				9BB422161A7DEFCD000E8995 /* cache.h */,
-				9BB422151A7DEFCD000E8995 /* cache.c */,
-				9BB422221A7DEFCD000E8995 /* output.h */,
-				9BB422211A7DEFCD000E8995 /* output.c */,
 				9BB422241A7DEFCD000E8995 /* range.h */,
 				9BB422231A7DEFCD000E8995 /* range.c */,
 				9BB422261A7DEFCD000E8995 /* stringtools.h */,
@@ -286,8 +281,6 @@
 				9BB422341A7DEFCD000E8995 /* logging.c */,
 				9BB422371A7DEFCD000E8995 /* nullstream.h */,
 				9BB422361A7DEFCD000E8995 /* nullstream.c */,
-				9BB422391A7DEFCD000E8995 /* prefixstream.h */,
-				9BB422381A7DEFCD000E8995 /* prefixstream.c */,
 			);
 			name = logging;
 			path = src/logging;
@@ -311,6 +304,8 @@
 				9BB422421A7DEFCD000E8995 /* gpt.c */,
 				9BB422451A7DEFCD000E8995 /* mbr.h */,
 				9BB422441A7DEFCD000E8995 /* mbr.c */,
+				9BB422221A7DEFCD000E8995 /* output.h */,
+				9BB422211A7DEFCD000E8995 /* output.c */,
 				9BB422291A7DEFCD000E8995 /* utilities.h */,
 				9BB422281A7DEFCD000E8995 /* utilities.c */,
 			);
@@ -459,7 +454,6 @@
 				9BB422601A7DEFCD000E8995 /* utilities.c in Sources */,
 				9BB4225C1A7DEFCD000E8995 /* path_info.c in Sources */,
 				9BB4226D1A7DEFCD000E8995 /* volume.c in Sources */,
-				9BB422671A7DEFCD000E8995 /* prefixstream.c in Sources */,
 				9BB422531A7DEFCD000E8995 /* hfs_io.c in Sources */,
 				9BB4225A1A7DEFCD000E8995 /* hfs_summary.c in Sources */,
 				9BB422641A7DEFCD000E8995 /* debug.c in Sources */,

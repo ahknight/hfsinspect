@@ -249,7 +249,9 @@ void loadBTree(HIOptions* options)
 
 int main (int argc, String const* argv)
 {
+    bool use_decimal = false;
     HIOptions options = {0};
+    
     ALLOC(options.hfs, sizeof(struct HFS));
 
     (void)strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
@@ -318,7 +320,7 @@ int main (int argc, String const* argv)
 
             case 'S':
             {
-                output_set_uses_decimal_blocks(true);
+                use_decimal = true;
                 break;
             }
 
@@ -550,6 +552,9 @@ OPEN:
         die(1, "hfs_open");
     }
 
+    out_ctx* ctx = options.hfs->vol->ctx;
+    ctx->decimal_sizes = use_decimal;
+
     uid_t uid = 99;
     gid_t gid = 99;
 
@@ -706,7 +711,7 @@ NOPE:
 #pragma mark Volume Requests
 
     // Always detail what volume we're working on at the very least
-    PrintVolumeInfo(options.hfs);
+    PrintVolumeInfo(ctx, options.hfs);
 
     // Default to volume info if there are no other specifiers.
     if (options.mode == 0) set_mode(&options, HIModeShowVolumeInfo);
@@ -715,13 +720,13 @@ NOPE:
     if (check_mode(&options, HIModeShowSummary)) {
         debug("Printing summary.");
         VolumeSummary summary = generateVolumeSummary(&options);
-        PrintVolumeSummary(&summary);
+        PrintVolumeSummary(ctx, &summary);
     }
 
     // Show volume info
     if (check_mode(&options, HIModeShowVolumeInfo)) {
         debug("Printing volume header.");
-        PrintVolumeHeader(&options.hfs->vh);
+        PrintVolumeHeader(ctx, &options.hfs->vh);
     }
 
     // Journal info
@@ -731,12 +736,12 @@ NOPE:
                 JournalInfoBlock block   = {0};
                 bool             success = hfs_get_JournalInfoBlock(&block, options.hfs);
                 if (!success) die(1, "Could not get the journal info block!");
-                PrintJournalInfoBlock(&block);
+                PrintJournalInfoBlock(ctx, &block);
 
                 journal_header   header  = {0};
                 success = hfs_get_journalheader(&header, block, options.hfs);
                 if (!success) die(1, "Could not get the journal header!");
-                PrintJournalHeader(&header);
+                PrintJournalHeader(ctx, &header);
 
             } else {
                 warning("Consistency error: volume attributes indicate it is journaled but the journal info block is empty!");
@@ -790,23 +795,23 @@ NOPE:
         loadBTree(&options);
 
         if (options.tree->treeID == kHFSCatalogFileID) {
-            BeginSection("Catalog B-Tree Header");
+            BeginSection(ctx, "Catalog B-Tree Header");
 
         } else if (options.tree->treeID == kHFSExtentsFileID) {
-            BeginSection("Extents B-Tree Header");
+            BeginSection(ctx, "Extents B-Tree Header");
 
         } else if (options.tree->treeID == kHFSAttributesFileID) {
-            BeginSection("Attributes B-Tree Header");
+            BeginSection(ctx, "Attributes B-Tree Header");
 
         } else if (options.tree_type == BTreeTypeHotfiles) {
-            BeginSection("Hotfiles B-Tree Header");
+            BeginSection(ctx, "Hotfiles B-Tree Header");
 
         } else {
             die(1, "Unknown tree type: %d", options.tree_type);
         }
 
-        PrintTreeNode(options.tree, 0);
-        EndSection();
+        PrintTreeNode(ctx, options.tree, 0);
+        EndSection(ctx);
     }
 
     // Show a B-Tree node by ID
@@ -816,16 +821,16 @@ NOPE:
         loadBTree(&options);
 
         if (options.tree_type == BTreeTypeCatalog) {
-            BeginSection("Catalog B-Tree Node %d", options.node_id);
+            BeginSection(ctx, "Catalog B-Tree Node %d", options.node_id);
 
         } else if (options.tree_type == BTreeTypeExtents) {
-            BeginSection("Extents B-Tree Node %d", options.node_id);
+            BeginSection(ctx, "Extents B-Tree Node %d", options.node_id);
 
         } else if (options.tree_type == BTreeTypeAttributes) {
-            BeginSection("Attributes B-Tree Node %d", options.node_id);
+            BeginSection(ctx, "Attributes B-Tree Node %d", options.node_id);
 
         } else if (options.tree_type == BTreeTypeHotfiles) {
-            BeginSection("Hotfiles B-Tree Node %d", options.node_id);
+            BeginSection(ctx, "Hotfiles B-Tree Node %d", options.node_id);
 
         } else {
             die(1, "Unknown tree type: %s", options.tree_type);
@@ -843,10 +848,10 @@ NOPE:
             FREE(buf);
 
         } else {
-            PrintTreeNode(options.tree, options.node_id);
+            PrintTreeNode(ctx, options.tree, options.node_id);
         }
 
-        EndSection();
+        EndSection(ctx);
 
     }
 

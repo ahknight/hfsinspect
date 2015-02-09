@@ -21,7 +21,6 @@
 
 #include "hfs/btree/btree.h"
 #include "hfs/btree/btree_endian.h"
-#include "hfsinspect/output.h"
 #include "hfsinspect/stringtools.h" // memdump
 #include "volumes/utilities.h"      // fpread
 #include "hfs/unicode.h"
@@ -109,17 +108,6 @@ bool BTIsBlockUsed(uint32_t thisAllocationBlock, void* allocationFileContents, s
     return (thisByte & (1 << (7 - (thisAllocationBlock % 8)))) != 0;
 }
 
-void PrintBTNodeRecord(BTNodeRecordPtr record)
-{
-    BeginSection("Node %u, Record %u (Tree %u)", record->node->nodeNumber, record->recNum, record->node->bTree->treeID);
-    PrintUI(record, offset);
-    PrintUI(record, recordLen);
-    PrintUI(record, keyLen);
-    PrintRawAttribute(record, key, 16);
-    PrintUI(record, valueLen);
-    EndSection();
-}
-
 int BTGetBTNodeRecord(BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum recNum)
 {
     assert(record);
@@ -143,8 +131,6 @@ int BTGetBTNodeRecord(BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum 
     record->value     = (record->record + record->keyLen);
     record->valueLen  = record->recordLen - record->keyLen;
     record->valueLen += (record->valueLen % 2);
-
-//    PrintBTNodeRecord(record);
 
     return 0;
 }

@@ -7,7 +7,7 @@
 //
 
 #include "volumes.h"
-#include "hfsinspect/output.h"
+#include "output.h"
 #include "logging/logging.h"    // console printing routines
 
 
@@ -63,9 +63,9 @@ int volumes_dump(Volume* vol)
 {
     volumes_load(vol);
 
-    BeginSection("Parsed Volumes");
+    BeginSection(vol->ctx, "Parsed Volumes");
     vol_dump(vol);
-    EndSection();
+    EndSection(vol->ctx);
 
     return 0;
 }

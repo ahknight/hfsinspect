@@ -75,12 +75,14 @@ void showFreeSpace(HIOptions* options)
         currentExtent.length = 1;
     }
 
-    BeginSection("Allocation File Statistics");
-    PrintAttribute("Extents", "%zu", total_extents);
-    _PrintHFSBlocks("Used Blocks", total_used);
-    _PrintHFSBlocks("Free Blocks", total_free);
-    _PrintHFSBlocks("Total Blocks", total_used + total_free);
-    EndSection();
+    out_ctx* ctx = fork->hfs->vol->ctx;
+
+    BeginSection(ctx, "Allocation File Statistics");
+    PrintAttribute(ctx, "Extents", "%zu", total_extents);
+    _PrintHFSBlocks(ctx, "Used Blocks", total_used);
+    _PrintHFSBlocks(ctx, "Free Blocks", total_free);
+    _PrintHFSBlocks(ctx, "Total Blocks", total_used + total_free);
+    EndSection(ctx);
 
     FREE(data);
     hfsfork_free(fork);

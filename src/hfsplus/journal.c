@@ -13,10 +13,9 @@
 #include <bsd/string.h>     // strlcpy, etc.
 #endif
 
-#include "hfsinspect/output.h"
 #include "hfs/output_hfs.h"
 
-void PrintJournalInfoBlock(const JournalInfoBlock* record)
+void PrintJournalInfoBlock(out_ctx* ctx, const JournalInfoBlock* record)
 {
     /*
        struct JournalInfoBlock {
@@ -31,29 +30,29 @@ void PrintJournalInfoBlock(const JournalInfoBlock* record)
        typedef struct JournalInfoBlock JournalInfoBlock;
      */
 
-    BeginSection("Journal Info Block");
-    PrintRawAttribute(record, flags, 2);
-    PrintUIFlagIfMatch(record->flags, kJIJournalInFSMask);
-    PrintUIFlagIfMatch(record->flags, kJIJournalOnOtherDeviceMask);
-    PrintUIFlagIfMatch(record->flags, kJIJournalNeedInitMask);
-    _PrintRawAttribute("device_signature", &record->device_signature[0], 32, 16);
-    PrintDataLength(record, offset);
-    PrintDataLength(record, size);
+    BeginSection(ctx, "Journal Info Block");
+    PrintRawAttribute(ctx, record, flags, 2);
+    PrintUIFlagIfMatch(ctx, record->flags, kJIJournalInFSMask);
+    PrintUIFlagIfMatch(ctx, record->flags, kJIJournalOnOtherDeviceMask);
+    PrintUIFlagIfMatch(ctx, record->flags, kJIJournalNeedInitMask);
+    _PrintRawAttribute(ctx, "device_signature", &record->device_signature[0], 32, 16);
+    PrintDataLength(ctx, record, offset);
+    PrintDataLength(ctx, record, size);
 
     char uuid_str[sizeof(uuid_string_t) + 1];
     (void)strlcpy(uuid_str, &record->ext_jnl_uuid[0], sizeof(uuid_str));
-    PrintAttribute("ext_jnl_uuid", uuid_str);
+    PrintAttribute(ctx, "ext_jnl_uuid", uuid_str);
 
     char serial[49];
     (void)strlcpy(serial, &record->machine_serial_num[0], 49);
-    PrintAttribute("machine_serial_num", serial);
+    PrintAttribute(ctx, "machine_serial_num", serial);
 
     // (uint32_t) reserved[32]
 
-    EndSection();
+    EndSection(ctx);
 }
 
-void PrintJournalHeader(const journal_header* record)
+void PrintJournalHeader(out_ctx* ctx, const journal_header* record)
 {
     /*
        int32_t        magic;
@@ -66,16 +65,16 @@ void PrintJournalHeader(const journal_header* record)
        int32_t        jhdr_size;     // block size (in bytes) of the journal header
        uint32_t       sequence_num;  // NEW FIELD: a monotonically increasing value assigned to all txn's
      */
-    BeginSection("Journal Header");
-    PrintHFSChar(record, magic);
-    PrintUIHex(record, endian);
-    PrintUI(record, start);
-    PrintUI(record, end);
-    PrintDataLength(record, size);
-    PrintDataLength(record, blhdr_size);
-    PrintUIHex(record, checksum);
-    PrintDataLength(record, jhdr_size);
-    PrintUI(record, sequence_num);
-    EndSection();
+    BeginSection(ctx, "Journal Header");
+    PrintUIChar(ctx, record, magic);
+    PrintUIHex(ctx, record, endian);
+    PrintUI(ctx, record, start);
+    PrintUI(ctx, record, end);
+    PrintDataLength(ctx, record, size);
+    PrintDataLength(ctx, record, blhdr_size);
+    PrintUIHex(ctx, record, checksum);
+    PrintDataLength(ctx, record, jhdr_size);
+    PrintUI(ctx, record, sequence_num);
+    EndSection(ctx);
 }
 

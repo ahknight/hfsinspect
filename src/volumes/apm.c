@@ -14,7 +14,7 @@
 #include "logging/logging.h"    // console printing routines
 
 #include "volumes/_endian.h"
-#include "hfsinspect/output.h"
+#include "volumes/output.h"
 
 #pragma mark Interface (Private)
 
@@ -31,8 +31,8 @@ void swap_APMHeader(APMHeader* record)
     Swap32(record->partition_count);
     Swap32(record->partition_start);
     Swap32(record->partition_length);
-//    char            name[32];
-//    char            type[32];
+//    char name[32];
+//    char type[32];
     Swap32(record->data_start);
     Swap32(record->data_length);
     Swap32(record->status);
@@ -43,17 +43,18 @@ void swap_APMHeader(APMHeader* record)
     Swap32(record->boot_code_entry);
     Swap32(record->reserved3);
     Swap32(record->boot_code_checksum);
-//    char            processor_type[16];
+//    char processor_type[16];
 }
 
 int apm_get_header(Volume* vol, APMHeader* header, unsigned partition_number)
 {
-    size_t  block_size = vol->sector_size;
+    size_t  block_size = 0;
+    ssize_t bytes      = 0;
 
-    ssize_t bytes      = vol_read(vol, (Bytes)header, sizeof(APMHeader), (block_size * partition_number));
-    if (bytes < 0) {
-        return -1;
-    }
+    block_size = vol->sector_size;
+    bytes      = vol_read(vol, (Bytes)header, sizeof(APMHeader), (block_size * partition_number));
+
+    if (bytes < 0) return -1;
 
     swap_APMHeader(header);
 
@@ -72,9 +73,10 @@ int apm_get_volume_header(Volume* vol, APMHeader* header)
  */
 int apm_test(Volume* vol)
 {
+    uint8_t* buf = NULL;
+
     debug("APM test");
 
-    uint8_t* buf = NULL;
     ALLOC(buf, 4096);
 
     if ( vol_read(vol, buf, 4096, 0) < 0 )
@@ -102,69 +104,79 @@ int apm_test(Volume* vol)
  */
 int apm_dump(Volume* vol)
 {
+    unsigned   partitionID = 1;
+    APMHeader* header      = NULL;
+    out_ctx*   ctx         = vol->ctx;
+
     debug("APM dump");
 
-    unsigned   partitionID = 1;
-
-    APMHeader* header      = NULL;
     ALLOC(header, sizeof(APMHeader));
 
-    BeginSection("Apple Partition Map");
+    BeginSection(ctx, "Apple Partition Map");
 
     while (1) {
-        int  result  = apm_get_header(vol, header, partitionID);
-        if (result == -1) { FREE(header); perror("get APM header"); return -1; }
-
         char str[33] = "";
 
-        BeginSection("Partition %d", partitionID);
-        PrintUIChar         (header, signature);
-        PrintUI             (header, partition_count);
-        PrintUI             (header, partition_start);
-        PrintDataLength     (header, partition_length*vol->sector_size);
+        if (apm_get_header(vol, header, partitionID) == -1) {
+            FREE(header);
+            perror("get APM header");
+            return -1;
+        }
+
+        BeginSection(ctx, "Partition %d", partitionID);
+        PrintUIChar         (ctx, header, signature);
+        PrintUI             (ctx, header, partition_count);
+        PrintUI             (ctx, header, partition_start);
+        PrintDataLength     (ctx, header, partition_length*vol->sector_size);
 
         memcpy(str, &header->name, 32); str[32] = '\0';
-        PrintAttribute("name", "%s", str);
+        PrintAttribute(ctx, "name", "%s", str);
 
         memcpy(str, &header->type, 32); str[32] = '\0';
         for (int i = 0; APMPartitionIdentifers[i].type[0] != '\0'; i++) {
             APMPartitionIdentifer identifier = APMPartitionIdentifers[i];
             if ( (strncasecmp((char*)&header->type, identifier.type, 32) == 0) ) {
-                PrintAttribute("type", "%s (%s)", identifier.name, identifier.type);
+                PrintAttribute(ctx, "type", "%s (%s)", identifier.name, identifier.type);
             }
         }
 
-        PrintUI             (header, data_start);
-        PrintDataLength     (header, data_length*vol->sector_size);
+        PrintUI             (ctx, header, data_start);
+        PrintDataLength     (ctx, header, data_length*vol->sector_size);
 
-        PrintRawAttribute   (header, status, 2);
-        PrintUIFlagIfSet    (header->status, kAPMStatusValid);
-        PrintUIFlagIfSet    (header->status, kAPMStatusAllocated);
-        PrintUIFlagIfSet    (header->status, kAPMStatusInUse);
-        PrintUIFlagIfSet    (header->status, kAPMStatusBootInfo);
-        PrintUIFlagIfSet    (header->status, kAPMStatusReadable);
-        PrintUIFlagIfSet    (header->status, kAPMStatusWritable);
-        PrintUIFlagIfSet    (header->status, kAPMStatusPositionIndependent);
-        PrintUIFlagIfSet    (header->status, kAPMStatusChainCompatible);
-        PrintUIFlagIfSet    (header->status, kAPMStatusRealDriver);
-        PrintUIFlagIfSet    (header->status, kAPMStatusChainDriver);
-        PrintUIFlagIfSet    (header->status, kAPMStatusAutoMount);
-        PrintUIFlagIfSet    (header->status, kAPMStatusIsStartup);
+        PrintRawAttribute   (ctx, header, status, 2);
+        PrintUIFlagIfSet    (ctx, header->status, kAPMStatusValid);
+        PrintUIFlagIfSet    (ctx, header->status, kAPMStatusAllocated);
+        PrintUIFlagIfSet    (ctx, header->status, kAPMStatusInUse);
+        PrintUIFlagIfSet    (ctx, header->status, kAPMStatusBootInfo);
+        PrintUIFlagIfSet    (ctx, header->status, kAPMStatusReadable);
+        PrintUIFlagIfSet    (ctx, header->status, kAPMStatusWritable);
+        PrintUIFlagIfSet    (ctx, header->status, kAPMStatusPositionIndependent);
+        PrintUIFlagIfSet    (ctx, header->status, kAPMStatusChainCompatible);
+        PrintUIFlagIfSet    (ctx, header->status, kAPMStatusRealDriver);
+        PrintUIFlagIfSet    (ctx, header->status, kAPMStatusChainDriver);
+        PrintUIFlagIfSet    (ctx, header->status, kAPMStatusAutoMount);
+        PrintUIFlagIfSet    (ctx, header->status, kAPMStatusIsStartup);
 
-        PrintUI             (header, boot_code_start);
-        PrintDataLength     (header, boot_code_length*vol->sector_size);
-        PrintUI             (header, bootloader_address);
-        PrintUI             (header, boot_code_entry);
-        PrintUI             (header, boot_code_checksum);
+        PrintUI             (ctx, header, boot_code_start);
+        PrintDataLength     (ctx, header, boot_code_length*vol->sector_size);
+        PrintUI             (ctx, header, bootloader_address);
+        PrintUI             (ctx, header, boot_code_entry);
+        PrintUI             (ctx, header, boot_code_checksum);
 
         memcpy(str, &header->processor_type, 16); str[16] = '\0';
-        PrintAttribute("processor_type", "'%s'", str);
-        EndSection();
+        PrintAttribute(ctx, "processor_type", "'%s'", str);
+        EndSection(ctx);
 
-        if (partitionID >= header->partition_count) break; else partitionID++;
+        if (partitionID >= header->partition_count)
+            break;
+        else
+            partitionID++;
     }
 
-    EndSection();
+    EndSection(ctx);
+
+    if (header != NULL)
+        FREE(header);
 
     return 0;
 }

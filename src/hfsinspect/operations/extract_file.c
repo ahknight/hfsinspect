@@ -11,20 +11,23 @@
 
 ssize_t extractFork(const HFSFork* fork, const String extractPath)
 {
-    FILE*   f_out         = NULL;
-    FILE*   f_in          = NULL;
-    off_t   offset        = 0;
-    size_t  chunkSize     = 0;
-    Bytes   chunk         = NULL;
-    ssize_t nbytes        = 0;
-    size_t  totalBytes    = 0;
-    size_t  bytes         = 0;
-    char    totalStr[100] = {0};
-    char    bytesStr[100] = {0};
+    FILE*    f_out         = NULL;
+    FILE*    f_in          = NULL;
+    off_t    offset        = 0;
+    size_t   chunkSize     = 0;
+    Bytes    chunk         = NULL;
+    ssize_t  nbytes        = 0;
+    size_t   totalBytes    = 0;
+    size_t   bytes         = 0;
+    char     totalStr[100] = {0};
+    char     bytesStr[100] = {0};
+
+    out_ctx* ctx           = fork->hfs->vol->ctx;
 
     set_hfs_volume(fork->hfs);
-    Print("Extracting CNID %u to %s", fork->cnid, extractPath);
-    PrintHFSPlusForkData(&fork->forkData, fork->cnid, fork->forkType);
+
+    Print(ctx, "Extracting CNID %u to %s", fork->cnid, extractPath);
+    PrintHFSPlusForkData(ctx, &fork->forkData, fork->cnid, fork->forkType);
 
     // Open output stream
     f_out = fopen(extractPath, "w");
@@ -38,15 +41,15 @@ ssize_t extractFork(const HFSFork* fork, const String extractPath)
     chunkSize  = fork->hfs->block_size*256;    //1-2MB, generally.
     totalBytes = fork->logicalSize;
 
-    format_size(totalStr, totalBytes, 100);
-    format_size(bytesStr, bytes, 100);
+    format_size(ctx, totalStr, totalBytes, 100);
+    format_size(ctx, bytesStr, bytes, 100);
 
     ALLOC(chunk, chunkSize);
 
     do {
         if ( (nbytes = fread(chunk, 1, chunkSize, f_in)) > 0) {
             bytes += fwrite(chunk, 1, nbytes, f_out);
-            format_size(bytesStr, bytes, 100);
+            format_size(ctx, bytesStr, bytes, 100);
             fprintf(stdout, "\rCopying CNID %u to %s: %s of %s copied                ",
                     fork->cnid,
                     extractPath,
@@ -62,7 +65,7 @@ ssize_t extractFork(const HFSFork* fork, const String extractPath)
     fclose(f_out);
     fclose(f_in);
 
-    Print("\nCopy complete.");
+    Print(ctx, "\nCopy complete.");
     return offset;
 }
 

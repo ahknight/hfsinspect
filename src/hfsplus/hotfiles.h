@@ -17,7 +17,10 @@
 #define HFC_DEFAULT_DURATION    (3600 * 60)
 #define HFC_MINIMUM_TEMPERATURE 16
 #define HFC_MAXIMUM_FILESIZE    (10 * 1024 * 1024)
-#define hfc_tag                 "CLUSTERED HOT FILES B-TREE     ";
+#define HFS_TAG                 "CLUSTERED HOT FILES B-TREE     ";
+#define HFC_LOOKUPTAG           0xFFFFFFFF
+#define HFC_KEYLENGTH           (sizeof(HotFileKey) - sizeof(uint32_t))
+
 struct HotFilesInfo {
     uint32_t magic;             /* must be HFC_MAGIC */
     uint32_t version;           /* must be HFC_VERSION */
@@ -31,8 +34,6 @@ struct HotFilesInfo {
 };
 typedef struct HotFilesInfo HotFilesInfo;
 
-#define HFC_LOOKUPTAG 0xFFFFFFFF
-#define HFC_KEYLENGTH (sizeof(HotFileKey) - sizeof(uint32_t))
 struct HotFileKey {
     uint16_t keyLength;         /* always 10 */
     uint8_t  forkType;          /* always 0 */

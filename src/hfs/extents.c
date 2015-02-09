@@ -12,7 +12,7 @@
 
 #include "hfs/extents.h"
 
-#include "hfsinspect/output.h"
+#include "volumes/output.h"
 #include "volumes/utilities.h" // commonly-used utility functions
 #include "hfs/hfs_io.h"
 #include "hfs/output_hfs.h"
@@ -54,11 +54,12 @@ int hfs_get_extents_btree(BTreePtr* tree, const HFS* hfs)
 
 int hfs_extents_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodeid_t nodeNum)
 {
+    BTreeNodePtr node = NULL;
+    out_ctx      ctx  = OCMake(0, 2, "extents");
+
     assert(out_node);
     assert(bTree);
     assert(bTree->treeID == kHFSExtentsFileID);
-
-    BTreeNodePtr node = NULL;
 
     if ( btree_get_node(&node, bTree, nodeNum) < 0) return -1;
 
@@ -76,13 +77,13 @@ int hfs_extents_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodeid
             swap_HFSPlusExtentKey(key);
             if (key->keyLength != kHFSPlusExtentKeyMaximumLength) {
                 warning("Invalid extent key! (%#08x != %#08x @ %p)", key->keyLength, kHFSPlusExtentKeyMaximumLength, key);
-                VisualizeHFSPlusExtentKey(key, "Bad Key", 0);
+                VisualizeHFSPlusExtentKey(&ctx, key, "Bad Key", 0);
                 continue;
             }
 
             if (node->nodeDescriptor->kind == kBTLeafNode) {
                 swap_HFSPlusExtentRecord(((HFSPlusExtentDescriptor*)record.value));
-//                PrintHFSPlusExtentRecord(((const HFSPlusExtentRecord*)record.value));
+//                PrintHFSPlusExtentRecord(&ctx, ((const HFSPlusExtentRecord*)record.value));
             }
         }
     }
@@ -169,8 +170,9 @@ int hfs_extents_compare_keys(const HFSPlusExtentKey* key1, const HFSPlusExtentKe
 {
 //    if (DEBUG) {
 //        debug("compare extent keys");
-//        VisualizeHFSPlusExtentKey(key1, "Search Key", 1);
-//        VisualizeHFSPlusExtentKey(key2, "Test Key  ", 1);
+//        out_ctx ctx = OCMake(0, 2, "extents");
+//        VisualizeHFSPlusExtentKey(&ctx, key1, "Search Key", 1);
+//        VisualizeHFSPlusExtentKey(&ctx, key2, "Test Key  ", 1);
 //    }
 
     int result;

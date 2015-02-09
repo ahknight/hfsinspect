@@ -129,7 +129,7 @@ VolumeSummary generateVolumeSummary(HIOptions* options)
             // Update status
             size_t space     = summary.dataFork.logicalSpace + summary.resourceFork.logicalSpace;
             char   size[128] = {0};
-            (void)format_size(size, space, 128);
+            (void)format_size(options->hfs->vol->ctx, size, space, 128);
 
             fprintf(stdout, "\r%0.2f%% (files: %ju; directories: %ju; size: %s)",
                     ((float)count / (float)catalog->headerRecord.leafRecords) * 100.,

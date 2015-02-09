@@ -8,7 +8,7 @@
 
 #include "hfs/hfs_endian.h"
 
-#include "hfsinspect/output.h"
+#include "volumes/output.h"
 #include "hfs/types.h"
 #include "hfs/btree/btree_endian.h"
 #include "hfs/catalog.h"

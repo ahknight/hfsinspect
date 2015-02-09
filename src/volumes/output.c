@@ -1,6 +1,6 @@
 //
 //  output.c
-//  hfsinspect
+//  volumes
 //
 //  Created by Adam Knight on 11/10/13.
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
@@ -18,71 +18,71 @@
     #include <bsd/string.h> // strlcpy, etc.
 #endif
 
+#include "output.h"
+
 #include "hfsinspect/cdefs.h"
 #include "hfsinspect/stringtools.h"
-#include "hfsinspect/output.h"
 #include "logging/logging.h"    // console printing routines
 #include "memdmp/memdmp.h"
 
-
-char     _indent_string[50]  = "";
-unsigned indent_step         = 2;
-bool     _use_decimal_blocks = false;
-
-void output_set_uses_decimal_blocks(bool value)
+out_ctx OCMake(bool decimal_sizes, unsigned indent_step, char* prefix)
 {
-    _use_decimal_blocks = value;
+    out_ctx ctx = {
+        .decimal_sizes = decimal_sizes,
+        .indent_level  = 0,
+        .indent_step   = 2,
+        .prefix        = prefix,
+        .indent_string = ""
+    };
+    return ctx;
 }
 
-static inline const unsigned long indent_level() {
-    return strnlen(_indent_string, 50);
-}
-
-static inline void set_indent_level(unsigned long new_level) {
-    if (new_level > 49) new_level = 0;
-    _indent_string[new_level] = '\0';
-    while (new_level) _indent_string[--new_level] = ' ';
-}
-
-#pragma mark Print Functions
-
-int BeginSection(const char* format, ...)
+void OCSetIndentLevel(out_ctx* ctx, unsigned new_level)
 {
-    va_list       argp;
+    if (new_level > 49)
+        new_level = 0;
+
+    memset(ctx->indent_string, ' ', 50);
+    ctx->indent_string[new_level] = '\0';
+}
+
+#pragma mark - Print Functions
+
+int BeginSection(out_ctx* ctx, const char* format, ...)
+{
+    va_list argp;
     va_start(argp, format);
 
-    unsigned long indent = indent_level();
-
-    Print("");
-    char          str[255];
+    Print(ctx, "");
+    char    str[255];
     vsprintf(str, format, argp);
-    int           bytes = Print("# %s", str);
+    int     bytes = Print(ctx, "# %s", str);
 
-    set_indent_level(indent + indent_step);
+    OCSetIndentLevel(ctx, ctx->indent_level + ctx->indent_step);
 
     va_end(argp);
     return bytes;
 }
 
-void EndSection(void)
+void EndSection(out_ctx* ctx)
 {
-    unsigned long indent = indent_level();
-    if (indent > 0) set_indent_level(indent - MIN(indent, indent_step));
+    if (ctx->indent_level > 0)
+        OCSetIndentLevel(ctx, ctx->indent_level - MIN(ctx->indent_level, ctx->indent_step));
 }
 
-int Print(const char* format, ...)
+int Print(out_ctx* ctx, const char* format, ...)
 {
     va_list argp;
     va_start(argp, format);
 
     char    str[255]; vsprintf(str, format, argp);
-    int     bytes = print("%s%s", _indent_string, str);
+    int     bytes = print("%s%s", ctx->indent_string, str);
 
     va_end(argp);
     return bytes;
 }
 
-int PrintAttribute(const char* label, const char* format, ...)
+int PrintAttribute(out_ctx* ctx, const char* label, const char* format, ...)
 {
     va_list argp;
     va_start(argp, format);
@@ -92,11 +92,11 @@ int PrintAttribute(const char* label, const char* format, ...)
     char    spc[2] = {' ', '\0'};
 
     if (label == NULL)
-        bytes = Print("%-23s. %s", "", str);
+        bytes = Print(ctx, "%-23s. %s", "", str);
     else if ( memcmp(label, spc, 2) == 0 )
-        bytes = Print("%-23s  %s", "", str);
+        bytes = Print(ctx, "%-23s  %s", "", str);
     else
-        bytes = Print("%-23s= %s", label, str);
+        bytes = Print(ctx, "%-23s= %s", label, str);
 
     va_end(argp);
     return bytes;
@@ -104,38 +104,33 @@ int PrintAttribute(const char* label, const char* format, ...)
 
 #pragma mark Line Print Functions
 
-void _PrintDataLength(const char* label, uint64_t size)
+void _PrintDataLength(out_ctx* ctx, const char* label, uint64_t size)
 {
     assert(label != NULL);
 
     char decimalLabel[50];
 
-    (void)format_size(decimalLabel, size, 50);
+    (void)format_size(ctx, decimalLabel, size, 50);
 
-//    if (size > 1024*1024*1024) {
-//        char binaryLabel[50];
-//        (void)format_size_d(binaryLabel, size, 50, false);
-//        PrintAttribute(label, "%s/%s (%lu bytes)", decimalLabel, binaryLabel, size);
-//    } else
     if (size > 1024) {
-        PrintAttribute(label, "%s (%lu bytes)", decimalLabel, size);
+        PrintAttribute(ctx, label, "%s (%lu bytes)", decimalLabel, size);
     } else {
-        PrintAttribute(label, "%s", decimalLabel);
+        PrintAttribute(ctx, label, "%s", decimalLabel);
     }
 }
 
-void PrintAttributeDump(const char* label, const void* map, size_t nbytes, char base)
+void PrintAttributeDump(out_ctx* ctx, const char* label, const void* map, size_t nbytes, char base)
 {
     assert(label != NULL);
     assert(map != NULL);
     assert(nbytes > 0);
     assert(base >= 2 && base <= 36);
 
-    PrintAttribute(label, "");
+    PrintAttribute(ctx, label, "");
     VisualizeData(map, nbytes);
 }
 
-void _PrintRawAttribute(const char* label, const void* map, size_t nbytes, char base)
+void _PrintRawAttribute(out_ctx* ctx, const char* label, const void* map, size_t nbytes, char base)
 {
     assert(label != NULL);
     assert(map != NULL);
@@ -147,12 +142,12 @@ void _PrintRawAttribute(const char* label, const void* map, size_t nbytes, char 
     ssize_t  len           = 0;
     ssize_t  msize         = 0;
 
-    msize = format_dump(NULL, map, base, nbytes, 0);
+    msize = format_dump(ctx, NULL, map, base, nbytes, 0);
     if (msize < 0) { perror("format_dump"); return; }
     msize++; // NULL terminator
     ALLOC(str, msize);
 
-    if ( (len = format_dump(str, map, base, nbytes, msize)) < 0 ) {
+    if ( (len = format_dump(ctx, str, map, base, nbytes, msize)) < 0 ) {
         warning("format_dump failed!");
         return;
     }
@@ -162,7 +157,7 @@ void _PrintRawAttribute(const char* label, const void* map, size_t nbytes, char 
 
         (void)strlcpy(segment, &str[i], MIN(segmentLength, len - i));
 
-        PrintAttribute(label, "%s%s", (base==16 ? "0x" : ""), segment);
+        PrintAttribute(ctx, label, "%s%s", (base==16 ? "0x" : ""), segment);
 
         if (i == 0) label = "";
     }
@@ -170,15 +165,15 @@ void _PrintRawAttribute(const char* label, const void* map, size_t nbytes, char 
     FREE(str);
 }
 
-int _PrintUIChar(const char* label, const char* i, size_t nbytes)
+int _PrintUIChar(out_ctx* ctx, const char* label, const char* i, size_t nbytes)
 {
     char str[50] = {0};
     char hex[50] = {0};
 
     (void)format_uint_chars(str, i, nbytes, 50);
-    (void)format_dump(hex, i, 16, nbytes, 50);
+    (void)format_dump(ctx, hex, i, 16, nbytes, 50);
 
-    return PrintAttribute(label, "0x%s (%s)", hex, str);
+    return PrintAttribute(ctx, label, "0x%s (%s)", hex, str);
 }
 
 void VisualizeData(const void* data, size_t length)
@@ -188,7 +183,7 @@ void VisualizeData(const void* data, size_t length)
 
 #pragma mark - Formatters
 
-int format_dump(char* out, const char* value, unsigned base, size_t nbytes, size_t length)
+int format_dump(out_ctx* ctx, char* out, const char* value, unsigned base, size_t nbytes, size_t length)
 {
     assert(value != NULL);
     assert(base >= 2 && base <= 36);
@@ -198,30 +193,27 @@ int format_dump(char* out, const char* value, unsigned base, size_t nbytes, size
     return memstr(out, base, value, nbytes, length);
 }
 
-int format_size(char* out, size_t value, size_t length)
+int format_size(out_ctx* ctx, char* out, size_t value, size_t length)
 {
-    return format_size_d(out, value, length, _use_decimal_blocks);
-}
+    char*       binaryNames[]  = { "bytes", "KiB", "MiB", "GiB", "TiB", "EiB", "PiB", "ZiB", "YiB" };
+    char*       decimalNames[] = { "bytes", "KB", "MB", "GB", "TB", "EB", "PB", "ZB", "YB" };
+    float       divisor        = 1024.0;
+    bool        decimal        = ctx->decimal_sizes;
+    long double displaySize    = value;
+    int         count          = 0;
+    char*       sizeLabel;
 
-int format_size_d(char* out, size_t value, size_t length, bool decimal)
-{
+    assert(ctx != NULL);
     assert(out != NULL);
     assert(length > 0);
 
-    float       divisor        = 1024.0;
     if (decimal) divisor = 1000.0;
 
-    char*       binaryNames[]  = { "bytes", "KiB", "MiB", "GiB", "TiB", "EiB", "PiB", "ZiB", "YiB" };
-    char*       decimalNames[] = { "bytes", "KB", "MB", "GB", "TB", "EB", "PB", "ZB", "YB" };
-
-    long double displaySize    = value;
-    int         count          = 0;
     while (count < 9) {
         if (displaySize < divisor) break;
         displaySize /= divisor;
         count++;
     }
-    char* sizeLabel;
 
     if (decimal) sizeLabel = decimalNames[count]; else sizeLabel = binaryNames[count];
 
@@ -230,15 +222,15 @@ int format_size_d(char* out, size_t value, size_t length, bool decimal)
     return strlen(out);
 }
 
-int format_blocks(char* out, size_t blocks, size_t block_size, size_t length)
+int format_blocks(out_ctx* ctx, char* out, size_t blocks, size_t block_size, size_t length)
 {
     size_t displaySize = (blocks * block_size);
     char   sizeLabel[50];
-    (void)format_size(sizeLabel, displaySize, 50);
+    (void)format_size(ctx, sizeLabel, displaySize, 50);
     return snprintf(out, length, "%s (%zu blocks)", sizeLabel, blocks);
 }
 
-int format_time(char* out, time_t gmt_time, size_t length)
+int format_time(out_ctx* ctx, char* out, time_t gmt_time, size_t length)
 {
     struct tm* t = gmtime(&gmt_time);
 #if defined(__APPLE__)

@@ -26,7 +26,7 @@
 #endif
 
 #include "volume.h"
-#include "hfsinspect/output.h"
+#include "output.h"
 #include "logging/logging.h"    // console printing routines
 
 #define ASSERT_VOL(vol) { assert(vol != NULL); assert(vol->fp); }
@@ -90,6 +90,12 @@ int vol_open(Volume* vol, const char* path, int mode, off_t offset, size_t lengt
 
     if ((length == 0) && vol->sector_size && vol->sector_count)
         vol->length = vol->sector_size * vol->sector_count;
+
+    // Setup the output context
+    out_ctx* ctx = NULL;
+    ALLOC(ctx, sizeof(out_ctx));
+    *ctx     = OCMake(0, 2, "volume");
+    vol->ctx = ctx;
 
     return 0;
 }
@@ -245,16 +251,16 @@ void vol_dump(Volume* vol)
         return;
     }
 
-    BeginSection("Volume '%s' (%s)", vol->desc, vol->native_desc);
+    BeginSection(vol->ctx, "Volume '%s' (%s)", vol->desc, vol->native_desc);
 
-    Print("source", "%s", vol->source);
-    PrintUI(vol, type);
+    Print(vol->ctx, "source", "%s", vol->source);
+    PrintUI(vol->ctx, vol, type);
 
 #define PrintUICharsIfEqual(var, val) if (var == val) { \
         char     type[5]; \
         uint64_t i = val; \
         format_uint_chars(type, (const char*)&i, 4, 5); \
-        PrintAttribute(#var, "'%s' (%s)", type, #val); \
+        PrintAttribute(vol->ctx, #var, "'%s' (%s)", type, #val); \
 }
 
     PrintUICharsIfEqual(vol->type, kTypeUnknown);
@@ -275,22 +281,22 @@ void vol_dump(Volume* vol)
     PrintUICharsIfEqual(vol->subtype, kFSTypeHFSX);
     PrintUICharsIfEqual(vol->subtype, kFSTypeWrappedHFSPlus);
 
-    PrintDataLength(vol, offset);
-    PrintDataLength(vol, length);
+    PrintDataLength(vol->ctx, vol, offset);
+    PrintDataLength(vol->ctx, vol, length);
 
-    PrintDataLength(vol, sector_size);
-    PrintUI(vol, sector_count);
+    PrintDataLength(vol->ctx, vol, sector_size);
+    PrintUI(vol->ctx, vol, sector_count);
 
-    PrintUI(vol, partition_count);
+    PrintUI(vol->ctx, vol, partition_count);
     if (vol->partition_count) {
         FOR_UNTIL(i, vol->partition_count) {
             if (vol->partitions[i] != NULL) {
-                BeginSection("Partition %u:", i+1);
+                BeginSection(vol->ctx, "Partition %u:", i+1);
                 vol_dump(vol->partitions[i]);
-                EndSection();
+                EndSection(vol->ctx);
             }
         }
     }
-    EndSection();
+    EndSection(vol->ctx);
 }
 

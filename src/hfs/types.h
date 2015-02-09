@@ -14,7 +14,6 @@
 typedef char uuid_string_t[37];
 #endif /* _UUID_STRING_T */
 
-#include "hfsinspect/cache.h"
 #include "volumes/volume.h"
 #include "hfs/Apple/hfs_types.h"
 

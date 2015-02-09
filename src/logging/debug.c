@@ -17,12 +17,14 @@
 int print_trace(FILE* fp, unsigned offset)
 {
     int    nbytes = 0;
-    offset += 1; // Omit this function.
-
     void*  stack[128];
-    int    i, size = backtrace(stack, 128);
-    char** lines = backtrace_symbols(&stack[offset], size - offset);
-    for (i = 0; i < (size - offset); i++) {
+    int    size   = 0;
+    char** lines  = NULL;
+
+    offset += 1; // Omit this function.
+    size    = backtrace(stack, 128);
+    lines   = backtrace_symbols(&stack[offset], size - offset);
+    for (int i = 0; i < (size - offset); i++) {
         nbytes += fprintf(fp, "%s\n", lines[i]);
     }
     free(lines);

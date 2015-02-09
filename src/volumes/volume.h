@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include <sys/param.h>          //PATH_MAX
 
+#include "output.h"
+
 typedef struct Volume       Volume;
 typedef struct PartitionOps PartitionOps;
 
@@ -66,6 +68,7 @@ enum {
 struct Volume {
     int      fd;                            // POSIX file descriptor
     FILE*    fp;                            // C Stream pointer
+    out_ctx* ctx;                           // Output context
     char     source[PATH_MAX];              // path to source file
     mode_t   mode;                          // mode of source file
 

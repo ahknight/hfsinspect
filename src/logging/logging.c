@@ -19,9 +19,13 @@
 #endif
 
 #include "logging.h"
-#include "prefixstream.h"
 #include "nullstream.h"
 #include "memdmp/output.h"
+
+
+#define PrintLine_MAX_LINE_LEN 1024
+#define PrintLine_MAX_DEPTH    40
+#define USE_EMOJI              0
 
 bool DEBUG = false;
 
@@ -46,90 +50,58 @@ void _printColor(FILE* f, unsigned level)
 {
     if (_useColor(f) == false) return;
 
-    // Critical:    always white on red
-    colorState critical = { { .white = 23 }, { .red = 5 } };
+    colorState current = {{0}};
 
-    // Error:       always red
-    colorState error    = { { .red = 5 }, { 0 } };
-
-    // Warning:     always orange
-    colorState warning  = { { 5, 1, 0}, { 0 } };
-
-    // Info:        shades of green
-    colorState info     = { { 1, 5, 1}, { 0 } };
-
-    // Debug:       shades of blue
-    colorState debug    = { { 2, 2, 4}, { 0 } };
-
-    //    const int max_depth = 15;
-    //
-    //    int depth = stack_depth(max_depth);
-    //
-    //    float colorMap[max_depth][3] = {
-    //        {1, 1, 1}, //0 - start()
-    //        {1, 1, 1}, //1 - main()
-    //        {1, 1, 5}, //2 - calls from main()
-    //        {1, 2, 1}, //3 - functions or libraries
-    //        {1, 3, 1},
-    //
-    //        {1, 4, 1}, //5
-    //        {1, 5, 1},
-    //        {1, 1, 2},
-    //        {1, 1, 3},
-    //        {1, 1, 4},
-    //
-    //        {1, 1, 5}, //10
-    //        {2, 1, 1},
-    //        {3, 1, 1},
-    //        {4, 1, 1},
-    //        {5, 1, 1},
-    //    };
-
-    colorState current = { { .white = 23 }, { 0 } };
     switch (level) {
         case L_CRITICAL:
         {
-            current = critical;
+            // Critical: always white on red
+            current = (colorState){ { .white = 23 }, { .red = 5 } };
             break;
         }
 
         case L_ERROR:
         {
-            current = error;
+            // Error: always red
+            current = (colorState){ { .red = 5 }, { 0 } };
             break;
         }
 
         case L_WARNING:
         {
-            current = warning;
+            // Warning: always orange
+            current = (colorState){ { 5, 1, 0}, { 0 } };
             break;
         }
 
         case L_INFO:
         {
-            current = info;
+            // Info: shades of green
+            current = (colorState){ { 1, 5, 1}, { 0 } };
             break;
         }
 
         case L_DEBUG:
         {
-            current = debug;
+            // Debug: shades of blue
+            current = (colorState){ { 2, 2, 4}, { 0 } };
             break;
         }
 
         default:
         {
+            current = (colorState){ { .white = 23 }, { 0 } };
             break;
         }
     }
 
     _print_reset(f);
-    if (current.foreground.white) {
+    if (current.foreground.white != 0) {
         _print_gray(f, current.foreground.white, 0);
     } else {
         _print_color(f, current.foreground.red, current.foreground.green, current.foreground.blue, 0);
     }
-    if (current.background.white) {
+    if (current.background.white != 0) {
         _print_gray(f, current.background.white, 1);
     } else {
         _print_color(f, current.background.red, current.background.green, current.background.blue, 1);
@@ -142,11 +114,8 @@ int LogLine(enum LogLevel level, const char* format, ...)
     va_start(argp, format);
 
     int          nchars      = 0;
-
+    FILE*        fp          = stdout;
     static FILE* streams[6]  = {0};
-
-#define USE_EMOJI 0
-
     char*        prefixes[6] = {
 #if USE_EMOJI
         "❕",
@@ -166,21 +135,19 @@ int LogLine(enum LogLevel level, const char* format, ...)
     };
 
     if (streams[0] == NULL) {
-        streams[L_CRITICAL] = prefixstream(stderr, prefixes[L_CRITICAL]);
-        streams[L_ERROR]    = prefixstream(stderr, prefixes[L_ERROR]);
-        streams[L_WARNING]  = prefixstream(stderr, prefixes[L_WARNING]);
-        streams[L_STANDARD] = prefixstream(stdout, prefixes[L_STANDARD]);
+        streams[L_CRITICAL] = stderr;
+        streams[L_ERROR]    = stderr;
+        streams[L_WARNING]  = stderr;
+        streams[L_STANDARD] = stdout;
 
         if (DEBUG) {
-            streams[L_INFO]  = prefixstream(stderr, prefixes[L_INFO]);
-            streams[L_DEBUG] = prefixstream(stderr, prefixes[L_DEBUG]);
+            streams[L_INFO]  = stderr;
+            streams[L_DEBUG] = stderr;
         } else {
             streams[L_INFO]  = nullstream();
             streams[L_DEBUG] = nullstream();
         }
     }
-
-    FILE* fp = stdout;
 
     if (level <= L_DEBUG)
         fp = streams[level];
@@ -188,6 +155,8 @@ int LogLine(enum LogLevel level, const char* format, ...)
         fprintf(stderr, "Uh oh. %u isn't a valid log level.", level);
 
     _printColor(fp, level);
+    nchars += fputs(prefixes[level], fp);
+    nchars += fputs(" ", fp);
     nchars += vfprintf(fp, format, argp);
     fputc('\n', fp);
     _print_reset(fp);
@@ -200,28 +169,25 @@ int LogLine(enum LogLevel level, const char* format, ...)
 
     fflush(fp);
 
-    if (DEBUG && (level <= L_CRITICAL)) {
-        raise(SIGTRAP);
+    if ((level <= L_CRITICAL)) {
+        if (DEBUG)
+            raise(SIGTRAP);
+        else
+            abort();
     }
-
-    if (!DEBUG && (level == L_CRITICAL))
-        abort();
 
     return nchars;
 }
 
-#define PrintLine_MAX_LINE_LEN 1024
-#define PrintLine_MAX_DEPTH    40
 int PrintLine(enum LogLevel level, const char* file, const char* function, unsigned int line, const char* format, ...)
 {
     va_list      argp;
     va_start(argp, format);
 
-    int          out_bytes = 0;
     char         inputstr[PrintLine_MAX_LINE_LEN];
-    unsigned int depth     = stack_depth(PrintLine_MAX_DEPTH) - 1; // remove our frame
     char         indent[PrintLine_MAX_LINE_LEN];
-
+    int          out_bytes = 0;
+    unsigned int depth     = stack_depth(PrintLine_MAX_DEPTH) - 1; // remove our frame
 
     // "Print" the input format string to a string.
     if (argp != NULL)
