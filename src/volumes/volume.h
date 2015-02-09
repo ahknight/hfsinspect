@@ -74,6 +74,7 @@ struct Volume {
 
     uint32_t sector_size;                   // block size (LBA size if the raw disk; FS blocks if a filesystem)
     uint64_t sector_count;                  // total blocks in this volume
+    uint32_t phy_sector_size;               // physical logical block size, if available
 
     off_t    offset;                        // offset in bytes on source
     size_t   length;                        // length in bytes

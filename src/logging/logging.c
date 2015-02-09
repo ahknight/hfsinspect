@@ -50,7 +50,7 @@ void _printColor(FILE* f, unsigned level)
 {
     if (_useColor(f) == false) return;
 
-    colorState current = {{0}};
+    colorState current;
 
     switch (level) {
         case L_CRITICAL:

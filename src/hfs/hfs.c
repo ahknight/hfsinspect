@@ -99,10 +99,12 @@ int hfs_open(HFS* hfs, Volume* vol)
  */
 int hfs_test(Volume* vol)
 {
-    debug("hfs_test");
-
     int                     type = kTypeUnknown;
-
+    
+    debug("hfs_test");
+    
+    assert(vol != NULL);
+    
     // First, test for HFS or wrapped HFS+ volumes.
     HFSMasterDirectoryBlock mdb  = {0};
 
@@ -133,7 +135,7 @@ int hfs_test(Volume* vol)
         return kFSTypeHFSPlus;
     }
 
-    info("Unknown volume type");
+    debug("Unknown volume type: %#x", vh.signature);
 
     return type;
 }
@@ -142,6 +144,9 @@ int hfs_test(Volume* vol)
 Volume* hfs_find(Volume* vol)
 {
     debug("hfs_find");
+    
+    assert(vol != NULL);
+    
     Volume* result = NULL;
     int     test   = hfs_test(vol);
 
@@ -149,9 +154,11 @@ Volume* hfs_find(Volume* vol)
         result = vol;
     } else if (vol->partition_count) {
         FOR_UNTIL(i, vol->partition_count) {
-            result = hfs_find(vol->partitions[i]);
-            if (result != NULL)
-                break;
+            if (vol->partitions[i] != NULL) {
+                result = hfs_find(vol->partitions[i]);
+                if (result != NULL)
+                    break;
+            }
         }
     }
 

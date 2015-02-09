@@ -128,6 +128,8 @@ int swap_BTreeNode(BTreeNodePtr node)
         BTreeKeyPtr key    = (BTreeKey*)(record);
         if (swapKeys) {
             Swap16( key->length16 );
+        } else {
+            debug("not swapping keys for record %u", recordNum);
         }
 
         switch (nodeDescriptor->kind) {

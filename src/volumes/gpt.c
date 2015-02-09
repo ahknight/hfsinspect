@@ -95,6 +95,7 @@ int _gpt_valid_header(GPTHeader header)
         return false;
     }
 
+    debug("GPT header CRC OK!");
     return true;
 }
 
@@ -160,8 +161,6 @@ int _gpt_load_header(Volume* vol, GPTHeader* header_out, GPTPartitionRecord* ent
     // Verify the header.
     if (_gpt_valid_header(header) != true)
         return -1;
-    else
-        debug("GPT header CRC OK!");
 
     if (entries_out != NULL) {
         char*              buf     = NULL;
@@ -319,30 +318,35 @@ int gpt_load(Volume* vol)
         char              name[100]   = {'\0'};
         Volume*           p           = NULL;
         VolType           type        = {0};
-        GPTPartitionEntry partition;
-        int               i           = 0;
+        GPTPartitionEntry* partition;
 
         // Grab the next partition structure
-        partition = entries[i];
-        if ((partition.first_lba == 0) && (partition.last_lba == 0))
+        partition = &(entries[i]);
+        if ((partition->first_lba == 0) && (partition->last_lba == 0))
             break;
 
         // Calculate the size of the partition
-        offset = partition.first_lba * vol->sector_size;
-        length = (partition.last_lba * vol->sector_size) - offset;
+        offset = partition->first_lba * vol->sector_size;
+        length = (partition->last_lba * vol->sector_size) - offset;
 
         // Add partition to volume
         p      = vol_make_partition(vol, i, offset, length);
+        if (p == NULL) {
+            perror("vol_make_partition");
+            warning("subpartition creation failed");
+            continue;
+        }
 
         // Update partition type with hint
-        _gpt_swap_uuid(&uuid, (const uuid_t*)&partition.type_uuid);
+        _gpt_swap_uuid(&uuid, (const uuid_t*)&(partition->type_uuid));
         uuid_unparse(uuid, uuid_str);
         const char* desc = _gpt_partition_type_str(uuid, &type);
         p->type = type;
 
-        while (i < 36 && partition.name[i] != '\0') {
-            wcname[i] = partition.name[i]; i++;
+        FOR_UNTIL(j, j < 36 && partition->name[j] != '\0') {
+            wcname[j] = partition->name[j];
         }
+        
         wcstombs(name, wcname, 100);
         (void)strlcpy(p->desc, name, 36);
         (void)strlcpy(p->native_desc, desc, 100);

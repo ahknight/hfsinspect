@@ -45,10 +45,12 @@ int vol_open(Volume* vol, const char* path, int mode, off_t offset, size_t lengt
 
     vol->fp = f;
     vol->fd = fileno(f);
-
+    
     if ( fstat(vol->fd, &s) < 0 )
         return -errno;
 
+    vol->mode = s.st_mode;
+    
     (void)strlcpy(vol->source, path, PATH_MAX);
     vol->offset = offset;
 
@@ -69,11 +71,15 @@ int vol_open(Volume* vol, const char* path, int mode, off_t offset, size_t lengt
 #if defined (__APPLE__)
         blkcnt_t  bc = 0;
         blksize_t bs = 0;
+        blksize_t ps = 0;
+        
         ioctl(vol->fd, DKIOCGETBLOCKCOUNT, &bc);
         ioctl(vol->fd, DKIOCGETBLOCKSIZE, &bs);
+        ioctl(vol->fd, DKIOCGETPHYSICALBLOCKSIZE, &ps);
 
         vol->sector_count = ( (bc != 0) ? bc : s.st_blocks);
         vol->sector_size  = ( (bs != 0) ? bs : S_BLKSIZE);
+        vol->phy_sector_size = ( (ps != 0) ? ps : vol->sector_size);
 
 #elif defined (__linux__)
         unsigned int  bs = 0;
@@ -91,6 +97,19 @@ int vol_open(Volume* vol, const char* path, int mode, off_t offset, size_t lengt
     if ((length == 0) && vol->sector_size && vol->sector_count)
         vol->length = vol->sector_size * vol->sector_count;
 
+    char* name = basename((char*)path);
+    strlcpy((char*)&vol->desc, name, 99);
+    
+    if (S_ISBLK(vol->mode)) {
+        strlcpy((char*)vol->native_desc, "block device", 99);
+        
+    } else if (S_ISCHR(vol->mode)) {
+        strlcpy((char*)vol->native_desc, "character device", 99);
+        
+    } else {
+        strlcpy((char*)vol->native_desc, "regular file", 99);
+    }
+    
     // Setup the output context
     out_ctx* ctx = NULL;
     ALLOC(ctx, sizeof(out_ctx));
@@ -230,6 +249,7 @@ Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t lengt
 
     newvol->sector_size      = vol->sector_size;
     newvol->sector_count     = length / vol->sector_size;
+    newvol->phy_sector_size  = vol->phy_sector_size;
 
     newvol->type             = kTypeUnknown;
     newvol->subtype          = kTypeUnknown;
@@ -237,6 +257,7 @@ Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t lengt
     // Link the two together
     newvol->parent_partition = vol;
     newvol->depth            = vol->depth + 1;
+    newvol->ctx              = vol->ctx;
 
     vol->partition_count++;
     vol->partitions[pos]     = newvol;
@@ -254,7 +275,6 @@ void vol_dump(Volume* vol)
     BeginSection(vol->ctx, "Volume '%s' (%s)", vol->desc, vol->native_desc);
 
     Print(vol->ctx, "source", "%s", vol->source);
-    PrintUI(vol->ctx, vol, type);
 
 #define PrintUICharsIfEqual(var, val) if (var == val) { \
         char     type[5]; \
@@ -284,8 +304,9 @@ void vol_dump(Volume* vol)
     PrintDataLength(vol->ctx, vol, offset);
     PrintDataLength(vol->ctx, vol, length);
 
-    PrintDataLength(vol->ctx, vol, sector_size);
     PrintUI(vol->ctx, vol, sector_count);
+    PrintDataLength(vol->ctx, vol, sector_size);
+    PrintDataLength(vol->ctx, vol, phy_sector_size);
 
     PrintUI(vol->ctx, vol, partition_count);
     if (vol->partition_count) {
@@ -294,6 +315,8 @@ void vol_dump(Volume* vol)
                 BeginSection(vol->ctx, "Partition %u:", i+1);
                 vol_dump(vol->partitions[i]);
                 EndSection(vol->ctx);
+            } else {
+                warning("unexpected NULL partition record in volume structure");
             }
         }
     }
