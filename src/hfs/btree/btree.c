@@ -135,7 +135,7 @@ int BTGetBTNodeRecord(BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum 
     return 0;
 }
 
-BTRecOffset BTGetRecordOffset(const BTreeNodePtr node, uint8_t recNum)
+BTRecOffset BTGetRecordOffset(const BTreeNodePtr node, uint16_t recNum)
 {
     BTRecOffset    result      = 0;
 
@@ -150,12 +150,12 @@ BTRecOffset BTGetRecordOffset(const BTreeNodePtr node, uint8_t recNum)
     return result;
 }
 
-Bytes BTGetRecord(const BTreeNodePtr node, uint8_t recNum)
+Bytes BTGetRecord(const BTreeNodePtr node, uint16_t recNum)
 {
     return (node->data + BTGetRecordOffset(node, recNum));
 }
 
-uint16_t BTGetRecordKeyLength(const BTreeNodePtr node, uint8_t recNum)
+uint16_t BTGetRecordKeyLength(const BTreeNodePtr node, uint16_t recNum)
 {
     /*
        Immediately following the keyLength is the key itself. The length of the key is determined by the node type and the B-tree attributes. In leaf nodes, the length is always determined by keyLength. In index nodes, the length depends on the value of the kBTVariableIndexKeysMask bit in the B-tree attributes in the header record. If the bit is clear, the key occupies a constant number of bytes, determined by the maxKeyLength field of the B-tree header record. If the bit is set, the key length is determined by the keyLength field of the keyed record.

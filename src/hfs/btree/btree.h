@@ -113,9 +113,9 @@ int  btree_walk          (const BTreePtr btree, const BTreeNodePtr node, btree_w
 int  btree_search        (BTreeNodePtr* node, BTRecNum* recordID, const BTreePtr btree, const void* searchKey) __attribute__((nonnull));
 int  btree_search_node   (BTRecNum* index, const BTreePtr btree, const BTreeNodePtr node, const void* searchKey) __attribute__((nonnull));
 
-BTRecOffset BTGetRecordOffset       (const BTreeNodePtr node, uint8_t recNum) __attribute__((nonnull));
-Bytes       BTGetRecord             (const BTreeNodePtr node, uint8_t recNum) __attribute__((nonnull));
-uint16_t    BTGetRecordKeyLength    (const BTreeNodePtr node, uint8_t recNum) __attribute__((nonnull));
+BTRecOffset BTGetRecordOffset       (const BTreeNodePtr node, uint16_t recNum) __attribute__((nonnull));
+Bytes       BTGetRecord             (const BTreeNodePtr node, uint16_t recNum) __attribute__((nonnull));
+uint16_t    BTGetRecordKeyLength    (const BTreeNodePtr node, uint16_t recNum) __attribute__((nonnull));
 int         BTGetBTNodeRecord       (BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum recNum) __attribute__((nonnull));
 
 bool BTIsBlockUsed           (uint32_t thisAllocationBlock, void* allocationFileContents, size_t length) __attribute__((nonnull));
