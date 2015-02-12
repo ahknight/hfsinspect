@@ -24,10 +24,10 @@
 #include "hfsinspect/types.h"
 #include "logging/logging.h"    // console printing routines
 
-extern String BTreeOptionCatalog;
-extern String BTreeOptionExtents;
-extern String BTreeOptionAttributes;
-extern String BTreeOptionHotfiles;
+extern char* BTreeOptionCatalog;
+extern char* BTreeOptionExtents;
+extern char* BTreeOptionAttributes;
+extern char* BTreeOptionHotfiles;
 
 typedef enum BTreeTypes {
     BTreeTypeCatalog = 0,
@@ -75,13 +75,13 @@ void set_mode (HIOptions* options, int mode);
 void clear_mode (HIOptions* options, int mode);
 bool check_mode (HIOptions* options, int mode);
 
-void die(int val, String format, ...) __attribute__(( noreturn ));
+void die(int val, char* format, ...) __attribute__(( noreturn ));
 
 void    showFreeSpace(HIOptions* options);
 void    showPathInfo(HIOptions* options);
 void    showCatalogRecord(HIOptions* options, FSSpec spec, bool followThreads);
-ssize_t extractFork(const HFSFork* fork, const String extractPath);
-void    extractHFSPlusCatalogFile(const HFS* hfs, const HFSPlusCatalogFile* file, const String extractPath);
+ssize_t extractFork(const HFSFork* fork, const char* extractPath);
+void    extractHFSPlusCatalogFile(const HFS* hfs, const HFSPlusCatalogFile* file, const char* extractPath);
 
 VolumeSummary generateVolumeSummary(HIOptions* options);
 void          generateForkSummary(HIOptions* options, ForkSummary* forkSummary, const HFSPlusCatalogFile* file, const HFSPlusForkData* fork, hfs_forktype_t type);

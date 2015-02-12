@@ -312,12 +312,12 @@ int gpt_load(Volume* vol)
 
     // Iterate over the partitions and update the volume record
     FOR_UNTIL(i, header.partitions_entry_count) {
-        uuid_string_t     uuid_str    = "";
-        uuid_t            uuid        = {0};
-        wchar_t           wcname[100] = {'\0'};
-        char              name[100]   = {'\0'};
-        Volume*           p           = NULL;
-        VolType           type        = {0};
+        uuid_string_t      uuid_str    = "";
+        uuid_t             uuid        = {0};
+        wchar_t            wcname[100] = {'\0'};
+        char               name[100]   = {'\0'};
+        Volume*            p           = NULL;
+        VolType            type        = {0};
         GPTPartitionEntry* partition;
 
         // Grab the next partition structure
@@ -346,7 +346,7 @@ int gpt_load(Volume* vol)
         FOR_UNTIL(j, j < 36 && partition->name[j] != '\0') {
             wcname[j] = partition->name[j];
         }
-        
+
         wcstombs(name, wcname, 100);
         (void)strlcpy(p->desc, name, 36);
         (void)strlcpy(p->native_desc, desc, 100);

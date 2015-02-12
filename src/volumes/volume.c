@@ -45,12 +45,12 @@ int vol_open(Volume* vol, const char* path, int mode, off_t offset, size_t lengt
 
     vol->fp = f;
     vol->fd = fileno(f);
-    
+
     if ( fstat(vol->fd, &s) < 0 )
         return -errno;
 
-    vol->mode = s.st_mode;
-    
+    vol->mode   = s.st_mode;
+
     (void)strlcpy(vol->source, path, PATH_MAX);
     vol->offset = offset;
 
@@ -72,13 +72,13 @@ int vol_open(Volume* vol, const char* path, int mode, off_t offset, size_t lengt
         blkcnt_t  bc = 0;
         blksize_t bs = 0;
         blksize_t ps = 0;
-        
+
         ioctl(vol->fd, DKIOCGETBLOCKCOUNT, &bc);
         ioctl(vol->fd, DKIOCGETBLOCKSIZE, &bs);
         ioctl(vol->fd, DKIOCGETPHYSICALBLOCKSIZE, &ps);
 
-        vol->sector_count = ( (bc != 0) ? bc : s.st_blocks);
-        vol->sector_size  = ( (bs != 0) ? bs : S_BLKSIZE);
+        vol->sector_count    = ( (bc != 0) ? bc : s.st_blocks);
+        vol->sector_size     = ( (bs != 0) ? bs : S_BLKSIZE);
         vol->phy_sector_size = ( (ps != 0) ? ps : vol->sector_size);
 
 #elif defined (__linux__)
@@ -99,17 +99,17 @@ int vol_open(Volume* vol, const char* path, int mode, off_t offset, size_t lengt
 
     char* name = basename((char*)path);
     strlcpy((char*)&vol->desc, name, 99);
-    
+
     if (S_ISBLK(vol->mode)) {
         strlcpy((char*)vol->native_desc, "block device", 99);
-        
+
     } else if (S_ISCHR(vol->mode)) {
         strlcpy((char*)vol->native_desc, "character device", 99);
-        
+
     } else {
         strlcpy((char*)vol->native_desc, "regular file", 99);
     }
-    
+
     // Setup the output context
     out_ctx* ctx = NULL;
     ALLOC(ctx, sizeof(out_ctx));
@@ -147,9 +147,9 @@ int vol_blk_get(const Volume* vol, off_t start, size_t count, void* buf)
 
 ssize_t vol_read (const Volume* vol, void* buf, size_t size, off_t offset)
 {
-    size_t  start_block = 0, byte_offset = 0, block_count = 0;
-    ssize_t read_blocks = 0;
-    uint8_t*   read_buffer = NULL;
+    size_t   start_block = 0, byte_offset = 0, block_count = 0;
+    ssize_t  read_blocks = 0;
+    uint8_t* read_buffer = NULL;
 
     ASSERT_VOL(vol);
 

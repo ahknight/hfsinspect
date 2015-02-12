@@ -40,8 +40,8 @@
 void usage (int status) __attribute__(( noreturn ));
 void show_version (void) __attribute__(( noreturn ));
 
-String deviceAtPath (String path) __attribute__((nonnull));
-bool   resolveDeviceAndPath (String path_in, String device_out, String path_out) __attribute__((nonnull));
+char* deviceAtPath (char* path) __attribute__((nonnull));
+bool  resolveDeviceAndPath (char* path_in, char* device_out, char* path_out) __attribute__((nonnull));
 
 
 #pragma mark - Variable Definitions
@@ -84,43 +84,43 @@ void usage(int status)
        -X FILTERARGS, --filter_args=FILTERARGS
                                  pass this argument string to the filter callback
      */
-    String help = "[-hvjs] [-d file] [-V volumepath] [ [-b btree] [-n nodeid] ] [-p path] [-P absolutepath] [-F parent:name] [-o file] [--version] [path]\n"
-                  "\n"
-                  "SOURCES: \n"
-                  "hfsinspect will use the root filesystem by default, or the filesystem containing a target file in some cases. If you wish to\n"
-                  "specify a specific device or volume, you can with the following options:\n"
-                  "\n"
-                  "    -d DEV,     --device DEV    Path to device or file containing a bare HFS+ filesystem (no partition map or HFS wrapper) \n"
-                  "    -V VOLUME   --volume VOLUME Use the path to a mounted disk or any file on the disk to use a mounted volume. \n"
-                  "\n"
-                  "INFO: \n"
-                  "    By default, hfsinspect will just show you the volume header and quit.  Use the following options to get more specific data.\n"
-                  "\n"
-                  "    -h,         --help          Show help and quit. \n"
-                  "    -v,         --version       Show version information and quit. \n"
-                  "    -b NAME,    --btree NAME    Specify which HFS+ B-Tree to work with. Supported options: attributes, catalog, extents, or hotfiles. \n"
-                  "    -n ID,      --node ID       Dump an HFS+ B-Tree node by ID (must specify tree with -b). \n"
-                  "    -r,         --volumeheader  Dump the volume header. \n"
-                  "    -j,         --journal       Dump the volume's journal info block structure. \n"
-                  "    -c CNID,    --cnid CNID     Lookup and display a record by its catalog node ID. \n"
-                  "    -l,         --list          If the specified FSOB is a folder, list the contents. \n"
-                  "    -D,         --disk-info     Show any available information about the disk, including partitions and volume headers.\n"
-                  "    -0,         --freespace     Show a summary of the used/free space and extent count based on the allocation file.\n"
-                  "    -s,         --summary       Show a summary of the files on the disk.\n"
-                  "    -F                          Locate a record by Carbon-style FSSpec (parent:name).\n"
-                  "    -P                          Locate a record by filesystem path.\n"
-                  "    -y DIR                      Yank all the filesystem files and put then in the specified directory.\n"
-                  "\n"
-                  "OUTPUT: \n"
-                  "    You can optionally have hfsinspect dump any fork it finds as the result of an operation. This includes B-Trees or file forks.\n"
-                  "    Use a command like \"-b catalog -o catalog.dump\" to extract the catalog file from the boot drive, for instance.\n"
-                  "\n"
-                  "    -o PATH,    --output PATH   Use with -b or -p to dump a raw data fork (when used with -b, will dump the HFS+ tree file). \n"
-                  "\n"
-                  "ENVIRONMENT: \n"
-                  "    Set NOCOLOR to hide ANSI colors (TODO: check terminal for support, etc.). \n"
-                  "    Set DEBUG to be overwhelmed with useless data. \n"
-                  "\n";
+    char* help = "[-hvjs] [-d file] [-V volumepath] [ [-b btree] [-n nodeid] ] [-p path] [-P absolutepath] [-F parent:name] [-o file] [--version] [path]\n"
+                 "\n"
+                 "SOURCES: \n"
+                 "hfsinspect will use the root filesystem by default, or the filesystem containing a target file in some cases. If you wish to\n"
+                 "specify a specific device or volume, you can with the following options:\n"
+                 "\n"
+                 "    -d DEV,     --device DEV    Path to device or file containing a bare HFS+ filesystem (no partition map or HFS wrapper) \n"
+                 "    -V VOLUME   --volume VOLUME Use the path to a mounted disk or any file on the disk to use a mounted volume. \n"
+                 "\n"
+                 "INFO: \n"
+                 "    By default, hfsinspect will just show you the volume header and quit.  Use the following options to get more specific data.\n"
+                 "\n"
+                 "    -h,         --help          Show help and quit. \n"
+                 "    -v,         --version       Show version information and quit. \n"
+                 "    -b NAME,    --btree NAME    Specify which HFS+ B-Tree to work with. Supported options: attributes, catalog, extents, or hotfiles. \n"
+                 "    -n ID,      --node ID       Dump an HFS+ B-Tree node by ID (must specify tree with -b). \n"
+                 "    -r,         --volumeheader  Dump the volume header. \n"
+                 "    -j,         --journal       Dump the volume's journal info block structure. \n"
+                 "    -c CNID,    --cnid CNID     Lookup and display a record by its catalog node ID. \n"
+                 "    -l,         --list          If the specified FSOB is a folder, list the contents. \n"
+                 "    -D,         --disk-info     Show any available information about the disk, including partitions and volume headers.\n"
+                 "    -0,         --freespace     Show a summary of the used/free space and extent count based on the allocation file.\n"
+                 "    -s,         --summary       Show a summary of the files on the disk.\n"
+                 "    -F                          Locate a record by Carbon-style FSSpec (parent:name).\n"
+                 "    -P                          Locate a record by filesystem path.\n"
+                 "    -y DIR                      Yank all the filesystem files and put then in the specified directory.\n"
+                 "\n"
+                 "OUTPUT: \n"
+                 "    You can optionally have hfsinspect dump any fork it finds as the result of an operation. This includes B-Trees or file forks.\n"
+                 "    Use a command like \"-b catalog -o catalog.dump\" to extract the catalog file from the boot drive, for instance.\n"
+                 "\n"
+                 "    -o PATH,    --output PATH   Use with -b or -p to dump a raw data fork (when used with -b, will dump the HFS+ tree file). \n"
+                 "\n"
+                 "ENVIRONMENT: \n"
+                 "    Set NOCOLOR to hide ANSI colors (TODO: check terminal for support, etc.). \n"
+                 "    Set DEBUG to be overwhelmed with useless data. \n"
+                 "\n";
     fprintf(stderr, "usage: %s %s", PROGRAM_NAME, help);
     exit(status);
 }
@@ -132,7 +132,7 @@ void show_version()
     exit(0);
 }
 
-String deviceAtPath(String path)
+char* deviceAtPath(char* path)
 {
 #if defined(BSD)
     static struct statfs stats;
@@ -151,10 +151,10 @@ String deviceAtPath(String path)
 #endif
 }
 
-bool resolveDeviceAndPath(String path_in, String device_out, String path_out)
+bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
 {
 #if defined(__BSD__)
-    String path = realpath(path_in, NULL);
+    char* path = realpath(path_in, NULL);
     if (path == NULL) {
         die(1, path_in);
         return false;
@@ -171,8 +171,8 @@ bool resolveDeviceAndPath(String path_in, String device_out, String path_out)
     debug("Mounted at: %s", stats.f_mntonname);
     debug("Path: %s", path);
 
-    String device     = stats.f_mntfromname;
-    String mountPoint = stats.f_mntonname;
+    char* device     = stats.f_mntfromname;
+    char* mountPoint = stats.f_mntonname;
 
     if (strncmp(mountPoint, "/", PATH_MAX) != 0) {
         // Remove mount point from path name (rather blindly, yes)
@@ -200,7 +200,7 @@ bool resolveDeviceAndPath(String path_in, String device_out, String path_out)
 #endif
 }
 
-void die(int val, String format, ...)
+void die(int val, char* format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -247,11 +247,11 @@ void loadBTree(HIOptions* options)
     }
 }
 
-int main (int argc, String const* argv)
+int main (int argc, char* const* argv)
 {
-    bool use_decimal = false;
-    HIOptions options = {0};
-    
+    bool      use_decimal = false;
+    HIOptions options     = {0};
+
     ALLOC(options.hfs, sizeof(struct HFS));
 
     (void)strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
@@ -289,7 +289,7 @@ int main (int argc, String const* argv)
     };
 
     /* short options */
-    String        shortopts = "0ShvjlrsDd:n:b:p:P:F:V:c:o:y:";
+    char*         shortopts = "0ShvjlrsDd:n:b:p:P:F:V:c:o:y:";
 
     char          opt;
     while ((opt = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -363,7 +363,7 @@ int main (int argc, String const* argv)
 
             case 'V':
             {
-                String str = deviceAtPath(optarg);
+                char* str = deviceAtPath(optarg);
                 (void)strlcpy(options.device_path, str, PATH_MAX);
                 if (options.device_path == NULL) fatal("Unable to determine device. Does the path exist?");
                 break;
@@ -417,9 +417,9 @@ int main (int argc, String const* argv)
                 memset(&options.record_filename, 0, sizeof(options.record_filename));
                 options.record_parent = 0;
 
-                String option   = strdup(optarg);
-                String parent   = strsep(&option, ":");
-                String filename = strsep(&option, ":");
+                char* option   = strdup(optarg);
+                char* parent   = strsep(&option, ":");
+                char* filename = strsep(&option, ":");
 
                 if (parent && strlen(parent)) sscanf(parent, "%u", &options.record_parent);
                 if (filename) (void)strlcpy(options.record_filename, filename, PATH_MAX);
@@ -511,7 +511,7 @@ OPEN:
         if (errno == EBUSY) {
             // If the device is busy, see if we can use the raw disk instead (and aren't already).
             if (strstr(options.device_path, "/dev/disk") != NULL) {
-                String newDevicePath = NULL;
+                char* newDevicePath = NULL;
                 ALLOC(newDevicePath, PATH_MAX + 1);
                 (void)strlcat(newDevicePath, "/dev/rdisk", PATH_MAX);
                 (void)strlcat(newDevicePath, &options.device_path[9], PATH_MAX);
@@ -555,12 +555,12 @@ OPEN:
     out_ctx* ctx = options.hfs->vol->ctx;
     ctx->decimal_sizes = use_decimal;
 
-    uid_t uid = 99;
-    gid_t gid = 99;
+    uid_t    uid = 99;
+    gid_t    gid = 99;
 
     // If extracting, determine the UID to become by checking the owner of the output directory (so we can create any requested files later).
     if (check_mode(&options, HIModeExtractFile) || check_mode(&options, HIModeYankFS)) {
-        String dir = strdup(dirname(options.extract_path));
+        char* dir = strdup(dirname(options.extract_path));
         if ( !strlen(dir) ) {
             die(1, "Output file directory does not exist: %s", dir);
         }
@@ -839,9 +839,9 @@ NOPE:
         bool showHex = 0;
 
         if (showHex) {
-            size_t length = options.tree->headerRecord.nodeSize;
-            off_t  offset = length * options.node_id;
-            uint8_t*  buf    = NULL;
+            size_t   length = options.tree->headerRecord.nodeSize;
+            off_t    offset = length * options.node_id;
+            uint8_t* buf    = NULL;
             ALLOC(buf, length);
             fpread(options.tree->fp, buf, length, offset);
             VisualizeData(buf, length);

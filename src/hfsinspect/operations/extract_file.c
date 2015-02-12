@@ -9,7 +9,7 @@
 #include "operations.h"
 #include <errno.h>              // errno/perror
 
-ssize_t extractFork(const HFSFork* fork, const String extractPath)
+ssize_t extractFork(const HFSFork* fork, const char* extractPath)
 {
     FILE*    f_out         = NULL;
     FILE*    f_in          = NULL;
@@ -69,7 +69,7 @@ ssize_t extractFork(const HFSFork* fork, const String extractPath)
     return offset;
 }
 
-void extractHFSPlusCatalogFile(const HFS* hfs, const HFSPlusCatalogFile* file, const String extractPath)
+void extractHFSPlusCatalogFile(const HFS* hfs, const HFSPlusCatalogFile* file, const char* extractPath)
 {
     if (file->dataFork.logicalSize > 0) {
         HFSFork* fork = NULL;
@@ -84,7 +84,7 @@ void extractHFSPlusCatalogFile(const HFS* hfs, const HFSPlusCatalogFile* file, c
         hfsfork_free(fork);
     }
     if (file->resourceFork.logicalSize > 0) {
-        String  outputPath = NULL;
+        char*   outputPath = NULL;
         ALLOC(outputPath, FILENAME_MAX);
         ssize_t size;
         size = strlcpy(outputPath, extractPath, sizeof(outputPath));

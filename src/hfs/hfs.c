@@ -99,14 +99,14 @@ int hfs_open(HFS* hfs, Volume* vol)
  */
 int hfs_test(Volume* vol)
 {
-    int                     type = kTypeUnknown;
-    
+    int type = kTypeUnknown;
+
     debug("hfs_test");
-    
+
     assert(vol != NULL);
-    
+
     // First, test for HFS or wrapped HFS+ volumes.
-    HFSMasterDirectoryBlock mdb  = {0};
+    HFSMasterDirectoryBlock mdb = {0};
 
     if ( hfs_load_mbd(vol, &mdb) < 0) {
         return -1;
@@ -144,9 +144,9 @@ int hfs_test(Volume* vol)
 Volume* hfs_find(Volume* vol)
 {
     debug("hfs_find");
-    
+
     assert(vol != NULL);
-    
+
     Volume* result = NULL;
     int     test   = hfs_test(vol);
 

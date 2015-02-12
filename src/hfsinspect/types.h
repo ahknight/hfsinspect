@@ -12,8 +12,6 @@
 #include <stdint.h>
 #include "hfs/Apple/hfs_types.h"
 
-typedef char*   String;
-
 // For volume statistics
 typedef struct Rank {
     uint64_t measure;
