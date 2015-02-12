@@ -1,17 +1,43 @@
-CFLAGS += -std=c1x -Isrc -Isrc/vendor -Isrc/vendor/crc-32c -Wall -msse4.2
-CFLAGS += -g -O0 #debug
-# CFLAGS += -Os
+CFLAGS += -std=c1x -Isrc -Isrc/vendor -Isrc/vendor/crc-32c -Wall -msse4.2 -g -O3
+CFLAGS += -O0 #debug
 
 OS := $(shell uname -s)
 MACHINE := $(shell uname -m)
-include Makefile.$(OS)
+
+# Pick a compiler, preferring clang, if the user hasn't expressed a preference.
+ifeq ($(CC), cc)
+	CLANG_PATH = $(shell which clang)
+	GCC_PATH = $(shell which gcc)
+	ifdef CLANG_PATH
+		CC := $(CLANG_PATH)
+	else
+		ifdef GCC_PATH
+			CC := $(GCC_PATH)
+		endif
+	endif
+endif
+
+ifeq ($(OS), Linux)
+CFLAGS += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_ISOC11_SOURCE
+LIBS += $(shell pkg-config --libs libbsd-overlay uuid)
+LIBS += -lm
+endif
+
+ifeq ($(CC), gcc)
+CFLAGS += -fstack-protector -Wno-multichar -Wno-unknown-pragmas
+endif
+
+ifeq ($(CC), clang)
+CFLAGS += -Wpedantic -Wno-four-char-constants
+endif
+
 
 BINARYNAME = hfsinspect
 BUILDDIR = build/$(OS)-$(MACHINE)
 BINARYPATH = $(BUILDDIR)/$(BINARYNAME)
 OBJDIR = $(BUILDDIR)/obj
 
-AUXFILES := Makefile Makefile.Darwin Makefile.Linux README.md
+AUXFILES := Makefile README.md
 PROJDIRS := src/hfsinspect src/hfs src/hfsplus src/logging src/vendor/memdmp src/vendor/crc-32c/crc32c src/volumes
 SRCFILES := $(shell find $(PROJDIRS) -type f -name *.c)
 HDRFILES := $(shell find $(PROJDIRS) -type f -name *.h)
@@ -38,7 +64,7 @@ depend: .depend
 .depend: $(SRCFILES)
 	@echo "Building dependancy graph"
 	@rm -f ./.depend
-	@$(CC) $(CFLAGS) -MM $^>>./.depend;
+	$(CC) $(CFLAGS) -MM $^>>./.depend;
 
 -include .depend
 
