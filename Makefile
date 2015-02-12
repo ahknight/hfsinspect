@@ -1,6 +1,16 @@
-CFLAGS += -std=c1x -Isrc -Isrc/vendor -Isrc/vendor/crc-32c -Wall -msse4.2 -g -O3
-CFLAGS += -O0 #debug
+# Lovingly crafted by hand.
 
+# Some defaults.  Feel free to override them via environment vars.
+CFLAGS = -g -O2 -Wall
+LDFLAGS =
+PREFIX = /usr/local
+
+# ------------ Systems and Platforms ------------
+
+# System-specific CFLAGS
+sys_CFLAGS =
+
+# Get the OS and machine type.
 OS := $(shell uname -s)
 MACHINE := $(shell uname -m)
 
@@ -9,32 +19,40 @@ ifeq ($(CC), cc)
 	CLANG_PATH = $(shell which clang)
 	GCC_PATH = $(shell which gcc)
 	ifdef CLANG_PATH
-		CC := $(CLANG_PATH)
+		CC = $(CLANG_PATH)
 	else
 		ifdef GCC_PATH
-			CC := $(GCC_PATH)
+			CC = $(GCC_PATH)
 		endif
 	endif
 endif
 
+# Linux needs some love.
 ifeq ($(OS), Linux)
-CFLAGS += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_ISOC11_SOURCE
+sys_CFLAGS += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_ISOC11_SOURCE
 LIBS += $(shell pkg-config --libs libbsd-overlay uuid)
 LIBS += -lm
 endif
 
+# Our GCC options.
 ifeq ($(CC), gcc)
-CFLAGS += -fstack-protector -Wno-multichar -Wno-unknown-pragmas
+sys_CFLAGS += -fstack-protector -Wno-multichar -Wno-unknown-pragmas
 endif
 
+# Our clang options.
 ifeq ($(CC), clang)
-CFLAGS += -Wpedantic -Wno-four-char-constants
+sys_CFLAGS += -Wpedantic -Wno-four-char-constants
 endif
 
 
-BINARYNAME = hfsinspect
+# ------------ hfsinspect ------------
+
+# Required CFLAGS
+bin_CFLAGS = -std=c1x -msse4.2 -Isrc -Isrc/vendor -Isrc/vendor/crc-32c
+
+PRODUCTNAME = hfsinspect
 BUILDDIR = build/$(OS)-$(MACHINE)
-BINARYPATH = $(BUILDDIR)/$(BINARYNAME)
+BINARYPATH = $(BUILDDIR)/$(PRODUCTNAME)
 OBJDIR = $(BUILDDIR)/obj
 
 AUXFILES := Makefile README.md
@@ -45,16 +63,29 @@ OBJFILES := $(patsubst src/%.c, $(OBJDIR)/%.o, $(SRCFILES))
 DEPFILES := $(patsubst src/%.c, $(OBJDIR)/%.d, $(SRCFILES))
 ALLFILES := $(SRCFILES) $(HDRFILES) $(AUXFILES)
 
-INSTALL = $(shell which install)
-PREFIX = /usr/local
+INSTALL = install
+RM = rm -f
 
-.PHONY: all test docs clean distclean pretty
+
+# ------------ Definitions ------------
+
+# The superset we're going to use.
+ALL_CFLAGS = $(CFLAGS) $(bin_CFLAGS) $(sys_CFLAGS)
+ALL_LDFLAGS = $(LDFLAGS) 
+
+# ------------ Actions ------------
+
+.PHONY: all everything clean distclean pretty depend docs install uninstall test clean-hfsinspect clean-test clean-docs
 
 all: depend $(BINARYPATH)
+
 everything: $(BINARYPATH) docs
+
 clean: clean-hfsinspect
-distclean: clean-test clean-docs
-	$(RM) -r build
+
+distclean: clean-hfsinspect clean-test clean-docs
+	@echo "Removing all build artifacts."
+	@$(RM) -r build
 
 pretty:
 	find src -iname '*.[hc]' -and \! -path '*vendor*' -and \! -path '*Apple*' | uncrustify -c uncrustify.cfg -F- --replace --no-backup --mtime -lC
@@ -64,23 +95,24 @@ depend: .depend
 .depend: $(SRCFILES)
 	@echo "Building dependancy graph"
 	@rm -f ./.depend
-	$(CC) $(CFLAGS) -MM $^>>./.depend;
+	@$(CC) $(ALL_CFLAGS) -MM $^>>./.depend;
 
 -include .depend
 
 $(OBJDIR)/%.o : src/%.c
 	@echo Compiling $<
 	@mkdir -p `dirname $@`
-	@$(COMPILE.c) $< -o $@
+	@$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(BINARYPATH): $(OBJFILES)
 	@echo "Building hfsinspect."
 	@mkdir -p `dirname $(BINARYPATH)`
-	@$(LINK.c) -o $(BINARYPATH) $^ $(LIBS)
+	@$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) -o $(BINARYPATH) $^ $(LIBS)
+	@echo "=> $(BINARYPATH)"
 
 docs:
 	@echo "Building documentation."
-	@doxygen docs/doxygen.config
+	@doxygen docs/doxygen.config >/dev/null 2>&1
 
 install: $(BINARYPATH)
 	@echo "Installing hfsinspect in $(PREFIX)"
@@ -91,7 +123,7 @@ install: $(BINARYPATH)
 	@$(INSTALL) docs/hfsinspect.1 $(PREFIX)/share/man/man1
 
 uninstall:
-	$(RM) $(PREFIX)/bin/$(BINARYNAME)
+	$(RM) $(PREFIX)/bin/$(PRODUCTNAME)
 	$(RM) $(PREFIX)/share/man/man1/hfsinspect.1
 
 test: all
@@ -99,13 +131,16 @@ test: all
 	./tools/tests.sh $(BINARYPATH) images/test.img
 
 clean-test:
-	$(RM) "images/test.img" "images/MBR.dmg"
+	@echo "Cleaning test images."
+	@$(RM) "images/test.img" "images/MBR.dmg"
 
 clean-hfsinspect:
-	$(RM) -r "$(BUILDDIR)" ./.depend
+	@echo "Cleaning hfsinspect."
+	@$(RM) -r "$(BUILDDIR)" ./.depend
 
 clean-docs:
-	$(RM) -r docs/html docs/doxygen.log
+	@echo "Cleaning documentation."
+	@$(RM) -r docs/html docs/doxygen.log
 
 dist.tgz: $(ALLFILES)
 	tar -czf dist.tgz $^
