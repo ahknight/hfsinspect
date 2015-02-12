@@ -145,7 +145,7 @@ int hfs_extents_find_record(HFSPlusExtentRecord* record, hfs_block_t* record_sta
 
     // Buffer has some data, so validate it.
     BTreeKeyPtr          recordKey      = NULL;
-    Bytes                recordValue    = NULL;
+    uint8_t*             recordValue    = NULL;
     btree_get_record(&recordKey, &recordValue, node, index);
 
     HFSPlusExtentKey*    returnedKey    = (HFSPlusExtentKey*)recordKey;

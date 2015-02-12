@@ -28,13 +28,13 @@
 
 void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh);
 
-uint32_t cs_crc32c(uint32_t seed, const Byte* base, uint32_t length)
+uint32_t cs_crc32c(uint32_t seed, const uint8_t* base, uint32_t length)
 {
     // All CRCs exempt the first 8 bytes as they hold the seed and CRC themselves.
     return crc32c(seed, (base+8), (length-8));
 }
 
-int cs_verify_block(const CSVolumeHeader* vh, const Byte* block, size_t nbytes)
+int cs_verify_block(const CSVolumeHeader* vh, const uint8_t* block, size_t nbytes)
 {
     if (vh->checksum_algo == 1) {
         const CSBlockHeader* bh  = (CSBlockHeader*)block;
@@ -64,8 +64,8 @@ int cs_verify_block(const CSVolumeHeader* vh, const Byte* block, size_t nbytes)
 int cs_get_volume_header(Volume* vol, CSVolumeHeader* header)
 {
     // TODO: Refactor to not use dynamic arrays.
-    size_t buf_size = sizeof(CSVolumeHeader);
-    Byte   buf[buf_size];
+    size_t  buf_size = sizeof(CSVolumeHeader);
+    uint8_t buf[buf_size];
 
     memset(&buf, 0, sizeof(buf));
 
@@ -78,7 +78,7 @@ int cs_get_volume_header(Volume* vol, CSVolumeHeader* header)
     return cs_verify_block(header, buf, buf_size);
 }
 
-ssize_t cs_get_metadata_block(Byte** buf, const Volume* vol, const CSVolumeHeader* header, unsigned block)
+ssize_t cs_get_metadata_block(uint8_t** buf, const Volume* vol, const CSVolumeHeader* header, unsigned block)
 {
     CSBlockHeader* bh       = NULL;
     size_t         buf_size = header->md_block_size;
@@ -225,7 +225,7 @@ int cs_dump(Volume* vol)
     char            _header[1024] = "";
     CSVolumeHeader* header        = (CSVolumeHeader*)&_header;
     size_t          block_size    = 0;
-    Byte*           buf           = NULL;
+    uint8_t*        buf           = NULL;
     out_ctx*        ctx           = vol->ctx;
 
     debug("CS dump");
@@ -278,9 +278,9 @@ int cs_dump(Volume* vol)
         }
 
         {
-            size_t  size   = header->md_size;
-            Byte*   block  = valloc(size);
-            ssize_t nbytes = vol_read(vol, block, size, block_number * header->md_block_size);
+            size_t   size   = header->md_size;
+            uint8_t* block  = valloc(size);
+            ssize_t  nbytes = vol_read(vol, block, size, block_number * header->md_block_size);
 
             if (nbytes) {
                 VisualizeData((char*)block, size);
@@ -305,7 +305,7 @@ int cs_dump(Volume* vol)
 void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh)
 {
     size_t   block_size   = vh->md_block_size;
-    Byte*    buf          = NULL;
+    uint8_t* buf          = NULL;
     ALLOC(buf, block_size);
     uint64_t block_number = vh->md_blocks[0];
     uint64_t total_blocks = (vh->physical_size / vh->md_block_size);

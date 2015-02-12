@@ -90,7 +90,7 @@ int hfs_attributes_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nod
     // Swap tree-specific structs in the records
     if ((node->nodeDescriptor->kind == kBTIndexNode) || (node->nodeDescriptor->kind == kBTLeafNode)) {
         for (int recNum = 0; recNum < node->recordCount; recNum++) {
-            Bytes           record = BTGetRecord(node, recNum);
+            uint8_t*        record = BTGetRecord(node, recNum);
             HFSPlusAttrKey* key    = (HFSPlusAttrKey*)record;
 
             swap_HFSPlusAttrKey(key);

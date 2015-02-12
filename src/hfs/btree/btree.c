@@ -101,10 +101,10 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
 
 bool BTIsBlockUsed(uint32_t thisAllocationBlock, void* allocationFileContents, size_t length)
 {
-    size_t idx      = (thisAllocationBlock / 8);
+    size_t  idx      = (thisAllocationBlock / 8);
     if (idx > length) return false;
 
-    Byte   thisByte = ((Bytes)allocationFileContents)[idx];
+    uint8_t thisByte = ((uint8_t*)allocationFileContents)[idx];
     return (thisByte & (1 << (7 - (thisAllocationBlock % 8)))) != 0;
 }
 
@@ -150,7 +150,7 @@ BTRecOffset BTGetRecordOffset(const BTreeNodePtr node, uint16_t recNum)
     return result;
 }
 
-Bytes BTGetRecord(const BTreeNodePtr node, uint16_t recNum)
+uint8_t* BTGetRecord(const BTreeNodePtr node, uint16_t recNum)
 {
     return (node->data + BTGetRecordOffset(node, recNum));
 }
@@ -171,7 +171,7 @@ uint16_t BTGetRecordKeyLength(const BTreeNodePtr node, uint16_t recNum)
     if ((nodeDesc->kind != kBTIndexNode) && (nodeDesc->kind != kBTLeafNode))
         return 0;
 
-    Bytes       record  = BTGetRecord(node, recNum);
+    uint8_t*    record  = BTGetRecord(node, recNum);
     BTRecOffset keySize = headerRecord.maxKeyLength;
     BTreeKey*   keyPtr  = (BTreeKey*)record;
 
@@ -315,7 +315,7 @@ void btree_free_node (BTreeNodePtr node)
     }
 }
 
-int btree_get_record(BTreeKeyPtr* key, Bytes* data, const BTreeNodePtr node, BTRecNum recordID)
+int btree_get_record(BTreeKeyPtr* key, uint8_t** data, const BTreeNodePtr node, BTRecNum recordID)
 {
     assert(key || data);
     assert(node);
@@ -323,7 +323,7 @@ int btree_get_record(BTreeKeyPtr* key, Bytes* data, const BTreeNodePtr node, BTR
 
     if (recordID >= node->recordCount) return -1;
 
-    Bytes       record  = BTGetRecord(node, recordID);
+    uint8_t*    record  = BTGetRecord(node, recordID);
     BTRecOffset keySize = BTGetRecordKeyLength(node, recordID);
 
     if (key != NULL)  *key = (BTreeKey*)record;
@@ -445,7 +445,7 @@ int btree_search(BTreeNodePtr* node, BTRecNum* recordID, const BTreePtr btree, c
         BTGetBTNodeRecord(&currentRecord, searchNode, searchIndex);
 
         BTreeKeyPtr  currentKey    = currentRecord.key;
-        Bytes        currentValue  = currentRecord.value;
+        uint8_t*     currentValue  = currentRecord.value;
 
         info("FOLLOWING RECORD %d from node %d", searchIndex, searchNode->nodeNumber);
 

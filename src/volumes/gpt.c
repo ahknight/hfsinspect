@@ -172,7 +172,7 @@ int _gpt_load_header(Volume* vol, GPTHeader* header_out, GPTPartitionRecord* ent
 
         // Read the partition array
         ALLOC(buf, length);
-        if ( vol_read(vol, (Bytes)buf, length, offset) < 0 )
+        if ( vol_read(vol, (uint8_t*)buf, length, offset) < 0 )
             return -1;
 
         // Verify the partition map.

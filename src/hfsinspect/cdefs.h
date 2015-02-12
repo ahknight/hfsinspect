@@ -13,7 +13,7 @@
 
 // Tired of typing this? Me too.
 #ifndef FOR_UNTIL
-#define FOR_UNTIL(var, end) for(int var = 0; var < end; var++)
+#define FOR_UNTIL(var, end) for(int var = 0; (var) < (end); var++)
 #endif
 
 // This, too.

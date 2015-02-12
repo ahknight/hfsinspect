@@ -59,7 +59,7 @@ void swap_BTHeaderRec(BTHeaderRec* record)
 
 int swap_BTreeNode(BTreeNodePtr node)
 {
-    Bytes          nodeData = node->data;
+    uint8_t*       nodeData = node->data;
     const BTreePtr bTree    = node->bTree;
 
     // *** Verify Node ***
@@ -124,7 +124,7 @@ int swap_BTreeNode(BTreeNodePtr node)
 
 
     for (int recordNum = 0; recordNum < numRecords; recordNum++) {
-        Bytes       record = BTGetRecord(node, recordNum);
+        uint8_t*    record = BTGetRecord(node, recordNum);
         BTreeKeyPtr key    = (BTreeKey*)(record);
         if (swapKeys) {
             Swap16( key->length16 );

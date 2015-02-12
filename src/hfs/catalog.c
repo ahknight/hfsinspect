@@ -98,7 +98,7 @@ int hfs_catalog_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodeid
     // Swap catalog-specific structs in the records
     if ((node->nodeDescriptor->kind == kBTIndexNode) || (node->nodeDescriptor->kind == kBTLeafNode)) {
         for (int recNum = 0; recNum < node->recordCount; recNum++) {
-            Bytes                 record        = NULL;
+            uint8_t*              record        = NULL;
             HFSPlusCatalogKey*    catalogKey    = NULL;
             BTRecOffset           keyLen        = 0;
             HFSPlusCatalogRecord* catalogRecord = NULL;
@@ -245,7 +245,7 @@ int HFSPlusGetCNIDName(wchar_t* name, FSSpec spec)
     debug("Found thread record %d:%d", node->nodeNumber, recordID);
 
     BTreeKeyPtr           recordKey    = NULL;
-    Bytes                 recordValue  = NULL;
+    uint8_t*              recordValue  = NULL;
     btree_get_record(&recordKey, &recordValue, node, recordID);
 
     HFSPlusCatalogThread* threadRecord = (HFSPlusCatalogThread*)recordValue;

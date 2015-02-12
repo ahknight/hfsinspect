@@ -637,12 +637,12 @@ OPEN:
         // Volume Header Blocks
         unsigned sectorCount = 16;
         size_t   readSize    = vol->sector_size*sectorCount;
-        Bytes    buf         = NULL;
+        uint8_t* buf         = NULL;
         int      nbytes      = 0;
 
         ALLOC(buf, readSize);
         assert(buf != NULL);
-        nbytes = vol_read(vol, (Bytes)buf, readSize, 0);
+        nbytes = vol_read(vol, (uint8_t*)buf, readSize, 0);
         if (nbytes < 0) die(0, "reading volume header");
 
         FILE* fp = fopen(headerPath, "w");
@@ -841,7 +841,7 @@ NOPE:
         if (showHex) {
             size_t length = options.tree->headerRecord.nodeSize;
             off_t  offset = length * options.node_id;
-            Bytes  buf    = NULL;
+            uint8_t*  buf    = NULL;
             ALLOC(buf, length);
             fpread(options.tree->fp, buf, length, offset);
             VisualizeData(buf, length);

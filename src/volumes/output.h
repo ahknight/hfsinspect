@@ -10,6 +10,7 @@
 #define volumes_output_h
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
 

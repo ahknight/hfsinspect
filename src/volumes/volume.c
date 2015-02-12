@@ -149,7 +149,7 @@ ssize_t vol_read (const Volume* vol, void* buf, size_t size, off_t offset)
 {
     size_t  start_block = 0, byte_offset = 0, block_count = 0;
     ssize_t read_blocks = 0;
-    Bytes   read_buffer = NULL;
+    uint8_t*   read_buffer = NULL;
 
     ASSERT_VOL(vol);
 

@@ -20,7 +20,7 @@ int hfs_load_mbd(Volume* vol, HFSMasterDirectoryBlock* mdb)
     // On IA32, using Clang, the swap function needs a little scratch space
     // so we read into a larger area, swap there, then copy out.
 
-    Bytes buf[200] = {0};
+    uint8_t* buf[200] = {0};
 
     if ( vol_read(vol, buf, sizeof(HFSMasterDirectoryBlock), 1024) < 0)
         return -1;
@@ -34,7 +34,7 @@ int hfs_load_mbd(Volume* vol, HFSMasterDirectoryBlock* mdb)
 
 int hfs_load_header(Volume* vol, HFSPlusVolumeHeader* vh)
 {
-    if ( vol_read(vol, (Bytes)vh, sizeof(HFSPlusVolumeHeader), 1024) < 0)
+    if ( vol_read(vol, (uint8_t*)vh, sizeof(HFSPlusVolumeHeader), 1024) < 0)
         return -1;
 
     swap_HFSPlusVolumeHeader(vh);

@@ -12,7 +12,6 @@
 #include <stdint.h>
 #include "hfs/Apple/hfs_types.h"
 
-typedef BytePtr Bytes;
 typedef char*   String;
 
 // For volume statistics

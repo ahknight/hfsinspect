@@ -21,7 +21,7 @@
 
 int mbr_load_header(Volume* vol, MBR* mbr)
 {
-    if ( vol_read(vol, (Bytes)mbr, sizeof(MBR), 0) < 0 )
+    if ( vol_read(vol, (uint8_t*)mbr, sizeof(MBR), 0) < 0 )
         return -1;
 
     return 0;

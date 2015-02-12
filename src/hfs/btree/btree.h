@@ -28,7 +28,6 @@ typedef char uuid_string_t[37];
 #define cmp(a, b) ((a) > (b) ? 1 : ((a) < (b) ? -1 : 0))
 #endif
 
-typedef BytePtr      Bytes;
 typedef BTreeKey*    BTreeKeyPtr;
 typedef uint16_t     BTRecOffset;
 typedef BTRecOffset* BTRecOffsetPtr;
@@ -75,7 +74,7 @@ struct _BTreeNode {
 
     union {
         BTNodeDescriptor* nodeDescriptor;      // This node's descriptor record
-        Bytes             data;                // Raw node data
+        uint8_t*          data;                // Raw node data
     };
 
     // Cached metadata
@@ -96,9 +95,9 @@ struct _BTNodeRecord {
     BTreePtr     bTree;
     BTreeNodePtr node;
     BTRecOffset  offset;
-    Bytes        record;
+    uint8_t*     record;
     BTreeKeyPtr  key;
-    Bytes        value;
+    uint8_t*     value;
     BTRecNum     recNum;
     uint16_t     recordLen;
     uint16_t     keyLen;
@@ -108,13 +107,13 @@ struct _BTNodeRecord {
 int  btree_init          (BTreePtr btree, FILE* fp) __attribute__((nonnull));
 int  btree_get_node      (BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeNumber) __attribute__((nonnull));
 void btree_free_node    (BTreeNodePtr node);
-int  btree_get_record    (BTreeKeyPtr* key, Bytes* data, const BTreeNodePtr node, BTRecNum recordID) __attribute__((nonnull(1,3)));
+int  btree_get_record    (BTreeKeyPtr* key, uint8_t** data, const BTreeNodePtr node, BTRecNum recordID) __attribute__((nonnull(1,3)));
 int  btree_walk          (const BTreePtr btree, const BTreeNodePtr node, btree_walk_func walker) __attribute__((nonnull));
 int  btree_search        (BTreeNodePtr* node, BTRecNum* recordID, const BTreePtr btree, const void* searchKey) __attribute__((nonnull));
 int  btree_search_node   (BTRecNum* index, const BTreePtr btree, const BTreeNodePtr node, const void* searchKey) __attribute__((nonnull));
 
 BTRecOffset BTGetRecordOffset       (const BTreeNodePtr node, uint16_t recNum) __attribute__((nonnull));
-Bytes       BTGetRecord             (const BTreeNodePtr node, uint16_t recNum) __attribute__((nonnull));
+uint8_t*    BTGetRecord             (const BTreeNodePtr node, uint16_t recNum) __attribute__((nonnull));
 uint16_t    BTGetRecordKeyLength    (const BTreeNodePtr node, uint16_t recNum) __attribute__((nonnull));
 int         BTGetBTNodeRecord       (BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum recNum) __attribute__((nonnull));
 

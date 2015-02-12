@@ -24,7 +24,7 @@ int hfs_get_hotfiles_btree(BTreePtr* tree, const HFS* hfs)
     if (cachedTree == NULL) {
         BTreeNodePtr node         = NULL;
         BTreeKeyPtr  recordKey    = NULL;
-        Bytes        recordValue  = NULL;
+        uint8_t*     recordValue  = NULL;
         HFSFork*     fork         = NULL;
         FILE*        fp           = NULL;
         BTRecNum     recordID     = 0;
@@ -84,7 +84,7 @@ int hfs_hotfiles_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodei
     // Swap catalog-specific structs in the records
 //    if (node->nodeDescriptor->kind == kBTIndexNode || node->nodeDescriptor->kind == kBTLeafNode) {
 //        for (int recNum = 0; recNum < node->recordCount; recNum++) {
-//            Bytes record = NULL;
+//            uint8_t* record = NULL;
 //
 //            // Get the raw record
 //            record = BTGetRecord(node, recNum);

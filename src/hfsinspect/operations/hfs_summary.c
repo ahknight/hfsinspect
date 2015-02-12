@@ -48,7 +48,7 @@ VolumeSummary generateVolumeSummary(HIOptions* options)
             summary.recordCount++;
 
             BTreeKeyPtr           recordKey   = NULL;
-            Bytes                 recordValue = NULL;
+            uint8_t*              recordValue = NULL;
             btree_get_record(&recordKey, &recordValue, node, recNum);
 
             HFSPlusCatalogRecord* record      = (HFSPlusCatalogRecord*)recordValue;

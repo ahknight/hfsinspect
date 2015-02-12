@@ -15,7 +15,7 @@ ssize_t extractFork(const HFSFork* fork, const String extractPath)
     FILE*    f_in          = NULL;
     off_t    offset        = 0;
     size_t   chunkSize     = 0;
-    Bytes    chunk         = NULL;
+    uint8_t* chunk         = NULL;
     ssize_t  nbytes        = 0;
     size_t   totalBytes    = 0;
     size_t   bytes         = 0;
