@@ -11,4 +11,6 @@ images/*.img
 tmp/
 xcuserdata
 *.xccheckout
+.deps
+*.cache
 
