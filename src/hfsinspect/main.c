@@ -666,7 +666,7 @@ OPEN:
             { options.hfs->vh.attributesFile,  kHFSAttributesFileID,   attributesPath},
         };
 
-        FOR_UNTIL(i, 5) {
+        for(int i = 0; i < 5; i++) {
             if (files[i].forkData.logicalSize < 1) continue;
 
             hfsfork_make(&fork, options.hfs, files[i].forkData, HFSDataForkType, files[i].cnid);

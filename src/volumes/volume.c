@@ -310,7 +310,7 @@ void vol_dump(Volume* vol)
 
     PrintUI(vol->ctx, vol, partition_count);
     if (vol->partition_count) {
-        FOR_UNTIL(i, vol->partition_count) {
+        for(int i = 0; i < vol->partition_count; i++) {
             if (vol->partitions[i] != NULL) {
                 BeginSection(vol->ctx, "Partition %u:", i+1);
                 vol_dump(vol->partitions[i]);

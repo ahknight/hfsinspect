@@ -43,8 +43,7 @@ VolumeSummary generateVolumeSummary(HIOptions* options)
         // Process node
         debug("Processing node %d", cnid); summary.nodeCount++;
 
-        FOR_UNTIL(recNum, node->nodeDescriptor->numRecords) {
-
+        for(int recNum = 0; recNum < node->nodeDescriptor->numRecords; recNum++) {
             summary.recordCount++;
 
             BTreeKeyPtr           recordKey   = NULL;

@@ -160,7 +160,7 @@ void PrintCSVolumeHeader(out_ctx* ctx, CSVolumeHeader* header)
     PrintUI         (ctx, header, md_count);
     PrintDataLength (ctx, header, md_block_size);
     PrintDataLength (ctx, header, md_size);
-    FOR_UNTIL(i, 8) {
+    for(int i = 0; i < 8; i++) {
         if (header->md_blocks[i]) {
             char title[50] = "";
             sprintf(title, "md_blocks[%u]", i);
@@ -239,7 +239,7 @@ int cs_dump(Volume* vol)
     block_size = header->md_block_size;
     ALLOC(buf, block_size);
 
-    FOR_UNTIL(i, header->md_count) {
+    for(int i = 0; i < header->md_count; i++) {
         uint64_t       block_number = header->md_blocks[i];
         ssize_t        bytes        = 0;
         CSBlockHeader* block_header = NULL;

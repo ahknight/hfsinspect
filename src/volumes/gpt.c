@@ -182,7 +182,7 @@ int _gpt_load_header(Volume* vol, GPTHeader* header_out, GPTPartitionRecord* ent
             debug("GPT partition map CRC OK!");
 
         // Iterate over the partitions and update the volume record
-        FOR_UNTIL(i, header.partitions_entry_count) {
+        for(int i = 0; i < header.partitions_entry_count; i++) {
             GPTPartitionEntry partition;
 
             // Grab the next partition structure
@@ -240,7 +240,7 @@ void PrintGPTPartitions(const GPTHeader* header_p, const GPTPartitionRecord* ent
     const char*   type     = NULL;
     out_ctx*      ctx      = vol->ctx;
 
-    FOR_UNTIL(i, header_p->partitions_entry_count) {
+    for(int i = 0; i < header_p->partitions_entry_count; i++) {
         GPTPartitionEntry partition = (*entries_p)[i];
 
         if ((partition.first_lba == 0) && (partition.last_lba == 0)) break;
@@ -311,7 +311,7 @@ int gpt_load(Volume* vol)
         return -1;
 
     // Iterate over the partitions and update the volume record
-    FOR_UNTIL(i, header.partitions_entry_count) {
+    for(int i = 0; i < header.partitions_entry_count; i++) {
         uuid_string_t      uuid_str    = "";
         uuid_t             uuid        = {0};
         wchar_t            wcname[100] = {'\0'};
@@ -343,7 +343,7 @@ int gpt_load(Volume* vol)
         const char* desc = _gpt_partition_type_str(uuid, &type);
         p->type = type;
 
-        FOR_UNTIL(j, j < 36 && partition->name[j] != '\0') {
+        for(int j = 0; j < 36 && partition->name[j] != '\0'; j++) {
             wcname[j] = partition->name[j];
         }
 

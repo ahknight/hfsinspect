@@ -46,7 +46,7 @@ int volumes_load(Volume* vol)
     }
 
     // Recursive load
-    FOR_UNTIL(i, vol->partition_count) {
+    for(int i = 0; i < vol->partition_count; i++) {
         info("Looking for nested partitions on partition %u", i);
         if ((vol->partitions[i] != NULL) && (vol->partitions[i]->type == kVolTypePartitionMap)) {
             debug("Trying to load nested partitions on partition %u", i);

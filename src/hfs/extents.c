@@ -210,8 +210,8 @@ bool hfs_extents_get_extentlist_for_fork(ExtentList* list, const HFSFork* fork)
 
         extentlist_add_record(list, record);
 
-        FOR_UNTIL(i, kHFSPlusExtentDensity)
-        blocks += record[i].blockCount;
+        for(int i = 0; i < kHFSPlusExtentDensity; i++)
+            blocks += record[i].blockCount;
 
         if (record[7].blockCount == 0)
             break;

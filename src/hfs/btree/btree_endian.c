@@ -92,7 +92,7 @@ int swap_BTreeNode(BTreeNodePtr node)
 
     uint16_t       numRecords = nodeDescriptor->numRecords;
     BTRecOffsetPtr offsets    = ((BTRecOffsetPtr)(node->data + node->nodeSize)) - numRecords - 1;
-    FOR_UNTIL(i, numRecords+1) Swap16(offsets[i]);
+    for(int i = 0; i < (numRecords+1); i++) Swap16(offsets[i]);
 
     // Validate offsets
     off_t          record_min = sizeof(BTNodeDescriptor);
@@ -100,7 +100,7 @@ int swap_BTreeNode(BTreeNodePtr node)
 
     {
         int prev = record_max;
-        FOR_UNTIL(i, numRecords) {
+        for(int i = 0; i < numRecords; i++) {
             BTRecOffset recOffset = offsets[i];
             if ((recOffset < record_min) || (recOffset > record_max)) {
                 warning("record %u points outside this node: %u (%jd, %jd)", i, recOffset, (intmax_t)record_min, (intmax_t)record_max);

@@ -153,7 +153,7 @@ Volume* hfs_find(Volume* vol)
     if ( (test) & (kFSTypeHFSPlus | kFSTypeWrappedHFSPlus)) {
         result = vol;
     } else if (vol->partition_count) {
-        FOR_UNTIL(i, vol->partition_count) {
+        for(int i = 0; i < vol->partition_count; i++) {
             if (vol->partitions[i] != NULL) {
                 result = hfs_find(vol->partitions[i]);
                 if (result != NULL)

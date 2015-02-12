@@ -18,7 +18,8 @@ int hfsuctowcs(hfs_wc_str output, const HFSUniStr255* input)
     int len = MIN(input->length, 255);
 
     // Copy the u16 to the wchar array
-    FOR_UNTIL(i, len) output[i] = input->unicode[i];
+    for(int i = 0; i < len; i++)
+        output[i] = input->unicode[i];
 
     // Terminate the output at the length
     output[len]                 = L'\0';

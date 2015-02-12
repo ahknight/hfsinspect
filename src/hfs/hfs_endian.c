@@ -22,7 +22,8 @@ void swap_HFSExtentDescriptor(HFSExtentDescriptor* record)
 
 void swap_HFSExtentRecord(HFSExtentRecord* record)
 {
-    FOR_UNTIL(i, kHFSExtentDensity) swap_HFSExtentDescriptor(record[i]);
+    for(int i = 0; i < kHFSExtentDensity; i++)
+        swap_HFSExtentDescriptor(record[i]);
 }
 
 void swap_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* record)
@@ -117,7 +118,8 @@ void swap_JournalInfoBlock(JournalInfoBlock* record)
        typedef struct JournalInfoBlock JournalInfoBlock;
      */
     Swap32(record->flags);
-    FOR_UNTIL(i, 8) Swap32(record->device_signature[i]);
+    for(int i = 0; i < 8; i++)
+        Swap32(record->device_signature[i]);
     Swap64(record->offset);
     Swap64(record->size);
     // noswap: uuid_string_t is a series of char
@@ -135,7 +137,8 @@ void swap_HFSPlusForkData(HFSPlusForkData* record)
 
 void swap_HFSPlusExtentRecord(HFSPlusExtentDescriptor record[])
 {
-    FOR_UNTIL(i, kHFSPlusExtentDensity) swap_HFSPlusExtentDescriptor(&record[i]);
+    for(int i = 0; i < kHFSPlusExtentDensity; i++)
+        swap_HFSPlusExtentDescriptor(&record[i]);
 }
 
 void swap_HFSPlusExtentDescriptor(HFSPlusExtentDescriptor* record)
@@ -157,7 +160,8 @@ void swap_HFSUniStr255(HFSUniStr255* unistr)
     if (unistr->length > 256) {
         warning("Invalid HFSUniStr255 length: %d", unistr->length);
     }
-    FOR_UNTIL(i, MIN(256, unistr->length)) Swap16(unistr->unicode[i]);
+    for(int i = 0; i < MIN(256, unistr->length); i++)
+        Swap16(unistr->unicode[i]);
 }
 
 void swap_HFSPlusAttrKey(HFSPlusAttrKey* record)
@@ -167,7 +171,7 @@ void swap_HFSPlusAttrKey(HFSPlusAttrKey* record)
     Swap32(record->fileID);
     Swap32(record->startBlock);
     Swap16(record->attrNameLen);
-    FOR_UNTIL(i, record->attrNameLen) Swap16(record->attrName[i]);
+    for(int i = 0; i < record->attrNameLen; i++) Swap16(record->attrName[i]);
 }
 
 void swap_HFSPlusAttrData(HFSPlusAttrData* record)
