@@ -45,7 +45,7 @@ int hfs_get_catalog_btree(BTreePtr* tree, const HFS* hfs)
 
         debug("Creating catalog B-Tree");
 
-        ALLOC(cachedTree, sizeof(struct _BTree));
+        SALLOC(cachedTree, sizeof(struct _BTree));
 
         if ( hfsfork_get_special(&fork, hfs, kHFSCatalogFileID) < 0 ) {
             critical("Could not create fork for Catalog B-Tree!");
@@ -361,7 +361,7 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord* out_ca
         if (out_catalogRecord != NULL) *out_catalogRecord = catalogRecord;
     }
 
-    FREE(dup_path);
+    SFREE(dup_path);
 
     debug("found: %u", found);
     return (found ? 0 : -1);

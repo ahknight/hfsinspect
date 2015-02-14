@@ -45,7 +45,7 @@ int hfs_get_hotfiles_btree(BTreePtr* tree, const HFS* hfs)
         if ( hfsfork_make(&fork, hfs, record->catalogFile.dataFork, 0x00, record->catalogFile.fileID) < 0 )
             return -1;
 
-        ALLOC(cachedTree, sizeof(struct _BTree));
+        SALLOC(cachedTree, sizeof(struct _BTree));
 
         fp = fopen_hfsfork(fork);
         if (fp == NULL) return -1;

@@ -44,7 +44,7 @@ ssize_t extractFork(const HFSFork* fork, const char* extractPath)
     format_size(ctx, totalStr, totalBytes, 100);
     format_size(ctx, bytesStr, bytes, 100);
 
-    ALLOC(chunk, chunkSize);
+    SALLOC(chunk, chunkSize);
 
     do {
         if ( (nbytes = fread(chunk, 1, chunkSize, f_in)) > 0) {
@@ -59,7 +59,7 @@ ssize_t extractFork(const HFSFork* fork, const char* extractPath)
         }
     } while (nbytes > 0);
 
-    FREE(chunk);
+    SFREE(chunk);
 
     fflush(f_out);
     fclose(f_out);
@@ -85,7 +85,7 @@ void extractHFSPlusCatalogFile(const HFS* hfs, const HFSPlusCatalogFile* file, c
     }
     if (file->resourceFork.logicalSize > 0) {
         char*   outputPath = NULL;
-        ALLOC(outputPath, FILENAME_MAX);
+        SALLOC(outputPath, FILENAME_MAX);
         ssize_t size;
         size = strlcpy(outputPath, extractPath, sizeof(outputPath));
         if (size < 1) die(1, "Could not create destination filename.");
@@ -101,7 +101,7 @@ void extractHFSPlusCatalogFile(const HFS* hfs, const HFSPlusCatalogFile* file, c
 
         hfsfork_free(fork);
 
-        FREE(outputPath);
+        SFREE(outputPath);
     }
     // TODO: Merge forks, set attributes ... essentially copy it. Maybe extract in AppleSingle/Double/MacBinary format?
 }

@@ -1,8 +1,7 @@
 # Lovingly crafted by hand.
 
-# Some defaults.  Feel free to override them via environment vars.
-CFLAGS = -g -O2 -Wall
-LDFLAGS =
+# Some defaults.  Feel free to override them.
+CFLAGS += -g -O0 -Wall
 PREFIX = /usr/local
 
 # ------------ Systems and Platforms ------------
@@ -19,10 +18,10 @@ ifeq ($(CC), cc)
 	CLANG_PATH = $(shell which clang)
 	GCC_PATH = $(shell which gcc)
 	ifdef CLANG_PATH
-		CC = $(CLANG_PATH)
+		CC = clang
 	else
 		ifdef GCC_PATH
-			CC = $(GCC_PATH)
+			CC = gcc
 		endif
 	endif
 endif
@@ -30,8 +29,7 @@ endif
 # Linux needs some love.
 ifeq ($(OS), Linux)
 sys_CFLAGS += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_ISOC11_SOURCE
-LIBS += $(shell pkg-config --libs libbsd-overlay uuid)
-LIBS += -lm
+LIBS += -lm $(shell pkg-config --libs libbsd-overlay uuid)
 endif
 
 # Our GCC options.
@@ -41,14 +39,23 @@ endif
 
 # Our clang options.
 ifeq ($(CC), clang)
+sys_CFLAGS += -fstack-protector-all -fstrict-enums -ftrapv
+# Clang 3.5.1
+# sys_CFLAGS += -fsanitize=undefined -fsanitize=address -fsanitize=local-bounds -fsanitize-memory-track-origins
+# Warnings
 sys_CFLAGS += -Wpedantic -Wno-four-char-constants
 endif
 
+# General options
+ifeq ($(USEGC), 1)
+sys_CFLAGS += -DGC_ENABLED
+LIBS += -lgc
+endif
 
 # ------------ hfsinspect ------------
 
 # Required CFLAGS
-bin_CFLAGS = -std=c1x -msse4.2 -Isrc -Isrc/vendor -Isrc/vendor/crc-32c
+bin_CFLAGS = -std=c1x -msse4.2 -include src/cdefs.h -Isrc -Isrc/vendor -Isrc/vendor/crc-32c
 
 PRODUCTNAME = hfsinspect
 BUILDDIR = build/$(OS)-$(MACHINE)
@@ -78,8 +85,9 @@ ALL_LDFLAGS = $(LDFLAGS)
 .PHONY: all everything clean distclean pretty depend docs install uninstall test clean-hfsinspect clean-test clean-docs
 
 all: depend $(BINARYPATH)
-
-everything: $(BINARYPATH) docs
+#	 @echo "Compiled and linked with: $(CC)/$(ALL_CFLAGS)/$(ALL_LDFLAGS)/$(LIBS)/"
+	
+everything: all docs
 
 clean: clean-hfsinspect
 
@@ -102,12 +110,12 @@ depend: .depend
 $(OBJDIR)/%.o : src/%.c
 	@echo Compiling $<
 	@mkdir -p `dirname $@`
-	@$(CC) $(ALL_CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(BINARYPATH): $(OBJFILES)
 	@echo "Building hfsinspect."
 	@mkdir -p `dirname $(BINARYPATH)`
-	@$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) -o $(BINARYPATH) $^ $(LIBS)
+	$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) -o $(BINARYPATH) $^ $(LIBS)
 	@echo "=> $(BINARYPATH)"
 
 docs:

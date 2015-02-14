@@ -20,7 +20,6 @@
 
 #include "output.h"
 
-#include "hfsinspect/cdefs.h"
 #include "hfsinspect/stringtools.h"
 #include "logging/logging.h"    // console printing routines
 #include "memdmp/memdmp.h"
@@ -145,7 +144,7 @@ void _PrintRawAttribute(out_ctx* ctx, const char* label, const void* map, size_t
     msize = format_dump(ctx, NULL, map, base, nbytes, 0);
     if (msize < 0) { perror("format_dump"); return; }
     msize++; // NULL terminator
-    ALLOC(str, msize);
+    SALLOC(str, msize);
 
     if ( (len = format_dump(ctx, str, map, base, nbytes, msize)) < 0 ) {
         warning("format_dump failed!");
@@ -162,7 +161,7 @@ void _PrintRawAttribute(out_ctx* ctx, const char* label, const void* map, size_t
         if (i == 0) label = "";
     }
 
-    FREE(str);
+    SFREE(str);
 }
 
 int _PrintUIChar(out_ctx* ctx, const char* label, const char* i, size_t nbytes)

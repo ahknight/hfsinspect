@@ -27,7 +27,7 @@
 ExtentList* extentlist_make(void)
 {
     ExtentList* retval = NULL;
-    ALLOC(retval, sizeof(ExtentList));
+    SALLOC(retval, sizeof(ExtentList));
     retval->tqh_first = NULL;
     retval->tqh_last  = &retval->tqh_first; // Ensure this is pointing to the value on the heap, not the stack.
     TAILQ_INIT(retval);
@@ -39,7 +39,7 @@ void extentlist_add(ExtentList* list, size_t startBlock, size_t blockCount)
     if (blockCount == 0) return;
 
     Extent* newExtent = NULL;
-    ALLOC(newExtent, sizeof(Extent));
+    SALLOC(newExtent, sizeof(Extent));
     newExtent->startBlock = startBlock;
     newExtent->blockCount = blockCount;
 
@@ -53,7 +53,7 @@ void extentlist_add(ExtentList* list, size_t startBlock, size_t blockCount)
 //        if (existingExtent != NULL && existingExtent->startBlock == startBlock) {
 //            // Updating an entry.  Must recalc logical starts later.
 //            TAILQ_REMOVE(list, existingExtent, extents);
-//            free(existingExtent);
+//            SFREE(existingExtent);
 //            existingExtent = NULL;
 //            break;
 //        }
@@ -122,8 +122,8 @@ void extentlist_free(ExtentList* list)
     Extent* e = NULL;
     while ( (e = TAILQ_FIRST(list)) ) {
         TAILQ_REMOVE(list, e, extents);
-        FREE(e);
+        SFREE(e);
     }
-    FREE(list);
+    SFREE(list);
 }
 

@@ -14,13 +14,6 @@
 #include <search.h>     // tfind/insque
 #include <sys/param.h>  // MIN
 
-#if defined(__linux__)
-    #include <malloc.h>
-    #define malloc_size malloc_usable_size
-#else
-    #include <malloc/malloc.h>      // malloc_size
-#endif
-
 
 typedef struct CacheRecord CacheRecord;
 typedef CacheRecord*       CacheRecordPtr;
@@ -85,7 +78,7 @@ CacheRecordPtr cache_record_new_(Cache cache)
     if (cache == NULL) return NULL;
 
     // Create and insert a new record.
-    CacheRecordPtr record = calloc(sizeof(CacheRecord), 1);
+    CacheRecordPtr record = ALLOC(sizeof(CacheRecord));
     if (record == NULL) return NULL;
 
     insque(record, cache->records);
@@ -115,7 +108,7 @@ int cache_record_remove_(Cache cache, CacheRecordPtr* r)
 
     CacheRecordPtr record = *r;
 
-    if (malloc_size(record) > 0) {
+    if (record != NULL) {
         if (cache->record_count > 0) cache->record_count--;
 
         if (tfind(record, &cache->index, key_compare) != NULL)
@@ -123,13 +116,13 @@ int cache_record_remove_(Cache cache, CacheRecordPtr* r)
 
         remque(record);
 
-        if (malloc_size(record->data) > 0) {
-            memset(record->data, 0, malloc_size(record->data));
-            free(record->data);
+        if (record->data != NULL) {
+            memset(record->data, 0, record->datalen);
+            SFREE(record->data);
         }
 
-        memset(record, 0, malloc_size(record));
-        free(record);
+        memset(record, 0, sizeof(CacheRecord));
+        SFREE(record);
 
         *r = NULL;
     }
@@ -143,13 +136,13 @@ int cache_init(Cache* cache, uint64_t num_records)
 {
     ASSERT_PTR(cache);
 
-    *cache          = calloc(sizeof(struct _Cache), 1);
+    *cache          = ALLOC(sizeof(struct _Cache));
     if (*cache == NULL) return -1;
 
     Cache c = *cache;
     c->max_records  = num_records;
     c->record_count = 0;
-    c->records      = calloc(sizeof(CacheRecord), 1);
+    c->records      = ALLOC(sizeof(CacheRecord));
 
     return 0;
 }
@@ -167,7 +160,7 @@ void cache_destroy(Cache cache)
 
     cache_record_remove_(cache, &cache->records);
 
-    free(cache);
+    SFREE(cache);
 }
 
 int cache_get(Cache cache, char* buf, size_t len, ckey_t key)
@@ -205,11 +198,11 @@ int cache_set(Cache cache, const char* buf, size_t len, ckey_t key)
 
     record->key     = key;
     record->datalen = len;
-    if ( (record->data = calloc(record->datalen, 1)) == NULL) { free(record); goto ERROR; }
+    if ( (record->data = ALLOC(record->datalen)) == NULL) { SFREE(record); goto ERROR; }
     memcpy(record->data, buf, record->datalen);
 
     void* ref = NULL;
-    if ( (ref = tsearch(record, &cache->index, key_compare)) == NULL ) { free(record->data); free(record); goto ERROR; }
+    if ( (ref = tsearch(record, &cache->index, key_compare)) == NULL ) { SFREE(record->data); SFREE(record); goto ERROR; }
 
     return 0;
 

@@ -13,7 +13,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include "hfsinspect/cdefs.h"
 #include "cache.h"
 
 #ifndef _UUID_STRING_T
@@ -83,7 +82,7 @@ struct _BTreeNode {
     off_t       nodeOffset;                 // Byte offset within the tree file (nodeNumber * nodeSize)
 
     // Data
-    size_t      dataLen;                    // Length of buffer (should generally be the node size, but is always the malloc_size)
+    size_t      dataLen;                    // Length of buffer (should generally be the node size)
     uint32_t    recordCount;
 //    char                *records __deprecated;
 };

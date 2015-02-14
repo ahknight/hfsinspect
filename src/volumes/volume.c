@@ -112,7 +112,7 @@ int vol_open(Volume* vol, const char* path, int mode, off_t offset, size_t lengt
 
     // Setup the output context
     out_ctx* ctx = NULL;
-    ALLOC(ctx, sizeof(out_ctx));
+    SALLOC(ctx, sizeof(out_ctx));
     *ctx     = OCMake(0, 2, "volume");
     vol->ctx = ctx;
 
@@ -122,10 +122,10 @@ int vol_open(Volume* vol, const char* path, int mode, off_t offset, size_t lengt
 Volume* vol_qopen(const char* path)
 {
     Volume* vol = NULL;
-    ALLOC(vol, sizeof(Volume));
+    SALLOC(vol, sizeof(Volume));
 
     if ( vol_open(vol, path, O_RDONLY, 0, 0, 0) < 0 ) {
-        FREE(vol);
+        SFREE(vol);
         // perror("vol_open");
         return NULL;
     }
@@ -175,7 +175,7 @@ ssize_t vol_read (const Volume* vol, void* buf, size_t size, off_t offset)
     block_count = (size / vol->sector_size) + ( ((offset + size) % vol->sector_size) ? 1 : 0);
 
     // Use the calculated size instead of the passed size to account for block alignment.
-    ALLOC(read_buffer, block_count * vol->sector_size);
+    SALLOC(read_buffer, block_count * vol->sector_size);
 
     // The range starts somewhere in this block.
     start_block = (size_t)(offset / vol->sector_size);
@@ -194,7 +194,7 @@ ssize_t vol_read (const Volume* vol, void* buf, size_t size, off_t offset)
     if (read_blocks) memcpy(buf, read_buffer + byte_offset, size);
 
     // Clean up.
-    FREE(read_buffer);
+    SFREE(read_buffer);
 
     // The amount we added to the buffer.
     return size;
@@ -217,7 +217,7 @@ int vol_close(Volume* vol)
     }
 
     fd = vol->fd;
-    FREE(vol);
+    SFREE(vol);
 
     if ( (result = close(fd)) < 0)
         perror("close");
@@ -230,15 +230,15 @@ Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t lengt
     { if ((vol == NULL) || (vol->fp == NULL)) { errno = EINVAL; return NULL; } }
 
     Volume* newvol = NULL;
-    ALLOC(newvol, sizeof(Volume));
+    SALLOC(newvol, sizeof(Volume));
 
     if( (newvol->fd = dup(vol->fd)) < 0) {
-        FREE(newvol);
+        SFREE(newvol);
         perror("dup");
         return NULL;
     }
     if( (newvol->fp = fdopen(vol->fd, "r")) == NULL) {
-        FREE(newvol);
+        SFREE(newvol);
         perror("fdopen");
         return NULL;
     }

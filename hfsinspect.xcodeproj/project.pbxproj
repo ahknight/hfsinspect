@@ -64,8 +64,6 @@
 
 /* Begin PBXFileReference section */
 		9B682FA61A867EE8000E8995 /* hfs_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_types.h; sourceTree = "<group>"; };
-		9B711846184D62A8008B9DB2 /* Makefile.Darwin */ = {isa = PBXFileReference; lastKnownFileType = text; path = Makefile.Darwin; sourceTree = "<group>"; };
-		9B711847184D62A8008B9DB2 /* Makefile.Linux */ = {isa = PBXFileReference; lastKnownFileType = text; path = Makefile.Linux; sourceTree = "<group>"; };
 		9B9F2001184B27AC005D7271 /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = SOURCE_ROOT; };
 		9BAC71F1182D48F80001A1A3 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = SOURCE_ROOT; };
 		9BB421F61A7DEFCD000E8995 /* APPLE_LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = APPLE_LICENSE; sourceTree = "<group>"; };
@@ -351,8 +349,6 @@
 			children = (
 				9BAC71F1182D48F80001A1A3 /* README.md */,
 				9B9F2001184B27AC005D7271 /* Makefile */,
-				9B711846184D62A8008B9DB2 /* Makefile.Darwin */,
-				9B711847184D62A8008B9DB2 /* Makefile.Linux */,
 				9BB422131A7DEFCD000E8995 /* hfsinspect */,
 				9BB421F41A7DEFCD000E8995 /* hfs */,
 				9BB4222A1A7DEFCD000E8995 /* hfsplus */,

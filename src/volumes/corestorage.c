@@ -9,16 +9,9 @@
 
 #include <string.h>             // memcpy, strXXX, etc.
 
-#if defined(__linux__)
-    #include <malloc.h>
-    #define malloc_size malloc_usable_size
-#else
-    #include <malloc/malloc.h>      // malloc_size
-#endif
-
 #include "volumes/corestorage.h"
-
 #include "volumes/output.h"
+
 #include "hfsinspect/stringtools.h"
 
 #include "crc32c/crc32c.h"
@@ -95,13 +88,7 @@ READ:
 
     if (bh->block_size > buf_size) {
         buf_size = bh->block_size;
-        if (malloc_size(*buf) < buf_size) {
-            *buf = realloc(*buf, buf_size);
-            if (*buf == NULL) {
-                perror("realloc");
-                abort();
-            }
-        }
+        SREALLOC(buf, buf_size);
         goto READ;
     }
 
@@ -237,7 +224,7 @@ int cs_dump(Volume* vol)
     PrintCSVolumeHeader(ctx, header);
 
     block_size = header->md_block_size;
-    ALLOC(buf, block_size);
+    SALLOC(buf, block_size);
 
     for(int i = 0; i < header->md_count; i++) {
         uint64_t       block_number = header->md_blocks[i];
@@ -246,7 +233,7 @@ int cs_dump(Volume* vol)
 
         if (block_number == 0) continue;
 
-        memset(buf, 0, malloc_size(buf));
+        memset(buf, 0, block_size);
         bytes        = cs_get_metadata_block(&buf, vol, header, block_number);
 
         if (bytes < 0) continue;
@@ -279,7 +266,7 @@ int cs_dump(Volume* vol)
 
         {
             size_t   size   = header->md_size;
-            uint8_t* block  = valloc(size);
+            uint8_t* block  = ALLOC(size);
             ssize_t  nbytes = vol_read(vol, block, size, block_number * header->md_block_size);
 
             if (nbytes) {
@@ -290,7 +277,7 @@ int cs_dump(Volume* vol)
         EndSection(ctx);
     }
 
-    FREE(buf);
+    SFREE(buf);
 
 //    BeginSection(ctx, "Block Dump");
 //    cs_dump_all_blocks(vol, header);
@@ -306,13 +293,14 @@ void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh)
 {
     size_t   block_size   = vh->md_block_size;
     uint8_t* buf          = NULL;
-    ALLOC(buf, block_size);
     uint64_t block_number = vh->md_blocks[0];
     uint64_t total_blocks = (vh->physical_size / vh->md_block_size);
     out_ctx* ctx          = vol->ctx;
 
+    SALLOC(buf, block_size);
+
     for (; block_number < total_blocks; block_number++) {
-        memset(buf, 0, malloc_size(buf));
+        memset(buf, 0, block_size);
 
         ssize_t bytes = cs_get_metadata_block(&buf, vol, vh, block_number);
         if (bytes < 0) {
@@ -348,7 +336,7 @@ void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh)
         EndSection(ctx);
     }
 
-    FREE(buf);
+    SFREE(buf);
 }
 
 PartitionOps cs_ops = {

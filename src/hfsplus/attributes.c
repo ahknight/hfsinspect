@@ -31,7 +31,7 @@ int hfs_get_attribute_btree(BTreePtr* tree, const HFS* hfs)
 
         debug("Creating attribute B-Tree");
 
-        ALLOC(cachedTree, sizeof(struct _BTree));
+        SALLOC(cachedTree, sizeof(struct _BTree));
 
         if ( hfsfork_get_special(&fork, hfs, kHFSAttributesFileID) < 0 ) {
             critical("Could not create fork for Attributes B-Tree!");

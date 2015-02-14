@@ -17,21 +17,21 @@ void showFreeSpace(HIOptions* options)
         die(1, "Couldn't get a reference to the volume allocation file.");
 
     char*    data = NULL;
-    ALLOC(data, fork->logicalSize);
+    SALLOC(data, fork->logicalSize);
     {
         size_t  block_size = 128*1024, offset = 0;
         ssize_t bytes      = 0;
         void*   block      = NULL;
-        ALLOC(block, block_size);
+        SALLOC(block, block_size);
         while ( (bytes = hfs_read_fork_range(block, fork, block_size, offset)) > 0 ) {
             memcpy(data+offset, block, bytes);
             offset += bytes;
             if (offset >= fork->logicalSize) break;
         }
-        FREE(block);
+        SFREE(block);
 
         if (offset == 0) {
-            FREE(data);
+            SFREE(data);
 
             // We didn't read anything.
             if (bytes < 0) {
@@ -84,7 +84,7 @@ void showFreeSpace(HIOptions* options)
     _PrintHFSBlocks(ctx, "Total Blocks", total_used + total_free);
     EndSection(ctx);
 
-    FREE(data);
+    SFREE(data);
     hfsfork_free(fork);
 }
 

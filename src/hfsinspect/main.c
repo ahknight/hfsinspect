@@ -252,7 +252,11 @@ int main (int argc, char* const* argv)
     bool      use_decimal = false;
     HIOptions options     = {0};
 
-    ALLOC(options.hfs, sizeof(struct HFS));
+#if defined(GC_ENABLED)         // GC_ENABLED
+    GC_INIT();
+#endif                          // GC_ENABLED
+
+    SALLOC(options.hfs, sizeof(struct HFS));
 
     (void)strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
 
@@ -417,14 +421,15 @@ int main (int argc, char* const* argv)
                 memset(&options.record_filename, 0, sizeof(options.record_filename));
                 options.record_parent = 0;
 
-                char* option   = strdup(optarg);
+                char* option, *tofree;
+                option = tofree = strdup(optarg);
                 char* parent   = strsep(&option, ":");
                 char* filename = strsep(&option, ":");
 
                 if (parent && strlen(parent)) sscanf(parent, "%u", &options.record_parent);
                 if (filename) (void)strlcpy(options.record_filename, filename, PATH_MAX);
 
-                FREE(option);
+                SFREE(tofree);
 
                 if ((options.record_filename == NULL) || (options.record_parent == 0)) fatal("option -F/--fsspec requires a parent ID and file (eg. 2:.journal)");
 
@@ -512,12 +517,12 @@ OPEN:
             // If the device is busy, see if we can use the raw disk instead (and aren't already).
             if (strstr(options.device_path, "/dev/disk") != NULL) {
                 char* newDevicePath = NULL;
-                ALLOC(newDevicePath, PATH_MAX + 1);
+                SALLOC(newDevicePath, PATH_MAX + 1);
                 (void)strlcat(newDevicePath, "/dev/rdisk", PATH_MAX);
                 (void)strlcat(newDevicePath, &options.device_path[9], PATH_MAX);
                 info("Device %s busy. Trying the raw disk instead: %s", options.device_path, newDevicePath);
                 (void)strlcpy(options.device_path, newDevicePath, PATH_MAX);
-                FREE(newDevicePath);
+                SFREE(newDevicePath);
                 goto OPEN;
             }
             die(errno, "vol_qopen");
@@ -573,7 +578,7 @@ OPEN:
 
         uid = dirstat.st_uid;
         gid = dirstat.st_gid;
-        FREE(dir);
+        SFREE(dir);
     }
 
 #pragma mark Drop Permissions
@@ -640,7 +645,7 @@ OPEN:
         uint8_t* buf         = NULL;
         int      nbytes      = 0;
 
-        ALLOC(buf, readSize);
+        SALLOC(buf, readSize);
         assert(buf != NULL);
         nbytes = vol_read(vol, (uint8_t*)buf, readSize, 0);
         if (nbytes < 0) die(0, "reading volume header");
@@ -842,10 +847,10 @@ NOPE:
             size_t   length = options.tree->headerRecord.nodeSize;
             off_t    offset = length * options.node_id;
             uint8_t* buf    = NULL;
-            ALLOC(buf, length);
+            SALLOC(buf, length);
             fpread(options.tree->fp, buf, length, offset);
             VisualizeData(buf, length);
-            FREE(buf);
+            SFREE(buf);
 
         } else {
             PrintTreeNode(ctx, options.tree, options.node_id);

@@ -22,7 +22,7 @@ int hfsuctowcs(hfs_wc_str output, const HFSUniStr255* input)
         output[i] = input->unicode[i];
 
     // Terminate the output at the length
-    output[len]                 = L'\0';
+    output[len] = L'\0';
 
     // Replace the catalog version with a printable version.
     if ( wcscmp(output, HFSPlusMetadataFolder) == 0 )
@@ -56,7 +56,7 @@ HFSUniStr255 strtohfsuc(const char* input)
 {
     HFSUniStr255 output          = {0};
     wchar_t*     wide            = NULL;
-    ALLOC(wide, 256 * sizeof(wchar_t));
+    SALLOC(wide, 256 * sizeof(wchar_t));
 
     size_t       char_count      = strlen(input);
     size_t       wide_char_count = mbstowcs(wide, input, 255);
@@ -65,7 +65,7 @@ HFSUniStr255 strtohfsuc(const char* input)
     if (char_count != wide_char_count) {
         error("Conversion error: mbstowcs returned a string of a different length than the input: %zd in; %zd out", char_count, wide_char_count);
     }
-    FREE(wide);
+    SFREE(wide);
 
     return output;
 }

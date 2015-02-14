@@ -104,16 +104,16 @@ int hfs_seekfn(void* c, off_t* p, int mode)
 int hfs_closefn(void* c)
 {
     HFSVolumeCookie* cookie = (HFSVolumeCookie*)c;
-    FREE(cookie->hfs);
-    FREE(cookie);
+    SFREE(cookie->hfs);
+    SFREE(cookie);
     return 0;
 }
 
 FILE* fopen_hfs(HFS* hfs)
 {
     HFSVolumeCookie* cookie = NULL;
-    ALLOC(cookie, sizeof(HFSVolumeCookie));
-    ALLOC(cookie->hfs, sizeof(HFS));
+    SALLOC(cookie, sizeof(HFSVolumeCookie));
+    SALLOC(cookie->hfs, sizeof(HFS));
     *cookie->hfs = *hfs; // copy
 
 #if defined(BSD)
@@ -213,7 +213,7 @@ int hfsfork_make (HFSFork** fork, const HFS* hfs, const HFSPlusForkData forkData
     ASSERT_PTR(hfs);
 
     HFSFork* f = NULL;
-    ALLOC(f, sizeof(HFSFork));
+    SALLOC(f, sizeof(HFSFork));
 
     f->hfs         = (HFS*)hfs;
     f->forkData    = forkData;
@@ -225,7 +225,7 @@ int hfsfork_make (HFSFork** fork, const HFS* hfs, const HFSPlusForkData forkData
     f->extents     = extentlist_make();
     if ( hfs_extents_get_extentlist_for_fork(f->extents, f) == false) {
         critical("Failed to get extents for new fork!");
-        FREE(f);
+        SFREE(f);
         return -1;
     }
 
@@ -237,7 +237,7 @@ int hfsfork_make (HFSFork** fork, const HFS* hfs, const HFSPlusForkData forkData
 void hfsfork_free(HFSFork* fork)
 {
     extentlist_free(fork->extents);
-    FREE(fork);
+    SFREE(fork);
 }
 
 ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, size_t start_block)
@@ -270,7 +270,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, siz
     }
 
     char*       read_buffer = NULL;
-    ALLOC(read_buffer, block_count * fork->hfs->block_size);
+    SALLOC(read_buffer, block_count * fork->hfs->block_size);
     ExtentList* extentList  = fork->extents;
 
     // Keep track of what's left to get
@@ -303,7 +303,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, siz
 
         ssize_t blocks = hfs_read_blocks(read_buffer, fork->hfs, read_range.count, read_range.start);
         if (blocks < 0) {
-            FREE(read_buffer);
+            SFREE(read_buffer);
             perror("read fork");
             critical("Read error.");
             return -1;
@@ -316,7 +316,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, siz
     }
 
     memcpy(buffer, read_buffer, MIN(block_count, request.count) * fork->hfs->block_size);
-    FREE(read_buffer);
+    SFREE(read_buffer);
 
     return request.count;
 }
@@ -357,7 +357,7 @@ ssize_t hfs_read_fork_range(void* buffer, const HFSFork* fork, size_t size, size
     block_count = (size / fork->hfs->block_size) + ( ((offset + size) % fork->hfs->block_size) ? 1 : 0);
 
     // Use the calculated size instead of the passed size to account for block alignment.
-    ALLOC(read_buffer, block_count * fork->hfs->block_size);
+    SALLOC(read_buffer, block_count * fork->hfs->block_size);
 
     // Fetch the data into a read buffer (it may fail).
     read_blocks = hfs_read_fork(read_buffer, fork, block_count, start_block);
@@ -368,7 +368,7 @@ ssize_t hfs_read_fork_range(void* buffer, const HFSFork* fork, size_t size, size
     }
 
     // Clean up.
-    FREE(read_buffer);
+    SFREE(read_buffer);
 
     // The amount we added to the buffer.
     return size;
@@ -417,7 +417,7 @@ int fork_seekfn(void* c, off_t* p, int mode)
         case SEEK_END:
         {
             pos = (cookie->fork->logicalSize - pos);
-
+            break;
         }
 
         default:
@@ -438,16 +438,16 @@ int fork_seekfn(void* c, off_t* p, int mode)
 int fork_closefn(void* c)
 {
     HFSForkCookie* cookie = (HFSForkCookie*)c;
-    FREE(cookie->fork);
-    FREE(cookie);
+    SFREE(cookie->fork);
+    SFREE(cookie);
     return 0;
 }
 
 FILE* fopen_hfsfork(HFSFork* fork)
 {
     HFSForkCookie* cookie = NULL;
-    ALLOC(cookie, sizeof(HFSForkCookie));
-    ALLOC(cookie->fork, sizeof(HFSFork));
+    SALLOC(cookie, sizeof(HFSForkCookie));
+    SALLOC(cookie->fork, sizeof(HFSFork));
     *cookie->fork = *fork; // copy
 
 #if defined(BSD)

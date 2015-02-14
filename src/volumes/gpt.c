@@ -171,7 +171,7 @@ int _gpt_load_header(Volume* vol, GPTHeader* header_out, GPTPartitionRecord* ent
         length = header.partitions_entry_count * header.partitions_entry_size;
 
         // Read the partition array
-        ALLOC(buf, length);
+        SALLOC(buf, length);
         if ( vol_read(vol, (uint8_t*)buf, length, offset) < 0 )
             return -1;
 
@@ -195,7 +195,7 @@ int _gpt_load_header(Volume* vol, GPTHeader* header_out, GPTPartitionRecord* ent
         }
 
         // Clean up
-        FREE(buf);
+        SFREE(buf);
 
         if (entries_out != NULL) memcpy(*entries_out, entries, sizeof(entries));
     }

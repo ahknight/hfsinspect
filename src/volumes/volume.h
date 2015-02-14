@@ -18,7 +18,6 @@
 typedef struct Volume       Volume;
 typedef struct PartitionOps PartitionOps;
 
-#include "hfsinspect/cdefs.h"
 #include "hfs/types.h"
 
 #pragma mark - Structures

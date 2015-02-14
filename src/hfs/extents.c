@@ -31,7 +31,7 @@ int hfs_get_extents_btree(BTreePtr* tree, const HFS* hfs)
     if (cachedTree == NULL) {
         debug("Creating extents B-Tree");
 
-        ALLOC(cachedTree, sizeof(struct _BTree));
+        SALLOC(cachedTree, sizeof(struct _BTree));
 
         HFSFork* fork;
         if ( hfsfork_get_special(&fork, hfs, kHFSExtentsFileID) < 0 ) {

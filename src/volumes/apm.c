@@ -77,7 +77,7 @@ int apm_test(Volume* vol)
 
     debug("APM test");
 
-    ALLOC(buf, 4096);
+    SALLOC(buf, 4096);
 
     if ( vol_read(vol, buf, 4096, 0) < 0 )
         return -1;
@@ -110,7 +110,7 @@ int apm_dump(Volume* vol)
 
     debug("APM dump");
 
-    ALLOC(header, sizeof(APMHeader));
+    SALLOC(header, sizeof(APMHeader));
 
     BeginSection(ctx, "Apple Partition Map");
 
@@ -118,7 +118,7 @@ int apm_dump(Volume* vol)
         char str[33] = "";
 
         if (apm_get_header(vol, header, partitionID) == -1) {
-            FREE(header);
+            SFREE(header);
             perror("get APM header");
             return -1;
         }
@@ -176,7 +176,7 @@ int apm_dump(Volume* vol)
     EndSection(ctx);
 
     if (header != NULL)
-        FREE(header);
+        SFREE(header);
 
     return 0;
 }

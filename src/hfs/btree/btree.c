@@ -12,13 +12,6 @@
 #include <search.h>
 #include <assert.h>             // assert()
 
-#if defined(__linux__)
-    #include <malloc.h>
-    #define malloc_size malloc_usable_size
-#else
-    #include <malloc/malloc.h>      // malloc_size
-#endif
-
 #include "hfs/btree/btree.h"
 #include "hfs/btree/btree_endian.h"
 #include "hfsinspect/stringtools.h" // memdump
@@ -58,29 +51,28 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
         bTree->nodeBitmapSize = record.recordLen;
 
         // Initially allocate space for up to 16 nodes.
-        ALLOC(bTree->nodeBitmap, bTree->headerRecord.nodeSize * 16);
+        bTree->nodeBitmap     = ALLOC(bTree->headerRecord.nodeSize * 16);
+        assert(bTree->nodeBitmap != NULL);
         memcpy(bTree->nodeBitmap, record.record, record.recordLen);
 
         // Concat any linked map node records
         while (node->nodeDescriptor->fLink > 0 && (signed)node->nodeDescriptor->fLink != -1) {
+            int         loaded   = false;
             size_t      old_size = bTree->nodeBitmapSize;
             bt_nodeid_t node_id  = node->nodeDescriptor->fLink;
+
             info("Loading bitmap continuation node %d", node_id);
 
             BTFreeNode(node);
-            node = NULL;
+            node   = NULL;
 
-            BTGetNode(&node, bTree, node_id);
+            loaded = BTGetNode(&node, bTree, node_id);
+            assert(loaded == 0);
             assert(node != NULL);
 
             BTGetBTNodeRecord(&record, node, 0);
             bTree->nodeBitmapSize += record.recordLen;
-            if (malloc_size(bTree->nodeBitmap) < bTree->nodeBitmapSize) {
-                bTree->nodeBitmap = realloc(bTree->nodeBitmap, bTree->nodeBitmapSize);
-                if (bTree->nodeBitmap == NULL) {
-                    critical("Could not allocate memory for tree bitmap.");
-                }
-            }
+            SREALLOC(bTree->nodeBitmap, bTree->nodeBitmapSize);
 
             memcpy(bTree->nodeBitmap + old_size, record.record, record.recordLen);
         }
@@ -210,27 +202,34 @@ uint16_t BTGetRecordKeyLength(const BTreeNodePtr node, uint16_t recNum)
 
 int btree_init(BTreePtr btree, FILE* fp)
 {
-    ssize_t nbytes;
-    char    buf[512];
+    ssize_t  nbytes = 0;
+    uint8_t* buf    = NULL;
+
+    buf       = ALLOC(512);
+    assert(buf != NULL);
 
     // First, init the fork record for future calls.
     btree->fp = fp;
 
     // Now load up the header node.
-    if ( (nbytes = fpread(btree->fp, &buf, sizeof(BTNodeDescriptor), 0)) < 0 )
+    if ( (nbytes = fpread(btree->fp, buf, sizeof(BTNodeDescriptor), 0)) < 0 ) {
+        SFREE(buf);
         return -1;
+    }
 
-    btree->nodeDescriptor = *(BTNodeDescriptor*)&buf;
+    btree->nodeDescriptor = *(BTNodeDescriptor*)buf;
     swap_BTNodeDescriptor(&btree->nodeDescriptor);
 
     // If there's a header record, we'll likely want that as well.
     if (btree->nodeDescriptor.numRecords > 0) {
         memset(buf, 0, 512);
 
-        if ( (nbytes = fpread(btree->fp, &buf, sizeof(BTHeaderRec), sizeof(BTNodeDescriptor))) < 0 )
+        if ( (nbytes = fpread(btree->fp, buf, sizeof(BTHeaderRec), sizeof(BTNodeDescriptor))) < 0 ) {
+            SFREE(buf);
             return -1;
+        }
 
-        btree->headerRecord = *(BTHeaderRec*)&buf;
+        btree->headerRecord = *(BTHeaderRec*)buf;
         swap_BTHeaderRec(&btree->headerRecord);
 
         // Next comes 128 bytes of "user" space for record 2 that we don't care about.
@@ -239,12 +238,16 @@ int btree_init(BTreePtr btree, FILE* fp)
 
     // Init the node cache.
     cache_init(&btree->nodeCache, 100);
+    SFREE(buf);
 
     return 0;
 }
 
 int btree_get_node(BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeNumber)
 {
+    BTreeNodePtr node       = NULL;
+    ssize_t      bytes_read = 0;
+
     info("Getting node %d", nodeNumber);
 
     if(nodeNumber >= tree->headerRecord.totalNodes) {
@@ -254,11 +257,11 @@ int btree_get_node(BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeN
 
     if ((nodeNumber != 0) && (BTIsNodeUsed(tree, nodeNumber) == false)) {
         info("Node %u is unused.", nodeNumber);
-        return 0;
+        return -1;
     }
 
-    BTreeNodePtr node = NULL;
-    ALLOC(node, sizeof(struct _BTreeNode));
+    node             = ALLOC(sizeof(struct _BTreeNode));
+    assert(node != NULL);
 
     node->nodeSize   = tree->headerRecord.nodeSize;
     node->nodeNumber = nodeNumber;
@@ -266,32 +269,36 @@ int btree_get_node(BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeN
     node->bTree      = tree;
     node->treeID     = tree->treeID;
 
-    ALLOC(node->data, node->nodeSize);
-    node->dataLen    = malloc_size(node->data);
+    node->data       = ALLOC(node->nodeSize);
+    assert(node->data != NULL);
+    node->dataLen    = node->nodeSize;
 
-    ssize_t result = 0;
-    if (tree->nodeCache != NULL) {
-        result = cache_get(tree->nodeCache, (void*)node->data, node->nodeSize, nodeNumber);
-        if (result)
-            info("Loaded a cached node for %u:%u", node->treeID, nodeNumber);
-    }
+    assert(tree->nodeCache != NULL);
 
-    if (result < 1) {
+    // Check the tree's node cache for a previous load.
+    if (cache_get(tree->nodeCache, (void*)node->data, node->nodeSize, nodeNumber) == 1) {
+        info("Loaded a cached node for %u:%u", node->treeID, nodeNumber);
+
+    } else {
         assert(node->data != NULL);
-        result = fpread(node->bTree->fp, node->data, node->nodeSize, node->nodeOffset);
-        if (result != node->nodeSize) {
-            warning("node read failed: expected %zd bytes, got %zd", node->nodeSize, result);
-        } else {
-            if (result && (tree->nodeCache != NULL))
-                result = cache_set(tree->nodeCache, (char*)node->data, node->nodeSize, nodeNumber);
+
+        bytes_read = fpread(node->bTree->fp, node->data, node->nodeSize, node->nodeOffset);
+
+        if (bytes_read < 0) {
+            error("Error reading from fork.");
+            btree_free_node(node);
+            return bytes_read;
+        }
+
+        if (bytes_read != node->nodeSize) {
+            warning("node read failed: expected %zd bytes, got %zd", node->nodeSize, bytes_read);
+
+        } else if (tree->nodeCache != NULL) {
+            cache_set(tree->nodeCache, (char*)node->data, node->nodeSize, nodeNumber);
         }
     }
 
-    if (result < 0) {
-        error("Error reading from fork.");
-        btree_free_node(node);
-        return result;
-    }
+    assert(node->nodeDescriptor->numRecords > 0);
 
     if ( swap_BTreeNode(node) < 0 ) {
         btree_free_node(node);
@@ -301,7 +308,6 @@ int btree_get_node(BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeN
     }
 
     node->recordCount = node->nodeDescriptor->numRecords;
-
     *outNode          = node;
 
     return 0;
@@ -309,9 +315,13 @@ int btree_get_node(BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeN
 
 void btree_free_node (BTreeNodePtr node)
 {
-    if ((node != NULL) && (node->data != NULL)) {
-        FREE(node->data);
+    if (node != NULL) {
+        if (node->data != NULL) {
+            FREE(node->data);
+            node->data = NULL;
+        }
         FREE(node);
+        node = NULL;
     }
 }
 

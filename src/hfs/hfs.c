@@ -171,19 +171,19 @@ bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFS* hfs
 {
     if (hfs->vol) {
         char* buffer = NULL;
-        ALLOC(buffer, 2048)
+        SALLOC(buffer, 2048)
 
         ssize_t size = hfs_read(buffer, hfs, 2048, 0);
 
         if (size < 1) {
             perror("read");
             critical("Cannot read volume.");
-            FREE(buffer);
+            SFREE(buffer);
             return -1;
         }
 
         *vh = *(HFSMasterDirectoryBlock*)(buffer+1024);
-        FREE(buffer);
+        SFREE(buffer);
 
         swap_HFSMasterDirectoryBlock(vh);
 
@@ -197,19 +197,19 @@ bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFS* hfs)
 {
     if (hfs->vol) {
         char* buffer = NULL;
-        ALLOC(buffer, 2048)
+        SALLOC(buffer, 2048)
 
         ssize_t size = hfs_read(buffer, hfs, 2048, 0);
 
         if (size < 1) {
             perror("read");
             critical("Cannot read volume.");
-            FREE(buffer);
+            SFREE(buffer);
             return -1;
         }
 
         *vh = *(HFSPlusVolumeHeader*)(buffer+1024);
-        FREE(buffer);
+        SFREE(buffer);
 
         swap_HFSPlusVolumeHeader(vh);
 
@@ -223,7 +223,7 @@ bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFS* hfs)
 {
     if (hfs->vh.journalInfoBlock) {
         char*   buffer = NULL;
-        ALLOC(buffer, hfs->block_size);
+        SALLOC(buffer, hfs->block_size);
 
         ssize_t read   = hfs_read_blocks(buffer, hfs, 1, hfs->vh.journalInfoBlock);
         if (read < 0) {
@@ -233,7 +233,7 @@ bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFS* hfs)
             critical("Didn't read the whole journal info block!");
         }
         *block = *(JournalInfoBlock*)buffer; // copies
-        FREE(buffer);
+        SFREE(buffer);
 
         swap_JournalInfoBlock(block);
         return true;
