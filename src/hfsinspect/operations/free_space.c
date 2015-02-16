@@ -48,9 +48,10 @@ void showFreeSpace(HIOptions* options)
     size_t total_extents = 0;
 
     struct extent {
-        uint8_t used;
         size_t  start;
         size_t  length;
+        bool    used;
+        uint8_t _reserved[7];
     };
 
     // The first allocation block is used by the VH.

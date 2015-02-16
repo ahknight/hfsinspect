@@ -16,6 +16,7 @@
 typedef struct Rank {
     uint64_t measure;
     uint32_t cnid;
+    uint32_t _reserved;
 } Rank;
 
 typedef struct ForkSummary {

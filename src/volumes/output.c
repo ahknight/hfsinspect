@@ -38,10 +38,12 @@ out_ctx OCMake(bool decimal_sizes, unsigned indent_step, char* prefix)
 
 void OCSetIndentLevel(out_ctx* ctx, unsigned new_level)
 {
-    if (new_level > 49)
+    ctx->indent_level = new_level;
+
+    if (new_level > (sizeof(ctx->indent_string) - 1))
         new_level = 0;
 
-    memset(ctx->indent_string, ' ', 50);
+    memset(ctx->indent_string, ' ', sizeof(ctx->indent_string));
     ctx->indent_string[new_level] = '\0';
 }
 
@@ -74,8 +76,11 @@ int Print(out_ctx* ctx, const char* format, ...)
     va_list argp;
     va_start(argp, format);
 
-    char    str[255]; vsprintf(str, format, argp);
-    int     bytes = print("%s%s", ctx->indent_string, str);
+    char    str[255] = {0};
+    int     bytes    = 0;
+
+    vsprintf(str, format, argp);
+    bytes = printf("%s%s\n", ctx->indent_string, str);
 
     va_end(argp);
     return bytes;
@@ -87,8 +92,10 @@ int PrintAttribute(out_ctx* ctx, const char* label, const char* format, ...)
     va_start(argp, format);
 
     int     bytes  = 0;
-    char    str[255]; vsprintf(str, format, argp);
+    char    str[255];
     char    spc[2] = {' ', '\0'};
+
+    vsprintf(str, format, argp);
 
     if (label == NULL)
         bytes = Print(ctx, "%-23s. %s", "", str);
@@ -136,7 +143,7 @@ void _PrintRawAttribute(out_ctx* ctx, const char* label, const void* map, size_t
     assert(nbytes > 0);
     assert(base >= 2 && base <= 36);
 
-    unsigned segmentLength = 32;
+#define segmentLength 32
     char*    str           = NULL;
     ssize_t  len           = 0;
     ssize_t  msize         = 0;
@@ -151,7 +158,7 @@ void _PrintRawAttribute(out_ctx* ctx, const char* label, const void* map, size_t
         return;
     }
 
-    for (int i = 0; i < len; i += segmentLength) {
+    for (unsigned i = 0; i < len; i += segmentLength) {
         char segment[segmentLength]; memset(segment, '\0', segmentLength);
 
         (void)strlcpy(segment, &str[i], MIN(segmentLength, len - i));
@@ -177,7 +184,7 @@ int _PrintUIChar(out_ctx* ctx, const char* label, const char* i, size_t nbytes)
 
 void VisualizeData(const void* data, size_t length)
 {
-    memdump(stdout, data, length, 16, 4, 4, DUMP_ADDRESS | DUMP_ENCODED | DUMP_OFFSET | DUMP_ASCII | DUMP_PADDING);
+    memdump(stdout, data, length, 16, 4, 4, DUMP_ENCODED | DUMP_OFFSET | DUMP_ASCII | DUMP_PADDING);
 }
 
 #pragma mark - Formatters

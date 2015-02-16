@@ -21,7 +21,7 @@
 
 int mbr_load_header(Volume* vol, MBR* mbr)
 {
-    if ( vol_read(vol, (uint8_t*)mbr, sizeof(MBR), 0) < 0 )
+    if ( vol_read(vol, (void*)mbr, sizeof(MBR), 0) < 0 )
         return -1;
 
     return 0;
@@ -54,7 +54,7 @@ int mbr_load(Volume* vol)
     if ( mbr_load_header(vol, &mbr) < 0)
         return -1;
 
-    for(int i = 0; i < 4; i++) {
+    for(unsigned i = 0; i < 4; i++) {
         if (mbr.partitions[i].type) {
             Volume*      v      = NULL;
             MBRPartition p;
@@ -82,7 +82,7 @@ const char* mbr_partition_type_str(uint16_t type, VolType* hint)
 {
     static char type_str[100];
 
-    for(int i = 0; i < 22; i++) {
+    for(unsigned i = 0; i < 22; i++) {
         if (mbr_partition_types[i].type == type) {
             if (hint != NULL) *hint = mbr_partition_types[i].voltype;
             (void)strlcpy(type_str, mbr_partition_types[i].name, 99);
@@ -111,7 +111,7 @@ int mbr_dump(Volume* vol)
     BeginSection(ctx, "Master Boot Record");
     PrintAttribute(ctx, "signature", "0x%x%x", mbr->signature[1], mbr->signature[0]);
 
-    for(int i = 0; i < 4; i++) {
+    for(unsigned i = 0; i < 4; i++) {
         MBRPartition* partition = &mbr->partitions[i];
         if (partition->type == 0) continue;
 

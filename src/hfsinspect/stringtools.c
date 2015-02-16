@@ -20,9 +20,9 @@
 void memdump(FILE* file, const void* data, size_t length, uint8_t base, uint8_t width, uint8_t groups, unsigned mode)
 {
     // Length of a line
-    int   line_width = width * groups;
+    unsigned line_width = width * groups;
 
-    off_t offset     = 0;
+    uint64_t offset     = 0;
     while (length > offset) {
         // Starting position for the line
         const uint8_t* line = &((uint8_t*)data)[offset];
@@ -61,8 +61,16 @@ void memdump(FILE* file, const void* data, size_t length, uint8_t base, uint8_t 
                 if (size) {
                     if ((c % width) == 0) fprintf(file, " ");
                     char group[100] = "";
-                    if (line[c] == 0)
-                    { memset(group, '0', size); _print_gray(file, 5, 0); }else {                                                      memstr(group, base, &line[c], 1, size); _print_color(file, 2, 3, 5, 0); }
+                    if (line[c] == 0x00) {
+                        memset(group, '0', size);
+                        _print_gray(file, 5, 0);
+                    } else if (line[c] == 0xff) {
+                        memstr(group, base, &line[c], 1, size);
+                        _print_color(file, 1, 1, 3, 0);
+                    } else {
+                        memstr(group, base, &line[c], 1, size);
+                        _print_color(file, 2, 3, 5, 0);
+                    }
 
                     fprintf(file, "%s%s", group, ((mode & DUMP_PADDING) ? " " : ""));
 
@@ -77,12 +85,12 @@ void memdump(FILE* file, const void* data, size_t length, uint8_t base, uint8_t 
         // Print ASCII representation
         if (mode & DUMP_ASCII) {
             fprintf(file, " |");
-            for (int c = 0; c < lineMax; c++) {
+            for (unsigned c = 0; c < lineMax; c++) {
                 uint8_t chr = line[c] & 0xFF;
                 if (chr == 0)
                     chr = ' ';
                 else if (chr > 127) // ASCII unprintable
-                    chr = '?';
+                    chr = '.';
                 else if (chr < 32)  // ASCII control characters
                     chr = '.';
                 fprintf(file, "%c", chr);

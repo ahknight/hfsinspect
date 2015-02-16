@@ -26,6 +26,7 @@
 
 ExtentList* extentlist_make(void)
 {
+    trace("%s", __PRETTY_FUNCTION__);
     ExtentList* retval = NULL;
     SALLOC(retval, sizeof(ExtentList));
     retval->tqh_first = NULL;
@@ -36,16 +37,18 @@ ExtentList* extentlist_make(void)
 
 void extentlist_add(ExtentList* list, size_t startBlock, size_t blockCount)
 {
+    Extent* newExtent      = NULL;
+    Extent* existingExtent = NULL;
+    Extent* tmp            = NULL;
+
+    // trace("list (%p), startBlock %zu, blockCount %zu", list, startBlock, blockCount);
+
     if (blockCount == 0) return;
 
-    Extent* newExtent = NULL;
     SALLOC(newExtent, sizeof(Extent));
     newExtent->startBlock = startBlock;
     newExtent->blockCount = blockCount;
 
-    Extent* existingExtent = NULL;
-
-    Extent* tmp            = NULL;
     TAILQ_FOREACH_REVERSE_SAFE(existingExtent, list, _ExtentList, extents, tmp) {
         if ((existingExtent != NULL) && (existingExtent->startBlock < startBlock)) {
             break;
@@ -78,12 +81,14 @@ void extentlist_add(ExtentList* list, size_t startBlock, size_t blockCount)
 
 void extentlist_add_descriptor(ExtentList* list, const HFSPlusExtentDescriptor d)
 {
+    // trace("list (%p), d (%u, %u)", list, d.startBlock, d.blockCount);
     extentlist_add(list, d.startBlock, d.blockCount);
 }
 
 void extentlist_add_record(ExtentList* list, const HFSPlusExtentRecord r)
 {
-    for(int i = 0; i < kHFSPlusExtentDensity; i++) {
+    // trace("list (%p), r[]", list);
+    for(unsigned i = 0; i < kHFSPlusExtentDensity; i++) {
         extentlist_add_descriptor(list, r[i]);
     }
 }
@@ -91,6 +96,9 @@ void extentlist_add_record(ExtentList* list, const HFSPlusExtentRecord r)
 bool extentlist_find(ExtentList* list, size_t logical_block, size_t* offset, size_t* length)
 {
     Extent* extent = NULL;
+
+    trace("list (%p), logical_block %zu, offset (%p), length (%p)", list, logical_block, offset, length);
+
     TAILQ_FOREACH(extent, list, extents) {
         range lrange = make_range(extent->logicalStart, extent->blockCount);
         if (range_contains(logical_block, lrange)) {
@@ -99,7 +107,7 @@ bool extentlist_find(ExtentList* list, size_t logical_block, size_t* offset, siz
     }
 
     if (extent == NULL) {
-        info("Extent for logical block %zu not found.", logical_block);
+//        debug("Extent for logical block %zu not found.", logical_block);
         return false;
     }
 
@@ -114,12 +122,16 @@ bool extentlist_find(ExtentList* list, size_t logical_block, size_t* offset, siz
 
     if (offset != NULL) *offset = extent->startBlock + extentOffset;
     if (length != NULL) *length = extent->blockCount - extentOffset;
+
     return true;
 }
 
 void extentlist_free(ExtentList* list)
 {
     Extent* e = NULL;
+
+    trace("list (%p)", list);
+
     while ( (e = TAILQ_FIRST(list)) ) {
         TAILQ_REMOVE(list, e, extents);
         SFREE(e);

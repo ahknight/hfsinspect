@@ -17,10 +17,12 @@
 
 int hfs_load_mbd(Volume* vol, HFSMasterDirectoryBlock* mdb)
 {
+    trace("vol (%p), mdb (%p)", vol, mdb);
+
     // On IA32, using Clang, the swap function needs a little scratch space
     // so we read into a larger area, swap there, then copy out.
 
-    uint8_t* buf[200] = {0};
+    char* buf[200] = {0};
 
     if ( vol_read(vol, buf, sizeof(HFSMasterDirectoryBlock), 1024) < 0)
         return -1;
@@ -34,7 +36,9 @@ int hfs_load_mbd(Volume* vol, HFSMasterDirectoryBlock* mdb)
 
 int hfs_load_header(Volume* vol, HFSPlusVolumeHeader* vh)
 {
-    if ( vol_read(vol, (uint8_t*)vh, sizeof(HFSPlusVolumeHeader), 1024) < 0)
+    trace("vol (%p), vh (%p)", vol, vh);
+
+    if ( vol_read(vol, vh, sizeof(HFSPlusVolumeHeader), 1024) < 0)
         return -1;
 
     swap_HFSPlusVolumeHeader(vh);
@@ -43,6 +47,7 @@ int hfs_load_header(Volume* vol, HFSPlusVolumeHeader* vh)
 }
 
 int hfs_close(HFS* hfs) {
+    trace("hfs (%p)", hfs);
     debug("Closing volume.");
     int result = vol_close(hfs->vol);
     return result;
@@ -50,10 +55,12 @@ int hfs_close(HFS* hfs) {
 
 int hfs_open(HFS* hfs, Volume* vol)
 {
-    if ((hfs == NULL) || (vol == NULL)) { errno = EINVAL; return -1; }
+    int type   = 0;
+    int result = 0;
 
-    int type;
-    int result;
+    trace("hfs (%p), vol (%p)", hfs, vol);
+
+    if ((hfs == NULL) || (vol == NULL)) { errno = EINVAL; return -1; }
 
     // Test to see if we support the volume.
     result = hfs_test(vol);
@@ -99,15 +106,17 @@ int hfs_open(HFS* hfs, Volume* vol)
  */
 int hfs_test(Volume* vol)
 {
-    int type = kTypeUnknown;
+    int                     type = kTypeUnknown;
+    HFSMasterDirectoryBlock mdb  = {0};
+    HFSPlusVolumeHeader     vh   = {0};
+
+    trace("vol (%p)", vol);
 
     debug("hfs_test");
 
     assert(vol != NULL);
 
     // First, test for HFS or wrapped HFS+ volumes.
-    HFSMasterDirectoryBlock mdb = {0};
-
     if ( hfs_load_mbd(vol, &mdb) < 0) {
         return -1;
     }
@@ -125,8 +134,6 @@ int hfs_test(Volume* vol)
         return type;
 
     // Now test for a modern HFS+ volume.
-    HFSPlusVolumeHeader vh = {0};
-
     if ( hfs_load_header(vol, &vh) < 0 )
         return -1;
 
@@ -143,17 +150,20 @@ int hfs_test(Volume* vol)
 /** returns the first HFS+ volume in a tree of volumes */
 Volume* hfs_find(Volume* vol)
 {
+    Volume* result = NULL;
+    int     test   = 0;
+
+    trace("vol (%p)", vol);
+
     debug("hfs_find");
 
     assert(vol != NULL);
-
-    Volume* result = NULL;
-    int     test   = hfs_test(vol);
+    test = hfs_test(vol);
 
     if ( (test) & (kFSTypeHFSPlus | kFSTypeWrappedHFSPlus)) {
         result = vol;
     } else if (vol->partition_count) {
-        for(int i = 0; i < vol->partition_count; i++) {
+        for(unsigned i = 0; i < vol->partition_count; i++) {
             if (vol->partitions[i] != NULL) {
                 result = hfs_find(vol->partitions[i]);
                 if (result != NULL)
@@ -169,11 +179,15 @@ Volume* hfs_find(Volume* vol)
 
 bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFS* hfs)
 {
+    void*   buffer = NULL;
+    ssize_t size   = 0;
+
+    trace("vh (%p), hfs (%p)", vh, hfs);
+
     if (hfs->vol) {
-        char* buffer = NULL;
         SALLOC(buffer, 2048)
 
-        ssize_t size = hfs_read(buffer, hfs, 2048, 0);
+        size = hfs_read(buffer, hfs, 2048, 0);
 
         if (size < 1) {
             perror("read");
@@ -182,7 +196,8 @@ bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFS* hfs
             return -1;
         }
 
-        *vh = *(HFSMasterDirectoryBlock*)(buffer+1024);
+        void* mdbp = (char*)buffer+1024;
+        *vh = *(HFSMasterDirectoryBlock*)mdbp;
         SFREE(buffer);
 
         swap_HFSMasterDirectoryBlock(vh);
@@ -195,11 +210,15 @@ bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFS* hfs
 
 bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFS* hfs)
 {
+    void*   buffer = NULL;
+    ssize_t size   = 0;
+
+    trace("vh (%p), hfs (%p)", vh, hfs);
+
     if (hfs->vol) {
-        char* buffer = NULL;
         SALLOC(buffer, 2048)
 
-        ssize_t size = hfs_read(buffer, hfs, 2048, 0);
+        size = hfs_read(buffer, hfs, 2048, 0);
 
         if (size < 1) {
             perror("read");
@@ -208,11 +227,11 @@ bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFS* hfs)
             return -1;
         }
 
-        *vh = *(HFSPlusVolumeHeader*)(buffer+1024);
-        SFREE(buffer);
-
+        void* vhp = (char*)buffer + 1024;
+        *vh = *(HFSPlusVolumeHeader*)vhp;
         swap_HFSPlusVolumeHeader(vh);
 
+        SFREE(buffer);
         return true;
     }
 
@@ -221,15 +240,19 @@ bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFS* hfs)
 
 bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFS* hfs)
 {
+    trace("block (%p), hfs (%p)", block, hfs);
+
     if (hfs->vh.journalInfoBlock) {
-        char*   buffer = NULL;
+        void*   buffer     = NULL;
+        ssize_t bytes_read = 0;
+
         SALLOC(buffer, hfs->block_size);
 
-        ssize_t read   = hfs_read_blocks(buffer, hfs, 1, hfs->vh.journalInfoBlock);
-        if (read < 0) {
-            perror("read");
+        bytes_read = hfs_read_blocks(buffer, hfs, 1, hfs->vh.journalInfoBlock);
+        if (bytes_read < 0) {
+            perror("hfs_read_blocks");
             critical("Read error when fetching journal info block");
-        } else if (read < 1) {
+        } else if (bytes_read < 1) {
             critical("Didn't read the whole journal info block!");
         }
         *block = *(JournalInfoBlock*)buffer; // copies
@@ -242,10 +265,14 @@ bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFS* hfs)
     return false;
 }
 
-bool hfs_get_journalheader(journal_header* header, JournalInfoBlock info, const HFS* hfs)
+bool hfs_get_journalheader(journal_header* header, JournalInfoBlock* info, const HFS* hfs)
 {
-    if (info.flags & kJIJournalInFSMask && info.offset) {
-        ssize_t nbytes = hfs_read(header, hfs, sizeof(journal_header), info.offset);
+    ssize_t nbytes = 0;
+
+    trace("header (%p), info (%p), hfs (%p)", header, info, hfs);
+
+    if (info->flags & kJIJournalInFSMask && info->offset) {
+        nbytes = hfs_read(header, hfs, sizeof(journal_header), info->offset);
         if (nbytes < 0) {
             perror("hfs_read");
             return false;

@@ -11,7 +11,7 @@
 #include "logging/logging.h"    // console printing routines
 
 
-PartitionOps* partitionTypes[] = {
+static PartitionOps* partitionTypes[] = {
     &gpt_ops,
     &apm_ops,
     &cs_ops,
@@ -28,7 +28,7 @@ int volumes_load(Volume* vol)
         info("Testing for a %s partition.", (*ops)->name);
         if ((*ops)->test(vol) == 1) {
             info("Detected a %s partition.", (*ops)->name);
-            if (DEBUG && ((*ops)->dump != NULL)) {
+            if ((log_level >= L_DEBUG) && ((*ops)->dump != NULL)) {
                 (*ops)->dump(vol);
             }
             if ((*ops)->load != NULL) {
@@ -46,7 +46,7 @@ int volumes_load(Volume* vol)
     }
 
     // Recursive load
-    for(int i = 0; i < vol->partition_count; i++) {
+    for(unsigned i = 0; i < vol->partition_count; i++) {
         info("Looking for nested partitions on partition %u", i);
         if ((vol->partitions[i] != NULL) && (vol->partitions[i]->type == kVolTypePartitionMap)) {
             debug("Trying to load nested partitions on partition %u", i);

@@ -21,13 +21,13 @@
 
 void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh);
 
-uint32_t cs_crc32c(uint32_t seed, const uint8_t* base, uint32_t length)
+uint32_t cs_crc32c(uint32_t seed, const void* base, uint32_t length)
 {
     // All CRCs exempt the first 8 bytes as they hold the seed and CRC themselves.
-    return crc32c(seed, (base+8), (length-8));
+    return crc32c(seed, ((char*)base+8), (length-8));
 }
 
-int cs_verify_block(const CSVolumeHeader* vh, const uint8_t* block, size_t nbytes)
+int cs_verify_block(const CSVolumeHeader* vh, const void* block, size_t nbytes)
 {
     if (vh->checksum_algo == 1) {
         const CSBlockHeader* bh  = (CSBlockHeader*)block;
@@ -71,7 +71,7 @@ int cs_get_volume_header(Volume* vol, CSVolumeHeader* header)
     return cs_verify_block(header, buf, buf_size);
 }
 
-ssize_t cs_get_metadata_block(uint8_t** buf, const Volume* vol, const CSVolumeHeader* header, unsigned block)
+ssize_t cs_get_metadata_block(void** buf, const Volume* vol, const CSVolumeHeader* header, unsigned block)
 {
     CSBlockHeader* bh       = NULL;
     size_t         buf_size = header->md_block_size;
@@ -147,7 +147,7 @@ void PrintCSVolumeHeader(out_ctx* ctx, CSVolumeHeader* header)
     PrintUI         (ctx, header, md_count);
     PrintDataLength (ctx, header, md_block_size);
     PrintDataLength (ctx, header, md_size);
-    for(int i = 0; i < 8; i++) {
+    for(unsigned i = 0; i < 8; i++) {
         if (header->md_blocks[i]) {
             char title[50] = "";
             sprintf(title, "md_blocks[%u]", i);
@@ -198,7 +198,7 @@ void PrintCSMetadataBlockType11(out_ctx* ctx, CSMetadataBlockType11* block)
 
     BeginSection(ctx, "Unknown Records");
     Print(ctx, "%-12s %-12s %-12s", "Generation", "Curly", "Moe");
-    for (int i = 0; i < block->ukwn_record_count; i++) {
+    for (unsigned i = 0; i < block->ukwn_record_count; i++) {
         uint64_t* record = (void*)&block->ukwn_records[i];
         Print(ctx, "%-#12x %-#12x %-#12x", record[0], record[1], record[2]);
     }
@@ -210,9 +210,9 @@ void PrintCSMetadataBlockType11(out_ctx* ctx, CSMetadataBlockType11* block)
 int cs_dump(Volume* vol)
 {
     char            _header[1024] = "";
-    CSVolumeHeader* header        = (CSVolumeHeader*)&_header;
+    CSVolumeHeader* header        = (void*)&_header;
     size_t          block_size    = 0;
-    uint8_t*        buf           = NULL;
+    void*           buf           = NULL;
     out_ctx*        ctx           = vol->ctx;
 
     debug("CS dump");
@@ -226,7 +226,7 @@ int cs_dump(Volume* vol)
     block_size = header->md_block_size;
     SALLOC(buf, block_size);
 
-    for(int i = 0; i < header->md_count; i++) {
+    for(unsigned i = 0; i < header->md_count; i++) {
         uint64_t       block_number = header->md_blocks[i];
         ssize_t        bytes        = 0;
         CSBlockHeader* block_header = NULL;
@@ -265,9 +265,9 @@ int cs_dump(Volume* vol)
         }
 
         {
-            size_t   size   = header->md_size;
-            uint8_t* block  = ALLOC(size);
-            ssize_t  nbytes = vol_read(vol, block, size, block_number * header->md_block_size);
+            size_t  size   = header->md_size;
+            void*   block  = ALLOC(size);
+            ssize_t nbytes = vol_read(vol, block, size, block_number * header->md_block_size);
 
             if (nbytes) {
                 VisualizeData((char*)block, size);
@@ -292,7 +292,7 @@ int cs_dump(Volume* vol)
 void cs_dump_all_blocks(Volume* vol, CSVolumeHeader* vh)
 {
     size_t   block_size   = vh->md_block_size;
-    uint8_t* buf          = NULL;
+    void*    buf          = NULL;
     uint64_t block_number = vh->md_blocks[0];
     uint64_t total_blocks = (vh->physical_size / vh->md_block_size);
     out_ctx* ctx          = vol->ctx;

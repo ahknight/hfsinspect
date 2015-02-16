@@ -9,13 +9,13 @@
 #ifndef volumes_apm_h
 #define volumes_apm_h
 
-#define _UNUSED __attribute__((unused))
-
 #include <stdint.h>
 #include <stdbool.h>
 
 #include "volume.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 
 #pragma mark - Structures
 
@@ -52,7 +52,7 @@ typedef struct APMPartitionIdentifer {
     VolType volsubtype;
 } APMPartitionIdentifer;
 
-static APMPartitionIdentifer                  APMPartitionIdentifers[] _UNUSED = {
+static APMPartitionIdentifer APMPartitionIdentifers[] = {
     {"Apple_Boot",                  "OS X Open Firmware 3.x booter",    kVolTypeSystem,     kSysReserved},
     {"Apple_Boot_RAID",             "RAID partition",                   kVolTypeSystem,     kSysReserved},
     {"Apple_Bootstrap",             "secondary loader",                 kVolTypeSystem,     kSysReserved},
@@ -84,18 +84,20 @@ static APMPartitionIdentifer                  APMPartitionIdentifers[] _UNUSED =
     {"", "", 0, 0}
 };
 
-static uint32_t kAPMStatusValid               _UNUSED = 0x00000001;
-static uint32_t kAPMStatusAllocated           _UNUSED = 0x00000002;
-static uint32_t kAPMStatusInUse               _UNUSED = 0x00000004;
-static uint32_t kAPMStatusBootInfo            _UNUSED = 0x00000008;
-static uint32_t kAPMStatusReadable            _UNUSED = 0x00000010;
-static uint32_t kAPMStatusWritable            _UNUSED = 0x00000020;
-static uint32_t kAPMStatusPositionIndependent _UNUSED = 0x00000040;
-static uint32_t kAPMStatusChainCompatible     _UNUSED = 0x00000100;
-static uint32_t kAPMStatusRealDriver          _UNUSED = 0x00000200;
-static uint32_t kAPMStatusChainDriver         _UNUSED = 0x00000400;
-static uint32_t kAPMStatusAutoMount           _UNUSED = 0x40000000;
-static uint32_t kAPMStatusIsStartup           _UNUSED = 0x80000000;
+static uint32_t              kAPMStatusValid               = 0x00000001;
+static uint32_t              kAPMStatusAllocated           = 0x00000002;
+static uint32_t              kAPMStatusInUse               = 0x00000004;
+static uint32_t              kAPMStatusBootInfo            = 0x00000008;
+static uint32_t              kAPMStatusReadable            = 0x00000010;
+static uint32_t              kAPMStatusWritable            = 0x00000020;
+static uint32_t              kAPMStatusPositionIndependent = 0x00000040;
+static uint32_t              kAPMStatusChainCompatible     = 0x00000100;
+static uint32_t              kAPMStatusRealDriver          = 0x00000200;
+static uint32_t              kAPMStatusChainDriver         = 0x00000400;
+static uint32_t              kAPMStatusAutoMount           = 0x40000000;
+static uint32_t              kAPMStatusIsStartup           = 0x80000000;
+
+#pragma GCC diagnostic pop // -Wunused-variable
 
 
 #pragma mark - Functions

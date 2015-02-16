@@ -48,7 +48,7 @@ typedef struct GPTHeader {
     uint32_t partitions_entry_count;
     uint32_t partitions_entry_size;
     uint32_t partition_table_crc;
-} __attribute__((packed, aligned(2))) GPTHeader;
+} GPTHeader;
 
 // 128 bytes
 typedef struct GPTPartitionEntry {
@@ -58,7 +58,7 @@ typedef struct GPTPartitionEntry {
     uint64_t last_lba;
     uint64_t attributes;
     uint16_t name[36];
-} __attribute__((packed, aligned(2))) GPTPartitionEntry;
+} GPTPartitionEntry;
 
 typedef GPTPartitionEntry GPTPartitionRecord[128];
 
@@ -69,7 +69,7 @@ typedef struct GPTPartitionName {
     VolType       volsubtype;
 } GPTPartitionName;
 
-static GPTPartitionName gpt_partition_types[] __attribute__((unused)) = {
+static GPTPartitionName gpt_partition_types[] = {
     {"00000000-0000-0000-0000-000000000000", "Unused",                          kVolTypeSystem,         kSysFreeSpace},
 
     {"024DEE41-33E7-11D3-9D69-0008C781F39F", "MBR Partition Scheme",            kVolTypePartitionMap,   kPMTypeMBR},

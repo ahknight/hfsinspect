@@ -23,16 +23,16 @@ struct _Cache {
     uint64_t       record_count;
     void*          index;
     CacheRecordPtr records;
-} __attribute__((aligned(2), packed));
+} __attribute__((aligned(2)));
 
 struct CacheRecord {
     CacheRecordPtr next;
     CacheRecordPtr prev;
 
     ckey_t         key;
-    size_t         datalen;
+    uint64_t       datalen;
     char*          data;
-} __attribute__((aligned(2), packed));
+} __attribute__((aligned(2)));
 
 
 #define ASSERT_PTR(ptr) if (ptr == NULL) { errno = EINVAL; return -1; }
@@ -163,7 +163,7 @@ void cache_destroy(Cache cache)
     SFREE(cache);
 }
 
-int cache_get(Cache cache, char* buf, size_t len, ckey_t key)
+int cache_get(Cache cache, void* buf, size_t len, ckey_t key)
 {
     ASSERT_PTR(cache);
     ASSERT_PTR(buf);
@@ -185,7 +185,7 @@ int cache_get(Cache cache, char* buf, size_t len, ckey_t key)
     return 1;
 }
 
-int cache_set(Cache cache, const char* buf, size_t len, ckey_t key)
+int cache_set(Cache cache, const void* buf, size_t len, ckey_t key)
 {
     ASSERT_PTR(cache);
     ASSERT_PTR(buf);

@@ -21,8 +21,8 @@ typedef char uuid_string_t[37];
 
 typedef uint8_t  hfs_forktype_t;
 typedef uint32_t hfs_block_t;
-typedef uint64_t hfs_size_t;
 typedef uint32_t hfs_cnid_t;
+typedef uint64_t hfs_size_t;
 
 typedef wchar_t hfs_wc_str[256];     // Wide char version of HFSUniStr255
 
@@ -42,11 +42,13 @@ struct HFS {
 
 struct HFSFork {
     HFS*                hfs;                // File system descriptor
-    HFSPlusForkData     forkData;           // Contains the initial extents
-    hfs_forktype_t      forkType;           // 0x00: data; 0xFF: resource
-    bt_nodeid_t         cnid;               // For extents overflow lookups
-    hfs_block_t         totalBlocks;
     hfs_size_t          logicalSize;
+    hfs_block_t         totalBlocks;
+    bt_nodeid_t         cnid;               // For extents overflow lookups
+    hfs_forktype_t      forkType;           // 0x00: data; 0xFF: resource
+    uint8_t             _reserved1[3];
+    HFSPlusForkData     forkData;           // Contains the initial extents
+    uint8_t             _reserved2[4];
     struct _ExtentList* extents;            // All known extents
 };
 

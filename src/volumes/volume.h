@@ -65,14 +65,15 @@ enum {
 };
 
 struct Volume {
-    int      fd;                            // POSIX file descriptor
     FILE*    fp;                            // C Stream pointer
-    out_ctx* ctx;                           // Output context
+    int      fd;                            // POSIX file descriptor
     char     source[PATH_MAX];              // path to source file
     mode_t   mode;                          // mode of source file
+    uint16_t pad;                           // (padding)
+    out_ctx* ctx;                           // Output context
 
-    uint32_t sector_size;                   // block size (LBA size if the raw disk; FS blocks if a filesystem)
     uint64_t sector_count;                  // total blocks in this volume
+    uint32_t sector_size;                   // block size (LBA size if the raw disk; FS blocks if a filesystem)
     uint32_t phy_sector_size;               // physical logical block size, if available
 
     off_t    offset;                        // offset in bytes on source
@@ -80,13 +81,12 @@ struct Volume {
 
     VolType  type;                          // Major type of volume (partition map or filesystem)
     VolType  subtype;                       // Minor type of volume (style of pmap or fs (eg. GPT or HFSPlus)
-    char     desc[100];                     // Human-readable description of the volume format.
-    char     native_desc[100];              // Native description of the volume format, if any.
+    char     desc[128];                     // Human-readable description of the volume format.
+    char     native_desc[128];              // Native description of the volume format, if any.
 
     unsigned depth;                         // How many containers deep this volue is found (0 = root)
-    Volume*  parent_partition;              // the enclosing partition; NULL if the root partition map
-
     unsigned partition_count;               // total count of sub-partitions; 0 if this is a data partition
+    Volume*  parent_partition;              // the enclosing partition; NULL if the root partition map
     Volume*  partitions[128];               // partition records
 };
 
@@ -126,12 +126,12 @@ Volume* vol_qopen(const char* path) __attribute__((nonnull));
    Read from a volume, adjusting for the volume's source offset and length.
    @param vol The Volume to read from.
    @param buf A buffer of sufficient size to hold the result.
-   @param nbyte The number of bytes to read.
+   @param size The number of bytes to read.
    @param offset The offset within the volume to read from. Do not compensate for the volume's physical location or block size -- that's what this function is for.
    @see read(2)
  */
 ssize_t vol_read (const Volume* vol, void* buf, size_t size, off_t offset) __attribute__((nonnull(1,2)));
-int     vol_blk_get(const Volume* vol, off_t start, size_t count, void* buf) __attribute__((nonnull(1,4)));
+ssize_t vol_blk_get(const Volume* vol, void* buf, size_t count, off_t start, size_t blksz) __attribute__((nonnull));
 
 /**
    Write to a volume, adjusting for the volume's source offset and length.

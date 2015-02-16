@@ -52,7 +52,7 @@ int apm_get_header(Volume* vol, APMHeader* header, unsigned partition_number)
     ssize_t bytes      = 0;
 
     block_size = vol->sector_size;
-    bytes      = vol_read(vol, (uint8_t*)header, sizeof(APMHeader), (block_size * partition_number));
+    bytes      = vol_read(vol, header, sizeof(APMHeader), (block_size * partition_number));
 
     if (bytes < 0) return -1;
 
@@ -73,7 +73,7 @@ int apm_get_volume_header(Volume* vol, APMHeader* header)
  */
 int apm_test(Volume* vol)
 {
-    uint8_t* buf = NULL;
+    char* buf = NULL; // char for pointer math
 
     debug("APM test");
 
@@ -133,7 +133,7 @@ int apm_dump(Volume* vol)
         PrintAttribute(ctx, "name", "%s", str);
 
         memcpy(str, &header->type, 32); str[32] = '\0';
-        for (int i = 0; APMPartitionIdentifers[i].type[0] != '\0'; i++) {
+        for (unsigned i = 0; APMPartitionIdentifers[i].type[0] != '\0'; i++) {
             APMPartitionIdentifer identifier = APMPartitionIdentifers[i];
             if ( (strncasecmp((char*)&header->type, identifier.type, 32) == 0) ) {
                 PrintAttribute(ctx, "type", "%s (%s)", identifier.name, identifier.type);
@@ -210,7 +210,7 @@ int apm_load(Volume* vol)
         memcpy(partition->desc, &header.name, 32);
         memcpy(partition->native_desc, &header.type, 32);
 
-        for (int i = 0; APMPartitionIdentifers[i].type[0] != '\0'; i++) {
+        for (unsigned i = 0; APMPartitionIdentifers[i].type[0] != '\0'; i++) {
             APMPartitionIdentifer identifier = APMPartitionIdentifers[i];
             if ( (strncasecmp((char*)&header.type, identifier.type, 32) == 0) ) {
                 partition->type = identifier.voltype;

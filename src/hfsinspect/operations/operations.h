@@ -55,20 +55,21 @@ enum HIModes {
 // Configuration context
 typedef struct HIOptions {
     HFS*                hfs;
+    BTreePtr            tree;
     FILE*               extract_fp;
     HFSFork*            extract_HFSFork;
+    HFSPlusCatalogFile* extract_HFSPlusCatalogFile;
+
     uint32_t            mode;
     bt_nodeid_t         record_parent;
     bt_nodeid_t         cnid;
-    BTreeTypes          tree_type;
-    BTreePtr            tree;
     bt_nodeid_t         node_id;
+    BTreeTypes          tree_type;
 
     char                device_path[PATH_MAX];
     char                file_path[PATH_MAX];
     char                record_filename[PATH_MAX];
     char                extract_path[PATH_MAX];
-    HFSPlusCatalogFile* extract_HFSPlusCatalogFile;
 } HIOptions;
 
 void set_mode (HIOptions* options, int mode);

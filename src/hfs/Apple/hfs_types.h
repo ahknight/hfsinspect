@@ -9,10 +9,16 @@
 #ifndef hfsinspect_hfs_types_h
 #define hfsinspect_hfs_types_h
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wpacked"
+
 #include "hfs/Apple/hfs_macos_defs.h"
 #include "hfs/Apple/hfs_unistr.h"
 #include "hfs/Apple/hfs_unicode.h"
 #include "hfs/Apple/vfs_journal.h"
 #include "hfs/Apple/hfs_format.h"
+
+#pragma GCC diagnostic pop
 
 #endif

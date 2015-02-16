@@ -34,16 +34,19 @@ void        PrintGPTPartitions      (const GPTHeader* header_p, const GPTPartiti
 
 void _gpt_swap_uuid(uuid_t* uuid_p, const uuid_t* uuid)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
     // Because these UUIDs are fucked up.
     *( (uint32_t*) uuid_p + 0 ) = be32toh(*( (uint32_t*)uuid + 0 ));
     *( (uint16_t*) uuid_p + 2 ) = be16toh(*( (uint16_t*)uuid + 2 ));
     *( (uint16_t*) uuid_p + 3 ) = be16toh(*( (uint16_t*)uuid + 3 ));
     *( (uint64_t*) uuid_p + 1 ) =         *( (uint64_t*)uuid + 1 );
+#pragma GCC diagnostic pop
 }
 
 const char* _gpt_partition_type_str(uuid_t uuid, VolType* hint)
 {
-    for(int i=0; gpt_partition_types[i].name[0] != '\0'; i++) {
+    for(unsigned i=0; gpt_partition_types[i].name[0] != '\0'; i++) {
         uuid_t test   = { "\0" };
         int    result = 0;
 
@@ -142,7 +145,7 @@ int _gpt_load_header(Volume* vol, GPTHeader* header_out, GPTPartitionRecord* ent
     // sector size to indicate that since it's always at LBA 1. :)
 
     // Search for the GPT header with block sizes of 512, 1024, 2048, and 4096.
-    for (int i = 9; i < 13; i++) {
+    for (unsigned i = 9; i < 13; i++) {
         size_t block_size = pow(2, i);
         offset = block_size * first_sector_lba;
         debug("Looking for GPT header at offset %ju", (uintmax_t)offset);
@@ -163,7 +166,7 @@ int _gpt_load_header(Volume* vol, GPTHeader* header_out, GPTPartitionRecord* ent
         return -1;
 
     if (entries_out != NULL) {
-        char*              buf     = NULL;
+        void*              buf     = NULL;
         GPTPartitionRecord entries = {{{0}}};
 
         // Determine start of partition array
@@ -172,7 +175,7 @@ int _gpt_load_header(Volume* vol, GPTHeader* header_out, GPTPartitionRecord* ent
 
         // Read the partition array
         SALLOC(buf, length);
-        if ( vol_read(vol, (uint8_t*)buf, length, offset) < 0 )
+        if ( vol_read(vol, buf, length, offset) < 0 )
             return -1;
 
         // Verify the partition map.
@@ -182,7 +185,7 @@ int _gpt_load_header(Volume* vol, GPTHeader* header_out, GPTPartitionRecord* ent
             debug("GPT partition map CRC OK!");
 
         // Iterate over the partitions and update the volume record
-        for(int i = 0; i < header.partitions_entry_count; i++) {
+        for(unsigned i = 0; i < header.partitions_entry_count; i++) {
             GPTPartitionEntry partition;
 
             // Grab the next partition structure
@@ -240,7 +243,7 @@ void PrintGPTPartitions(const GPTHeader* header_p, const GPTPartitionRecord* ent
     const char*   type     = NULL;
     out_ctx*      ctx      = vol->ctx;
 
-    for(int i = 0; i < header_p->partitions_entry_count; i++) {
+    for(unsigned i = 0; i < header_p->partitions_entry_count; i++) {
         GPTPartitionEntry partition = (*entries_p)[i];
 
         if ((partition.first_lba == 0) && (partition.last_lba == 0)) break;
@@ -260,7 +263,7 @@ void PrintGPTPartitions(const GPTHeader* header_p, const GPTPartitionRecord* ent
         PrintAttribute(ctx, "last_lba", "%llu", partition.last_lba);
         _PrintDataLength(ctx, "(size)", (partition.last_lba * vol->sector_size) - (partition.first_lba * vol->sector_size) );
         _PrintRawAttribute(ctx, "attributes", &partition.attributes, sizeof(partition.attributes), 2);
-        for(int c = 0; c < 37; c++) name[c] = partition.name[c];
+        for(unsigned c = 0; c < 37; c++) name[c] = partition.name[c];
         name[36] = '\0';
         PrintAttribute(ctx, "name", "%ls", name);
 
@@ -311,7 +314,7 @@ int gpt_load(Volume* vol)
         return -1;
 
     // Iterate over the partitions and update the volume record
-    for(int i = 0; i < header.partitions_entry_count; i++) {
+    for(unsigned i = 0; i < header.partitions_entry_count; i++) {
         uuid_string_t      uuid_str    = "";
         uuid_t             uuid        = {0};
         wchar_t            wcname[100] = {'\0'};
@@ -343,7 +346,7 @@ int gpt_load(Volume* vol)
         const char* desc = _gpt_partition_type_str(uuid, &type);
         p->type = type;
 
-        for(int j = 0; j < 36 && partition->name[j] != '\0'; j++) {
+        for(unsigned j = 0; j < 36 && partition->name[j] != '\0'; j++) {
             wcname[j] = partition->name[j];
         }
 

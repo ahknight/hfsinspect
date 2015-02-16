@@ -96,8 +96,8 @@ void PrintVolumeInfo(out_ctx* ctx, const HFS* hfs)
         PrintAttribute(ctx, "case sensitivity", "case insensitive");
     }
 
-    HFSPlusVolumeFinderInfo* finderInfo = (HFSPlusVolumeFinderInfo*)&hfs->vh.finderInfo;
-    if (finderInfo->bootDirID || finderInfo->bootParentID || finderInfo->os9DirID || finderInfo->osXDirID) {
+    HFSPlusVolumeFinderInfo finderInfo = { .finderInfo = {hfs->vh.finderInfo} };
+    if (finderInfo.bootDirID || finderInfo.bootParentID || finderInfo.os9DirID || finderInfo.osXDirID) {
         PrintAttribute(ctx, "bootable", "yes");
     } else {
         PrintAttribute(ctx, "bootable", "no");
@@ -228,7 +228,7 @@ void PrintVolumeHeader(out_ctx* ctx, const HFSPlusVolumeHeader* vh)
 
     BeginSection(ctx, "Finder Info");
 
-    HFSPlusVolumeFinderInfo* finderInfo = (HFSPlusVolumeFinderInfo*)&vh->finderInfo;
+    HFSPlusVolumeFinderInfo* finderInfo = (void*)&vh->finderInfo;
 
     PrintCatalogName    (ctx, finderInfo, bootDirID);
     PrintCatalogName    (ctx, finderInfo, bootParentID);
@@ -469,6 +469,7 @@ void PrintHFSPlusBSDInfo(out_ctx* ctx, const HFSPlusBSDInfo* record)
     };
 
     char* flagNames[] = {
+        "no dump",
         "immutable",
         "appendOnly",
         "directoryOpaque",
@@ -482,7 +483,7 @@ void PrintHFSPlusBSDInfo(out_ctx* ctx, const HFSPlusBSDInfo* record)
 
     PrintUIOct(ctx, record, adminFlags);
 
-    for (int i = 0; i < 10; i++) {
+    for (unsigned i = 0; i < 10; i++) {
         uint8_t flag = record->adminFlags;
         if (flag & flagMasks[i]) {
             PrintAttribute(ctx, NULL, "%05o %s", flagMasks[i], flagNames[i]);
@@ -491,7 +492,7 @@ void PrintHFSPlusBSDInfo(out_ctx* ctx, const HFSPlusBSDInfo* record)
 
     PrintUIOct(ctx, record, ownerFlags);
 
-    for (int i = 0; i < 10; i++) {
+    for (unsigned i = 0; i < 10; i++) {
         uint8_t flag = record->ownerFlags;
         if (flag & flagMasks[i]) {
             PrintAttribute(ctx, NULL, "%05o %s", flagMasks[i], flagNames[i]);
@@ -682,26 +683,27 @@ void PrintHFSPlusCatalogThread(out_ctx* ctx, const HFSPlusCatalogThread* record)
 
 void PrintHFSPlusAttrForkData(out_ctx* ctx, const HFSPlusAttrForkData* record)
 {
-    PrintUIHex          (ctx, record, recordType);
     PrintHFSPlusForkData(ctx, &record->theFork, 0, 0);
 }
 
 void PrintHFSPlusAttrExtents(out_ctx* ctx, const HFSPlusAttrExtents* record)
 {
-    PrintUIHex          (ctx, record, recordType);
     PrintHFSPlusExtentRecord(ctx, &record->extents);
 }
 
 void PrintHFSPlusAttrData(out_ctx* ctx, const HFSPlusAttrData* record)
 {
-    PrintUIHex          (ctx, record, recordType);
-    PrintUI             (ctx, record, attrSize);
+    PrintUI(ctx, record, attrSize);
 
     VisualizeData((char*)&record->attrData, record->attrSize);
 }
 
 void PrintHFSPlusAttrRecord(out_ctx* ctx, const HFSPlusAttrRecord* record)
 {
+    PrintConstHexIfEqual(ctx, record->recordType, kHFSPlusAttrInlineData);
+    PrintConstHexIfEqual(ctx, record->recordType, kHFSPlusAttrForkData);
+    PrintConstHexIfEqual(ctx, record->recordType, kHFSPlusAttrExtents);
+
     switch (record->recordType) {
         case kHFSPlusAttrInlineData:
         {
@@ -763,7 +765,7 @@ void PrintVolumeSummary(out_ctx* ctx, const VolumeSummary* summary)
 
     BeginSection  (ctx, "Largest Files");
     print("# %10s %10s", "Size", "CNID");
-    for (int i = 9; i > 0; i--) {
+    for (unsigned i = 9; i > 0; i--) {
         if (summary->largestFiles[i].cnid == 0) continue;
 
         char       size[50];
@@ -882,12 +884,13 @@ void VisualizeHFSPlusAttrKey(out_ctx* ctx, const HFSPlusAttrKey* record, const c
               name
               );
     } else {
-        char* names  = "| %-6s | %-10s | %-10s | %-6s | %-50s |";
-        char* format = "| %-6u | %-10u | %-10u | %-6u | %-50ls |";
+        char* names      = "| %-6s | %-10s | %-10s | %-6s | %-50s |";
+        char* format     = "| %-6u | %-10u | %-10u | %-6u | %-50ls |";
 
-        char* line_f =  "+%s+";
-        char  dashes[100];
+        char* line_f     =  "+%s+";
+        char  dashes[97] = {'\0'};
         memset(dashes, '-', 96);
+        dashes[96] = '\0';
 
         Print(ctx, "%s", label);
         Print(ctx, line_f, dashes);
@@ -947,13 +950,13 @@ void PrintNode(out_ctx* ctx, const BTreeNodePtr node)
     PrintBTNodeDescriptor(ctx, node->nodeDescriptor);
 
 //    uint16_t *records = ((uint16_t*)(node->data + node->bTree->headerRecord.nodeSize) - node->nodeDescriptor->numRecords);
-//    for (int i = node->nodeDescriptor->numRecords-1; i >= 0; --i) {
+//    for (unsigned i = node->nodeDescriptor->numRecords-1; i >= 0; --i) {
 //        char label[50] = "";
 //        sprintf(label, "Record Offset #%u", node->nodeDescriptor->numRecords - i);
 //        PrintAttribute(ctx, label, "%u", records[i]);
 //    }
 
-    for (int recordNumber = 0; recordNumber < node->nodeDescriptor->numRecords; recordNumber++) {
+    for (unsigned recordNumber = 0; recordNumber < node->nodeDescriptor->numRecords; recordNumber++) {
         PrintNodeRecord(ctx, node, recordNumber);
     }
     EndSection(ctx);
@@ -991,14 +994,14 @@ void PrintFolderListing(out_ctx* ctx, uint32_t folderID)
     uint32_t              threadID = recordKey->parentID;
 
     struct {
-        unsigned fileCount;
-        unsigned folderCount;
-        unsigned hardLinkCount;
-        unsigned symlinkCount;
-        unsigned dataForkCount;
-        size_t   dataForkSize;
-        unsigned rsrcForkCount;
-        size_t   rsrcForkSize;
+        uint64_t fileCount;
+        uint64_t folderCount;
+        uint64_t hardLinkCount;
+        uint64_t symlinkCount;
+        uint64_t dataForkCount;
+        uint64_t dataForkSize;
+        uint64_t rsrcForkCount;
+        uint64_t rsrcForkSize;
     } folderStats = {0};
 
     // Start output
@@ -1194,6 +1197,8 @@ void PrintNodeRecord(out_ctx* ctx, const BTreeNodePtr node, int recordNumber)
 
         case kBTMapNode:
         {
+            PrintAttribute(ctx, "recordType", "mapData");
+            VisualizeData(record->record, record->recordLen);
             break;
         }
 
@@ -1235,7 +1240,6 @@ void PrintNodeRecord(out_ctx* ctx, const BTreeNodePtr node, int recordNumber)
                 }
 
                 default:
-                    // TODO: Attributes file support.
                     goto INVALID_KEY;
             }
 

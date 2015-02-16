@@ -43,11 +43,11 @@ VolumeSummary generateVolumeSummary(HIOptions* options)
         // Process node
         debug("Processing node %d", cnid); summary.nodeCount++;
 
-        for(int recNum = 0; recNum < node->nodeDescriptor->numRecords; recNum++) {
+        for(unsigned recNum = 0; recNum < node->nodeDescriptor->numRecords; recNum++) {
             summary.recordCount++;
 
             BTreeKeyPtr           recordKey   = NULL;
-            uint8_t*              recordValue = NULL;
+            void*                 recordValue = NULL;
             btree_get_record(&recordKey, &recordValue, node, recNum);
 
             HFSPlusCatalogRecord* record      = (HFSPlusCatalogRecord*)recordValue;
@@ -156,7 +156,7 @@ void generateForkSummary(HIOptions* options, ForkSummary* forkSummary, const HFS
 
     if (fork->extents[1].blockCount > 0) forkSummary->fragmentedCount++;
 
-    for (int i = 0; i < kHFSPlusExtentDensity; i++) {
+    for (unsigned i = 0; i < kHFSPlusExtentDensity; i++) {
         if (fork->extents[i].blockCount > 0) forkSummary->extentDescriptors++; else break;
     }
 

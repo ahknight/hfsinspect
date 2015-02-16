@@ -30,6 +30,6 @@ int hfs_close (HFS* hfs) __attribute__((nonnull));
 bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFS* hfs) __attribute__((nonnull));
 bool hfs_get_HFSPlusVolumeHeader    (HFSPlusVolumeHeader* vh, const HFS* hfs) __attribute__((nonnull));
 bool hfs_get_JournalInfoBlock       (JournalInfoBlock* block, const HFS* hfs) __attribute__((nonnull));
-bool hfs_get_journalheader          (journal_header* header, JournalInfoBlock info, const HFS* hfs) __attribute__((nonnull));
+bool hfs_get_journalheader          (journal_header* header, JournalInfoBlock* info, const HFS* hfs) __attribute__((nonnull));
 
 #endif

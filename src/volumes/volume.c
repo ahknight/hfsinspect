@@ -27,17 +27,20 @@
 
 #include "volume.h"
 #include "output.h"
+#include "utilities.h"
 #include "logging/logging.h"    // console printing routines
 
 #define ASSERT_VOL(vol) { assert(vol != NULL); assert(vol->fp); }
 
 int vol_open(Volume* vol, const char* path, int mode, off_t offset, size_t length, size_t block_size)
 {
-    assert(vol);
-    assert(path);
-
     struct stat s = {0};
     FILE*       f = NULL;
+
+    trace("vol (%p), path '%s', mode %#o, offset %zd, length %zu, block_size %zu", vol, path, mode, offset, length, block_size);
+
+    assert(vol);
+    assert(path);
 
     if ( (f = fopen(path, "rb")) == NULL) {
         return -errno;
@@ -122,6 +125,9 @@ int vol_open(Volume* vol, const char* path, int mode, off_t offset, size_t lengt
 Volume* vol_qopen(const char* path)
 {
     Volume* vol = NULL;
+
+    trace("path '%s'", path);
+
     SALLOC(vol, sizeof(Volume));
 
     if ( vol_open(vol, path, O_RDONLY, 0, 0, 0) < 0 ) {
@@ -133,30 +139,45 @@ Volume* vol_qopen(const char* path)
     return vol;
 }
 
-int vol_blk_get(const Volume* vol, off_t start, size_t count, void* buf)
+ssize_t vol_blk_get(const Volume* vol, void* buf, size_t count, off_t start, size_t blksz)
 {
-    int      rval;
-    unsigned blksz = vol->sector_size;
-    off_t    off   = start*blksz + vol->offset;
+    ssize_t rval = 0;
+    off_t   off  = 0;
 
-    debug("Seeking to %llu then reading %zu blocks of size %u.", (unsigned long long)off, count, blksz);
-    if ( (rval = fseeko(vol->fp, off, SEEK_SET)) < 0 )
-        return rval;
-    return fread(buf, blksz, count, vol->fp);
+    trace("vol (%p), start %zd, count %zu, blksz %zu, buf (%p)", vol, start, count, blksz, buf);
+
+    // Determine offset based on block size.
+    off  = start * blksz + vol->offset;
+
+    debug2("Seeking to %zd then reading %zu blocks of size %zu.", off, count, blksz);
+
+    rval = fpread(vol->fp, buf, blksz * count, off);
+
+    if (rval > 0) {
+        rval /= blksz;
+    }
+
+    debug2("Read %zu blocks of size %zu.", count, blksz);
+    return rval;
 }
 
 ssize_t vol_read (const Volume* vol, void* buf, size_t size, off_t offset)
 {
-    size_t   start_block = 0, byte_offset = 0, block_count = 0;
-    ssize_t  read_blocks = 0;
-    uint8_t* read_buffer = NULL;
+    ssize_t bytes_read  = 0;
+    size_t  blksz       = 0;
+    size_t  start_block = 0;
+    size_t  block_count = 0;
+    ssize_t read_blocks = 0;
+    size_t  byte_offset = 0;
+    char*   read_buffer = NULL; // char instead of void so we can do pointer math
+
 
     ASSERT_VOL(vol);
 
-    debug("Reading from volume %s+%ju at (%jd, %zu)", basename((char*)&vol->source), (uintmax_t)vol->offset, (intmax_t)offset, size);
+    debug2("Reading from volume %s+%ju at (%jd, %zu)", basename((char*)&vol->source), (uintmax_t)vol->offset, (intmax_t)offset, size);
 
     // Range checks
-    if (vol->length && (offset > vol->length)) {
+    if (vol->length && (offset > (ssize_t)vol->length)) {
         debug("Read ignored; beyond end of source.");
         return 0;
     }
@@ -171,33 +192,46 @@ ssize_t vol_read (const Volume* vol, void* buf, size_t size, off_t offset)
         return 0;
     }
 
+
+    // Determine which block size to use.
+    if (vol->phy_sector_size > 0) {
+        blksz = vol->phy_sector_size;
+
+    } else if (vol->sector_size > 0) {
+        blksz = vol->sector_size;
+
+    } else {
+        blksz = 512;
+    }
+
+
     // Add a block to the read if the offset is not block-aligned.
-    block_count = (size / vol->sector_size) + ( ((offset + size) % vol->sector_size) ? 1 : 0);
+    block_count = (size / blksz) + ( ((offset + size) % blksz) ? 1 : 0);
 
     // Use the calculated size instead of the passed size to account for block alignment.
-    SALLOC(read_buffer, block_count * vol->sector_size);
+    SALLOC(read_buffer, block_count * blksz);
 
     // The range starts somewhere in this block.
-    start_block = (size_t)(offset / vol->sector_size);
+    start_block = (size_t)(offset / blksz);
 
     // Offset of the request within the start block.
-    byte_offset = (offset % vol->sector_size);
+    byte_offset = (offset % blksz);
 
     // Fetch the data into a read buffer (it may fail).
-    // read_blocks = vol_read_blocks(vol, read_buffer, block_count, start_block);
-    read_blocks = vol_blk_get(vol, start_block, block_count, read_buffer);
+    read_blocks = vol_blk_get(vol, read_buffer, block_count, start_block, blksz);
 
     // Adjust for truncated reads.
-    size        = MIN( (read_blocks * vol->sector_size) - byte_offset, size );
+    size        = MIN( (read_blocks * blksz) - byte_offset, size );
 
     // On success, copy the output.
     if (read_blocks) memcpy(buf, read_buffer + byte_offset, size);
 
     // Clean up.
     SFREE(read_buffer);
+    bytes_read = size;
 
-    // The amount we added to the buffer.
-    return size;
+    // The number of chars we changed in the buffer.
+    return bytes_read;
 }
 
 int vol_close(Volume* vol)
@@ -310,7 +344,7 @@ void vol_dump(Volume* vol)
 
     PrintUI(vol->ctx, vol, partition_count);
     if (vol->partition_count) {
-        for(int i = 0; i < vol->partition_count; i++) {
+        for(unsigned i = 0; i < vol->partition_count; i++) {
             if (vol->partitions[i] != NULL) {
                 BeginSection(vol->ctx, "Partition %u:", i+1);
                 vol_dump(vol->partitions[i]);

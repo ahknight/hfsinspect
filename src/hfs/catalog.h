@@ -17,6 +17,7 @@ struct FSSpec {
     const HFS*   hfs;
     hfs_cnid_t   parentID;
     HFSUniStr255 name;
+    uint8_t      _reserved[4];
 };
 typedef struct FSSpec FSSpec;
 typedef FSSpec*       FSSpecPtr;
@@ -65,17 +66,5 @@ int hfs_catalog_get_node (BTreeNodePtr* node, const BTreePtr bTree, bt_nodeid_t 
 int8_t hfs_catalog_find_record     (BTreeNodePtr* node, BTRecNum* recordID, FSSpec spec) __attribute__((nonnull));
 int    hfs_catalog_compare_keys_cf (const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2) __attribute__((nonnull));
 int    hfs_catalog_compare_keys_bc (const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2) __attribute__((nonnull));
-
-#pragma mark Endian Madness
-
-void swap_HFSPlusBSDInfo            (HFSPlusBSDInfo* record) __attribute__((nonnull));
-void swap_FndrDirInfo               (FndrDirInfo* record) __attribute__((nonnull));
-void swap_FndrFileInfo              (FndrFileInfo* record) __attribute__((nonnull));
-void swap_FndrOpaqueInfo            (FndrOpaqueInfo* record) __attribute__((nonnull));
-void swap_HFSPlusCatalogKey         (HFSPlusCatalogKey* key) __attribute__((nonnull));
-void swap_HFSPlusCatalogRecord      (HFSPlusCatalogRecord* record) __attribute__((nonnull));
-void swap_HFSPlusCatalogFile        (HFSPlusCatalogFile* record) __attribute__((nonnull));
-void swap_HFSPlusCatalogFolder      (HFSPlusCatalogFolder* record) __attribute__((nonnull));
-void swap_HFSPlusCatalogThread      (HFSPlusCatalogThread* record) __attribute__((nonnull));
 
 #endif

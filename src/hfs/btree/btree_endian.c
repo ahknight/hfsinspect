@@ -59,7 +59,7 @@ void swap_BTHeaderRec(BTHeaderRec* record)
 
 int swap_BTreeNode(BTreeNodePtr node)
 {
-    uint8_t*       nodeData = node->data;
+    char*          nodeData = node->data;
     const BTreePtr bTree    = node->bTree;
 
     // *** Verify Node ***
@@ -71,8 +71,22 @@ int swap_BTreeNode(BTreeNodePtr node)
     // Verify that this is a node in the first place (swap error protection).
     Swap16(sentinel);
     if ( sentinel != 14 ) {
-        warning("Node is not a node (sentinel: %u != 14).", sentinel);
+        warning("node %u: node is not a node (sentinel: %u != 14).", node->nodeNumber, sentinel);
         errno = EINVAL;
+
+        bool is_blank = true;
+        for (unsigned i = 0; i < node->nodeSize; i++) {
+            if ( ((char*)node->data + i) != 0 ) {
+                debug("node %u: node has data at index %u", node->nodeNumber, i);
+                is_blank = false;
+                break;
+            }
+        }
+
+        if (is_blank) {
+            warning("node %u: node->data is blank", node->nodeNumber);
+        }
+
         return -1;
     }
 
@@ -83,30 +97,31 @@ int swap_BTreeNode(BTreeNodePtr node)
 
     // Verify this is a valid node (additional protection against swap errors)
     if ((nodeDescriptor->kind < kBTLeafNode) || (nodeDescriptor->kind > kBTMapNode)) {
-        warning("Invalid node kind: %d", nodeDescriptor->kind);
+        warning("node %u: invalid node kind: %d", node->nodeNumber, nodeDescriptor->kind);
         errno = EINVAL;
         return -1;
     }
 
     // *** Record Offsets ***
 
-    uint16_t       numRecords = nodeDescriptor->numRecords;
+    uint16_t     numRecords  = nodeDescriptor->numRecords;
+
     BTRecOffsetPtr offsets    = ((BTRecOffsetPtr)(node->data + node->nodeSize)) - numRecords - 1;
-    for(int i = 0; i < (numRecords+1); i++) Swap16(offsets[i]);
+    for(unsigned i = 0; i < (numRecords+1); i++) Swap16(offsets[i]);
 
     // Validate offsets
-    off_t          record_min = sizeof(BTNodeDescriptor);
-    off_t          record_max = (node->nodeSize - ((numRecords+1) * sizeof(BTRecOffset)));
+    off_t record_min = sizeof(BTNodeDescriptor);
+    off_t record_max = (node->nodeSize - ((numRecords+1) * sizeof(BTRecOffset)));
 
     {
         int prev = record_max;
-        for(int i = 0; i < numRecords; i++) {
+        for(unsigned i = 0; i < numRecords; i++) {
             BTRecOffset recOffset = offsets[i];
             if ((recOffset < record_min) || (recOffset > record_max)) {
-                warning("record %u points outside this node: %u (%jd, %jd)", i, recOffset, (intmax_t)record_min, (intmax_t)record_max);
+                warning("node %u: record %u points outside this node: %u (%jd, %jd)", node->nodeNumber, i, recOffset, (intmax_t)record_min, (intmax_t)record_max);
             }
             if ((i != 0) && (recOffset > prev)) {
-                warning("record %u is out of order (%u > %u)", i, offsets[i-1], recOffset);
+                warning("node %u: record %u is out of order (%u > %u)", node->nodeNumber, i, offsets[i-1], recOffset);
             }
             prev = recOffset;
         }
@@ -123,13 +138,12 @@ int swap_BTreeNode(BTreeNodePtr node)
         );
 
 
-    for (int recordNum = 0; recordNum < numRecords; recordNum++) {
-        uint8_t*    record = BTGetRecord(node, recordNum);
+    // Handle keyed nodes
+    for (unsigned recordNum = 0; recordNum < numRecords; recordNum++) {
+        void*    record = BTGetRecord(node, recordNum);
         BTreeKeyPtr key    = (BTreeKey*)(record);
         if (swapKeys) {
             Swap16( key->length16 );
-        } else {
-            debug("not swapping keys for record %u", recordNum);
         }
 
         switch (nodeDescriptor->kind) {
@@ -143,8 +157,22 @@ int swap_BTreeNode(BTreeNodePtr node)
             {
                 // Swap the node pointers.
                 BTRecOffset keyLen       = BTGetRecordKeyLength(node, recordNum);
-                uint32_t*   childPointer = (uint32_t*)(record + keyLen);
+                uint32_t*   childPointer = (void*)((char*)record + keyLen);
                 Swap32(*childPointer);
+                break;
+            }
+
+            case kBTMapNode:
+            {
+                debug("Map node %u: fLink: %u", node->nodeNumber, nodeDescriptor->fLink);
+                debug("Map node %u: numRecords: %u", node->nodeNumber, nodeDescriptor->numRecords);
+                break;
+            }
+
+            case kBTLeafNode:
+            {
+//                debug("Leaf node: %u", node->nodeNumber);
+                break;
             }
 
             default:

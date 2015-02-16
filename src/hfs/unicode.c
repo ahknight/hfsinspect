@@ -14,11 +14,13 @@
 
 int hfsuctowcs(hfs_wc_str output, const HFSUniStr255* input)
 {
+    trace("output (%p), input (%p)", output, input);
+
     // Get the length of the input
-    int len = MIN(input->length, 255);
+    unsigned len = MIN(input->length, 255);
 
     // Copy the u16 to the wchar array
-    for(int i = 0; i < len; i++)
+    for(unsigned i = 0; i < len; i++)
         output[i] = input->unicode[i];
 
     // Terminate the output at the length
@@ -34,6 +36,8 @@ int hfsuctowcs(hfs_wc_str output, const HFSUniStr255* input)
 // FIXME: Eats higher-order Unicode chars. Could be fun.
 HFSUniStr255 wcstohfsuc(const wchar_t* input)
 {
+    trace("input '%ls'", input);
+
     // Allocate the return value
     HFSUniStr255 output = {0};
 
@@ -41,7 +45,7 @@ HFSUniStr255 wcstohfsuc(const wchar_t* input)
     size_t       len    = MIN(wcslen(input), 255);
 
     // Iterate over the input
-    for (int i = 0; i < len; i++) {
+    for (unsigned i = 0; i < len; i++) {
         // Copy the input to the output
         output.unicode[i] = input[i];
     }
@@ -56,10 +60,13 @@ HFSUniStr255 strtohfsuc(const char* input)
 {
     HFSUniStr255 output          = {0};
     wchar_t*     wide            = NULL;
-    SALLOC(wide, 256 * sizeof(wchar_t));
-
     size_t       char_count      = strlen(input);
     size_t       wide_char_count = mbstowcs(wide, input, 255);
+
+    trace("input '%s'", input)
+
+    SALLOC(wide, 256 * sizeof(wchar_t));
+
     if (wide_char_count > 0) output = wcstohfsuc(wide);
 
     if (char_count != wide_char_count) {

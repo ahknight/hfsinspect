@@ -29,14 +29,22 @@ static inline int icmp(const void* a, const void* b)
 
 bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
 {
-    if (bTree->_loadingBitmap == true)
-        return true;
+    if (bTree->_loadingBitmap == true) {
+        // Is it somewhere we've loaded so far?
+        if (nodeNum > bTree->nodeBitmapSize) {
+            // Really can't say yes, but everything breaks if we say no.
+            debug("Returning blind YES since node is beyond current bitmap.");
+            return true;
+        } else {
+            debug("Returning answer from partially-loaded result.");
+        }
+    }
 
     assert(bTree);
 
     // Load the tree bitmap, if needed.
     if (bTree->nodeBitmap == NULL) {
-        info("Loading tree bitmap.");
+        info("Tree %u: loading node bitmap.", bTree->treeID);
         bTree->_loadingBitmap = true;
 
         // Get the B-Tree's header node (#0)
@@ -69,6 +77,9 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
             loaded = BTGetNode(&node, bTree, node_id);
             assert(loaded == 0);
             assert(node != NULL);
+            if (loaded != 0) {
+                critical("bitmap continuation node not loaded: %u", node_id);
+            }
 
             BTGetBTNodeRecord(&record, node, 0);
             bTree->nodeBitmapSize += record.recordLen;
@@ -110,7 +121,7 @@ int BTGetBTNodeRecord(BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum 
     record->recNum = recNum;
 
     record->offset = BTGetRecordOffset(node, recNum);
-    record->record = (node->data + record->offset);
+    record->record = ((char*)node->data + record->offset);
     {
         BTRecOffset nextRecOff = 0;
         nextRecOff        = BTGetRecordOffset(node, recNum + 1);
@@ -120,7 +131,7 @@ int BTGetBTNodeRecord(BTNodeRecordPtr record, const BTreeNodePtr node, BTRecNum 
     record->key       = (BTreeKeyPtr)record->record;
     record->keyLen    = BTGetRecordKeyLength(node, recNum);
 
-    record->value     = (record->record + record->keyLen);
+    record->value     = ((char*)record->record + record->keyLen);
     record->valueLen  = record->recordLen - record->keyLen;
     record->valueLen += (record->valueLen % 2);
 
@@ -132,7 +143,7 @@ BTRecOffset BTGetRecordOffset(const BTreeNodePtr node, uint16_t recNum)
     BTRecOffset    result      = 0;
 
     int            recordCount = node->nodeDescriptor->numRecords;
-    BTRecOffsetPtr offsets     = ((BTRecOffsetPtr)(node->data + node->nodeSize)) - recordCount - 1;
+    BTRecOffsetPtr offsets     = ((BTRecOffsetPtr)((char*)node->data + node->nodeSize)) - recordCount - 1;
     if ( offsets[recordCount] != 14 ) {
         memdump(stderr, node->data, node->nodeSize, 16, 4, 4, DUMP_FULL);
         critical("Bad sentinel @ %ld! (%d != 14)", (long)((char*)offsets - (char*)node->data) + recordCount, offsets[recordCount]); /*sizeof(BTNodeDescriptor)*/
@@ -142,9 +153,9 @@ BTRecOffset BTGetRecordOffset(const BTreeNodePtr node, uint16_t recNum)
     return result;
 }
 
-uint8_t* BTGetRecord(const BTreeNodePtr node, uint16_t recNum)
+void* BTGetRecord(const BTreeNodePtr node, uint16_t recNum)
 {
-    return (node->data + BTGetRecordOffset(node, recNum));
+    return ((char*)node->data + BTGetRecordOffset(node, recNum));
 }
 
 uint16_t BTGetRecordKeyLength(const BTreeNodePtr node, uint16_t recNum)
@@ -165,7 +176,7 @@ uint16_t BTGetRecordKeyLength(const BTreeNodePtr node, uint16_t recNum)
 
     uint8_t*    record  = BTGetRecord(node, recNum);
     BTRecOffset keySize = headerRecord.maxKeyLength;
-    BTreeKey*   keyPtr  = (BTreeKey*)record;
+    BTreeKey*   keyPtr  = (void*)record;
 
     // Variable-length keys
     if (
@@ -202,8 +213,8 @@ uint16_t BTGetRecordKeyLength(const BTreeNodePtr node, uint16_t recNum)
 
 int btree_init(BTreePtr btree, FILE* fp)
 {
-    ssize_t  nbytes = 0;
-    uint8_t* buf    = NULL;
+    ssize_t nbytes = 0;
+    void*   buf    = NULL;
 
     buf       = ALLOC(512);
     assert(buf != NULL);
@@ -248,10 +259,10 @@ int btree_get_node(BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeN
     BTreeNodePtr node       = NULL;
     ssize_t      bytes_read = 0;
 
-    info("Getting node %d", nodeNumber);
+    info("Tree %u: getting node %d", tree->treeID, nodeNumber);
 
     if(nodeNumber >= tree->headerRecord.totalNodes) {
-        error("Node beyond file range.");
+        error("Node %u is beyond file range.", nodeNumber);
         return -1;
     }
 
@@ -290,7 +301,7 @@ int btree_get_node(BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeN
             return bytes_read;
         }
 
-        if (bytes_read != node->nodeSize) {
+        if ((size_t)bytes_read != node->nodeSize) {
             warning("node read failed: expected %zd bytes, got %zd", node->nodeSize, bytes_read);
 
         } else if (tree->nodeCache != NULL) {
@@ -301,8 +312,8 @@ int btree_get_node(BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeN
     assert(node->nodeDescriptor->numRecords > 0);
 
     if ( swap_BTreeNode(node) < 0 ) {
+        error("node %u: byte-swap of node failed.", node->nodeNumber);
         btree_free_node(node);
-        warning("Byte-swap of node failed.");
         errno = EINVAL;
         return -1;
     }
@@ -325,7 +336,7 @@ void btree_free_node (BTreeNodePtr node)
     }
 }
 
-int btree_get_record(BTreeKeyPtr* key, uint8_t** data, const BTreeNodePtr node, BTRecNum recordID)
+int btree_get_record(BTreeKeyPtr* key, void** data, const BTreeNodePtr node, BTRecNum recordID)
 {
     assert(key || data);
     assert(node);
@@ -455,7 +466,7 @@ int btree_search(BTreeNodePtr* node, BTRecNum* recordID, const BTreePtr btree, c
         BTGetBTNodeRecord(&currentRecord, searchNode, searchIndex);
 
         BTreeKeyPtr  currentKey    = currentRecord.key;
-        uint8_t*     currentValue  = currentRecord.value;
+        void*        currentValue  = currentRecord.value;
 
         info("FOLLOWING RECORD %d from node %d", searchIndex, searchNode->nodeNumber);
 

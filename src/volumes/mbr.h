@@ -62,9 +62,12 @@ typedef struct MBR {
         .signature = {0} \
     })
 
-static unsigned kMBRTypeGPTProtective __attribute__((unused)) = 0xEE;
-static unsigned kMBRTypeAppleBoot __attribute__((unused))     = 0xAB;
-static unsigned kMBRTypeAppleHFS __attribute__((unused))      = 0xAF;
+#pragma pack(pop)
+
+
+static unsigned kMBRTypeGPTProtective = 0xEE;
+static unsigned kMBRTypeAppleBoot     = 0xAB;
+static unsigned kMBRTypeAppleHFS      = 0xAF;
 
 struct MBRPartitionName {
     uint16_t type;
@@ -75,7 +78,7 @@ struct MBRPartitionName {
 };
 typedef struct MBRPartitionName MBRPartitionName;
 
-static MBRPartitionName mbr_partition_types[] __attribute__((unused)) = {
+static MBRPartitionName mbr_partition_types[] = {
     {0x00, 0, "Free",                           kVolTypeSystem,         kSysFreeSpace},
     {0x01, 0, "MS FAT12",                       kVolTypeUserData,       kFSTypeFAT12},
     {0x04, 0, "MS FAT16",                       kVolTypeUserData,       kFSTypeFAT16},
@@ -104,11 +107,9 @@ static MBRPartitionName mbr_partition_types[] __attribute__((unused)) = {
     {0, 0, {'\0'}, 0, 0},
 };
 
-#pragma pack(pop)
-
 #pragma mark - Functions
 
-extern PartitionOps mbr_ops;
+extern PartitionOps     mbr_ops;
 
 /**
    Tests a volume to see if it contains an MBR partition map.

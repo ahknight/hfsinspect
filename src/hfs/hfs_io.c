@@ -26,6 +26,8 @@ hfs_forktype_t HFSResourceForkType = 0xFF;
 
 ssize_t hfs_read(void* buffer, const HFS* hfs, size_t size, size_t offset)
 {
+    trace("buffer (%p), hfs (%p), size %zu, offset %zu", buffer, hfs, size, offset);
+
     ASSERT_PTR(buffer);
     ASSERT_PTR(hfs);
 
@@ -172,7 +174,6 @@ int hfsfork_get_special(HFSFork** fork, const HFS* hfs, bt_nodeid_t cnid)
                http://dubeiko.com/development/FileSystems/HFSPLUS/tn1150.html#BTrees
              */
             return -1;
-            break;
         }
 
         case kHFSAllocationFileID: //6
@@ -196,7 +197,6 @@ int hfsfork_get_special(HFSFork** fork, const HFS* hfs, bt_nodeid_t cnid)
         default:
         {
             return -1;
-            break;
         }
     }
 
@@ -250,7 +250,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, siz
     // Keep the original request around
     range request     = make_range(start_block, block_count);
 
-//    debug("Reading from CNID %u (%d, %d)", fork->cnid, request.start, request.count);
+    debug2("Reading from CNID %u (%zd, %zd)", fork->cnid, request.start, request.count);
 
     // Sanity checks
     if (request.count < 1) {
@@ -277,6 +277,10 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, siz
     range       remaining   = request;
 
     while (remaining.count != 0) {
+        range   read_range;
+        bool    found  = false;
+        ssize_t blocks = 0;
+
         if (++loopCounter > 2000) {
             Extent* extent = NULL;
             TAILQ_FOREACH(extent, extentList, extents) {
@@ -286,9 +290,9 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, siz
             critical("We're stuck in a read loop: request (%zd, %zd); remaining (%zd, %zd)", request.start, request.count, remaining.start, remaining.count);
         }
 
-//        debug("Remaining: (%zd, %zd)", remaining.start, remaining.count);
-        range read_range;
-        bool  found = extentlist_find(extentList, remaining.start, &read_range.start, &read_range.count);
+        trace("Remaining: (%zd, %zd)", remaining.start, remaining.count);
+
+        found = extentlist_find(extentList, remaining.start, &read_range.start, &read_range.count);
         if (!found) {
             PrintExtentList(fork->hfs->vol->ctx, extentList, fork->totalBlocks);
             critical("Logical block %zd not found in the extents for CNID %d!", remaining.start, fork->cnid);
@@ -301,7 +305,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, siz
 
         read_range.count = MIN(read_range.count, request.count);
 
-        ssize_t blocks = hfs_read_blocks(read_buffer, fork->hfs, read_range.count, read_range.start);
+        blocks           = hfs_read_blocks(read_buffer, fork->hfs, read_range.count, read_range.start);
         if (blocks < 0) {
             SFREE(read_buffer);
             perror("read fork");
@@ -309,7 +313,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, siz
             return -1;
         }
 
-        remaining.count -= MIN(blocks, remaining.count);
+        remaining.count -= MIN((size_t)blocks, remaining.count);
         remaining.start += blocks;
 
         if (remaining.count == 0) break;

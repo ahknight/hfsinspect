@@ -27,4 +27,14 @@ void swap_HFSUniStr255              (HFSUniStr255* unistr) __attribute__((nonnul
 void swap_HFSPlusExtentRecord       (HFSPlusExtentDescriptor record[]) __attribute__((nonnull));
 void swap_HFSPlusExtentDescriptor   (HFSPlusExtentDescriptor* extent) __attribute__((nonnull));
 
+void swap_HFSPlusBSDInfo            (HFSPlusBSDInfo* record) __attribute__((nonnull));
+void swap_FndrDirInfo               (FndrDirInfo* record) __attribute__((nonnull));
+void swap_FndrFileInfo              (FndrFileInfo* record) __attribute__((nonnull));
+void swap_FndrOpaqueInfo            (FndrOpaqueInfo* record) __attribute__((nonnull));
+void swap_HFSPlusCatalogKey         (HFSPlusCatalogKey* key) __attribute__((nonnull));
+void swap_HFSPlusCatalogRecord      (HFSPlusCatalogRecord* record) __attribute__((nonnull));
+void swap_HFSPlusCatalogFile        (HFSPlusCatalogFile* record) __attribute__((nonnull));
+void swap_HFSPlusCatalogFolder      (HFSPlusCatalogFolder* record) __attribute__((nonnull));
+void swap_HFSPlusCatalogThread      (HFSPlusCatalogThread* record) __attribute__((nonnull));
+
 #endif

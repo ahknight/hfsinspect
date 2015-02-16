@@ -37,100 +37,25 @@
 
 #pragma mark - Function Declarations
 
-void usage (int status) __attribute__(( noreturn ));
-void show_version (void) __attribute__(( noreturn ));
+void print_version(void);
+void print_usage(void);
+void print_help(void);
 
 char* deviceAtPath (char* path) __attribute__((nonnull));
 bool  resolveDeviceAndPath (char* path_in, char* device_out, char* path_out) __attribute__((nonnull));
 
+void fatal(char* format, ...) __attribute((format(printf,1,2), noreturn));
+#define fatal(...) { fprintf(stderr, __VA_ARGS__); fputc('\n', stdout); print_usage(); exit(1); }
+
 
 #pragma mark - Variable Definitions
 
-char PROGRAM_NAME[PATH_MAX];
+static char PROGRAM_NAME[PATH_MAX];
 
 
 #pragma mark - Function Definitions
 
 #define EMPTY_STRING(x) ((x) == NULL || strlen((x)) == 0)
-
-void usage(int status)
-{
-    /* hfsdebug-lite args remaining...
-       -0,        --freespace     display all free extents on the volume
-       -e,        --examples      display some usage examples
-       -f,        --fragmentation display all fragmented files on the volume
-       -H,        --hotfiles      display the hottest files on the volume; requires
-                                    the -t (--top=TOP) option for the number to list
-       -l TYPE,   --list=TYPE     specify an HFS+ B-Tree's leaf nodes' type, where
-                                     TYPE is one of "file", "folder", "filethread", or
-                                     "folderthread" for the Catalog B-Tree; one of
-                                     "hfcfile" or "hfcthread" for the Hot Files B-Tree
-                                     B-Tree; or "extents" for the Extents B-Tree
-                                     You can use the type "any" if you wish to display
-                                     all node types. Currently, "any" is the only
-                                     type supported for the Attributes B-Tree
-       -m,        --mountdata     display a mounted volume's in-memory data
-       -S,        --summary_rsrc  calculate and display volume usage summary
-       -t TOP,    --top=TOP       specify the number of most fragmented files
-                                     to display (when used with the --fragmentation
-                                     option), or the number of largest files to display
-                                     (when used with the --summary option)
-       -x FILTERDYLIB, --filter=FILTERDYLIB
-                                 run the filter implemented in the dynamic library
-                                     whose path is FILTERDYLIB. Alternatively,
-                                     FILTERDYLIB can be 'builtin:<name>', where <name>
-                                     specifies one of the built-in filters: atime,
-                                     crtime, dirhardlink, hardlink, mtime, and sxid
-       -X FILTERARGS, --filter_args=FILTERARGS
-                                 pass this argument string to the filter callback
-     */
-    char* help = "[-hvjs] [-d file] [-V volumepath] [ [-b btree] [-n nodeid] ] [-p path] [-P absolutepath] [-F parent:name] [-o file] [--version] [path]\n"
-                 "\n"
-                 "SOURCES: \n"
-                 "hfsinspect will use the root filesystem by default, or the filesystem containing a target file in some cases. If you wish to\n"
-                 "specify a specific device or volume, you can with the following options:\n"
-                 "\n"
-                 "    -d DEV,     --device DEV    Path to device or file containing a bare HFS+ filesystem (no partition map or HFS wrapper) \n"
-                 "    -V VOLUME   --volume VOLUME Use the path to a mounted disk or any file on the disk to use a mounted volume. \n"
-                 "\n"
-                 "INFO: \n"
-                 "    By default, hfsinspect will just show you the volume header and quit.  Use the following options to get more specific data.\n"
-                 "\n"
-                 "    -h,         --help          Show help and quit. \n"
-                 "    -v,         --version       Show version information and quit. \n"
-                 "    -b NAME,    --btree NAME    Specify which HFS+ B-Tree to work with. Supported options: attributes, catalog, extents, or hotfiles. \n"
-                 "    -n ID,      --node ID       Dump an HFS+ B-Tree node by ID (must specify tree with -b). \n"
-                 "    -r,         --volumeheader  Dump the volume header. \n"
-                 "    -j,         --journal       Dump the volume's journal info block structure. \n"
-                 "    -c CNID,    --cnid CNID     Lookup and display a record by its catalog node ID. \n"
-                 "    -l,         --list          If the specified FSOB is a folder, list the contents. \n"
-                 "    -D,         --disk-info     Show any available information about the disk, including partitions and volume headers.\n"
-                 "    -0,         --freespace     Show a summary of the used/free space and extent count based on the allocation file.\n"
-                 "    -s,         --summary       Show a summary of the files on the disk.\n"
-                 "    -F                          Locate a record by Carbon-style FSSpec (parent:name).\n"
-                 "    -P                          Locate a record by filesystem path.\n"
-                 "    -y DIR                      Yank all the filesystem files and put then in the specified directory.\n"
-                 "\n"
-                 "OUTPUT: \n"
-                 "    You can optionally have hfsinspect dump any fork it finds as the result of an operation. This includes B-Trees or file forks.\n"
-                 "    Use a command like \"-b catalog -o catalog.dump\" to extract the catalog file from the boot drive, for instance.\n"
-                 "\n"
-                 "    -o PATH,    --output PATH   Use with -b or -p to dump a raw data fork (when used with -b, will dump the HFS+ tree file). \n"
-                 "\n"
-                 "ENVIRONMENT: \n"
-                 "    Set NOCOLOR to hide ANSI colors (TODO: check terminal for support, etc.). \n"
-                 "    Set DEBUG to be overwhelmed with useless data. \n"
-                 "\n";
-    fprintf(stderr, "usage: %s %s", PROGRAM_NAME, help);
-    exit(status);
-}
-
-void show_version()
-{
-    debug("Version requested.");
-    print("%s %s\n", PROGRAM_NAME, "1.0");
-    exit(0);
-}
 
 char* deviceAtPath(char* path)
 {
@@ -200,6 +125,10 @@ bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
 #endif
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-security"
+
+__attribute__((noreturn))
 void die(int val, char* format, ...)
 {
     va_list args;
@@ -210,19 +139,14 @@ void die(int val, char* format, ...)
 
     if (errno > 0) {
         perror(str);
-    } else
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-security"
-
-    {
+    } else {
         error(str);
     }
 
-#pragma GCC diagnostic pop
-
     exit(val);
 }
+
+#pragma GCC diagnostic pop
 
 void loadBTree(HIOptions* options)
 {
@@ -247,6 +171,91 @@ void loadBTree(HIOptions* options)
     }
 }
 
+__attribute__((noreturn))
+void show_version()
+{
+    fprintf(stdout, "%s %s\n", PROGRAM_NAME, "1.0");
+    exit(0);
+}
+
+/* hfsdebug-lite args remaining...
+   -0,        --freespace     display all free extents on the volume
+   -e,        --examples      display some usage examples
+   -f,        --fragmentation display all fragmented files on the volume
+   -H,        --hotfiles      display the hottest files on the volume; requires
+                                the -t (--top=TOP) option for the number to list
+   -l TYPE,   --list=TYPE     specify an HFS+ B-Tree's leaf nodes' type, where
+                                 TYPE is one of "file", "folder", "filethread", or
+                                 "folderthread" for the Catalog B-Tree; one of
+                                 "hfcfile" or "hfcthread" for the Hot Files B-Tree
+                                 B-Tree; or "extents" for the Extents B-Tree
+                                 You can use the type "any" if you wish to display
+                                 all node types. Currently, "any" is the only
+                                 type supported for the Attributes B-Tree
+   -m,        --mountdata     display a mounted volume's in-memory data
+   -S,        --summary_rsrc  calculate and display volume usage summary
+   -t TOP,    --top=TOP       specify the number of most fragmented files
+                                 to display (when used with the --fragmentation
+                                 option), or the number of largest files to display
+                                 (when used with the --summary option)
+   -x FILTERDYLIB, --filter=FILTERDYLIB
+                             run the filter implemented in the dynamic library
+                                 whose path is FILTERDYLIB. Alternatively,
+                                 FILTERDYLIB can be 'builtin:<name>', where <name>
+                                 specifies one of the built-in filters: atime,
+                                 crtime, dirhardlink, hardlink, mtime, and sxid
+   -X FILTERARGS, --filter_args=FILTERARGS
+                             pass this argument string to the filter callback
+ */
+
+void print_usage()
+{
+    char* help = "[-hv] [-d path | -p path | -V fspath] [-0DjlrSs] [-b btree [-n nid]] [-P path] [-F parent:name] [-o file] path";
+    fprintf(stderr, "usage: %s %s\n", PROGRAM_NAME, help);
+}
+
+void print_help()
+{
+    char* help = "\n"
+                 "    -h,         --help          Show help and quit. \n"
+                 "    -v,         --version       Show version information and quit. \n"
+                 "    -S          --si            Use base 1000 SI data size measurements instead of the traditional base 1024.\n"
+                 "                --debug         Set to be overwhelmed with useless data.\n"
+                 "\n"
+                 "SOURCES: \n"
+                 "hfsinspect will use the root filesystem by default, or the filesystem containing a target file in some cases. If you wish to\n"
+                 "specify a specific device or volume, you can with the following options:\n"
+                 "\n"
+                 "    -d DEV,     --device DEV    Path to device or file containing a bare HFS+ filesystem (no partition map or HFS wrapper) \n"
+                 "    -V VOLUME   --volume VOLUME Use the path to a mounted disk or any file on the disk to use a mounted volume. \n"
+                 "    -p          --path          Locate the record for the given path on a mounted filesystem.\n"
+                 "\n"
+                 "INFO: \n"
+                 "    By default, hfsinspect will just show you the volume header and quit.  Use the following options to get more specific data.\n"
+                 "\n"
+                 "    -l,         --list          If the specified FSOB is a folder, list the contents. \n"
+                 "    -D,         --disk-info     Show any available information about the disk, including partitions and volume headers.\n"
+                 "    -0,         --freespace     Show a summary of the used/free space and extent count based on the allocation file.\n"
+                 "    -s,         --summary       Show a summary of the files on the disk.\n"
+                 "    -r,         --volumeheader  Dump the volume header. \n"
+                 "    -j,         --journal       Dump the volume's journal info block structure. \n"
+                 "    -b NAME,    --btree NAME    Specify which HFS+ B-Tree to work with. Supported options: attributes, catalog, extents, or hotfiles. \n"
+                 "    -n ID,      --node ID       Dump an HFS+ B-Tree node by ID (must specify tree with -b). \n"
+                 "    -c CNID,    --cnid CNID     Lookup and display a record by its catalog node ID. \n"
+                 "    -F FSSpec   --fsspec FSSpec Locate a record by Carbon-style FSSpec (parent:name).\n"
+                 "    -P path     --fs-path path  Locate a record by path on the given device's filesystem.\n"
+                 "    -y DIR      --yank          Yank all the filesystem files and put then in the specified directory.\n"
+                 "\n"
+                 "OUTPUT: \n"
+                 "    You can optionally have hfsinspect dump any fork it finds as the result of an operation. This includes B-Trees or file forks.\n"
+                 "    Use a command like \"-b catalog -o catalog.dump\" to extract the catalog file from the boot drive, for instance.\n"
+                 "\n"
+                 "    -o PATH,    --output PATH   Use with -b or -p to dump a raw data fork (when used with -b, will dump the HFS tree file).\n"
+                 "\n";
+    print_usage();
+    fputs(help, stderr);
+}
+
 int main (int argc, char* const* argv)
 {
     bool      use_decimal = false;
@@ -260,65 +269,55 @@ int main (int argc, char* const* argv)
 
     (void)strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
 
-    if (argc == 1) usage(0);
+    if (argc == 1) { print_usage(); exit(1); }
 
     setlocale(LC_ALL, "");
-
-    DEBUG = getenv("DEBUG");
 
 #pragma mark Process Options
 
     /* options descriptor */
     struct option longopts[] = {
-        { "help",           no_argument,            NULL,                   'h' },
         { "version",        no_argument,            NULL,                   'v' },
-        { "device",         required_argument,      NULL,                   'd' },
-        { "yank",           required_argument,      NULL,                   'y' },
-        { "volume",         required_argument,      NULL,                   'V' },
-        { "volumeheader",   no_argument,            NULL,                   'r' },
-        { "node",           required_argument,      NULL,                   'n' },
-        { "btree",          required_argument,      NULL,                   'b' },
-        { "output",         required_argument,      NULL,                   'o' },
-        { "summary",        no_argument,            NULL,                   's' },
-        { "path",           required_argument,      NULL,                   'p' },
-        { "path_abs",       required_argument,      NULL,                   'P' },
-        { "cnid",           required_argument,      NULL,                   'c' },
-        { "list",           no_argument,            NULL,                   'l' },
-        { "journal",        no_argument,            NULL,                   'j' },
-        { "disk-info",      no_argument,            NULL,                   'D' },
-        { "freespace",      no_argument,            NULL,                   '0' },
+        { "help",           no_argument,            NULL,                   'h' },
         { "si",             no_argument,            NULL,                   'S' },
         { "debug",          no_argument,            NULL,                   'B' },
+
+        { "device",         required_argument,      NULL,                   'd' },
+        { "volume",         required_argument,      NULL,                   'V' },
+        { "path",           required_argument,      NULL,                   'p' },
+
+        { "volumeheader",   no_argument,            NULL,                   'r' },
+        { "journal",        no_argument,            NULL,                   'j' },
+        { "list",           no_argument,            NULL,                   'l' },
+        { "disk-info",      no_argument,            NULL,                   'D' },
+        { "freespace",      no_argument,            NULL,                   '0' },
+        { "summary",        no_argument,            NULL,                   's' },
+        { "btree",          required_argument,      NULL,                   'b' },
+        { "node",           required_argument,      NULL,                   'n' },
+        { "cnid",           required_argument,      NULL,                   'c' },
+        { "fsspec",         required_argument,      NULL,                   'F' },
+        { "fs-path",        required_argument,      NULL,                   'P' },
+        { "yank",           required_argument,      NULL,                   'y' },
+
+        { "output",         required_argument,      NULL,                   'o' },
         { NULL,             0,                      NULL,                   0   }
     };
 
     /* short options */
-    char*         shortopts = "0ShvjlrsDd:n:b:p:P:F:V:c:o:y:";
+    char*         shortopts = "0ShvjlrsDd:n:b:p:P:F:V:c:o:y:L";
 
-    char          opt;
+    int           opt;
     while ((opt = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
         switch (opt) {
-            // Unknown option
-            case '?':
+            case 'L':
             {
-                // Missing argument
-                exit(1);
-            }
-
-            case ':':
-            {
-                // Value set or index returned
-                exit(1);
-            }
-
-            case 0:
-            {
+                log_level += 1;
                 break;
             }
 
             case 'B':
             {
-                DEBUG = 1;
+                log_level = L_DEBUG;
                 break;
             }
 
@@ -337,13 +336,12 @@ int main (int argc, char* const* argv)
             case 'v':
             {
                 show_version();
-                break;               // Exits
             }
 
             case 'h':
             {
-                usage(0);
-                break;                                      // Exits
+                print_help();
+                exit(0);
             }
 
             case 'j':
@@ -399,7 +397,7 @@ int main (int argc, char* const* argv)
             {
                 set_mode(&options, HIModeShowPathInfo);
                 (void)strlcpy(options.file_path, optarg, PATH_MAX);
-                if (options.file_path[0] != '/') fatal("Path given to -P/--path_abs must be an absolute path from the root of the target filesystem.");
+                if (options.file_path[0] != '/') fatal("Path given to -P/--fs-path must be an absolute path from the root of the target filesystem.");
                 break;
             }
 
@@ -421,8 +419,8 @@ int main (int argc, char* const* argv)
                 memset(&options.record_filename, 0, sizeof(options.record_filename));
                 options.record_parent = 0;
 
-                char* option, *tofree;
-                option = tofree = strdup(optarg);
+                char* option, * tofree;
+                option                = tofree = strdup(optarg);
                 char* parent   = strsep(&option, ":");
                 char* filename = strsep(&option, ":");
 
@@ -482,10 +480,14 @@ int main (int argc, char* const* argv)
                 break;
             }
 
+            case '?':  // Unknown option/Missing argument
+            case ':':  // Value set or index returned
+            case 0:
             default:
             {
-                debug("Unhandled argument '%c' (default case).", opt); usage(1);
-                break;
+                debug("unhandled argument '%c'", opt);
+                print_usage();
+                exit(1);
             }
         }
     }
@@ -544,7 +546,7 @@ OPEN:
 #pragma mark Find HFS Volume
 
     // Device loaded. Find the first HFS+ filesystem.
-    debug("Looking for HFS filesystems on %s.", basename((char*)&vol->source));
+    info("Looking for HFS filesystems on %s.", basename((char*)&vol->source));
     Volume* tmp = hfs_find(vol);
     if (tmp == NULL) {
         // No HFS Plus volumes found.
@@ -642,12 +644,12 @@ OPEN:
         // Volume Header Blocks
         unsigned sectorCount = 16;
         size_t   readSize    = vol->sector_size*sectorCount;
-        uint8_t* buf         = NULL;
+        void*    buf         = NULL;
         int      nbytes      = 0;
 
         SALLOC(buf, readSize);
         assert(buf != NULL);
-        nbytes = vol_read(vol, (uint8_t*)buf, readSize, 0);
+        nbytes = vol_read(vol, (void*)buf, readSize, 0);
         if (nbytes < 0) die(0, "reading volume header");
 
         FILE* fp = fopen(headerPath, "w");
@@ -671,7 +673,7 @@ OPEN:
             { options.hfs->vh.attributesFile,  kHFSAttributesFileID,   attributesPath},
         };
 
-        for(int i = 0; i < 5; i++) {
+        for(unsigned i = 0; i < 5; i++) {
             if (files[i].forkData.logicalSize < 1) continue;
 
             hfsfork_make(&fork, options.hfs, files[i].forkData, HFSDataForkType, files[i].cnid);
@@ -716,7 +718,7 @@ NOPE:
 #pragma mark Volume Requests
 
     // Always detail what volume we're working on at the very least
-    PrintVolumeInfo(ctx, options.hfs);
+//    PrintVolumeInfo(ctx, options.hfs);
 
     // Default to volume info if there are no other specifiers.
     if (options.mode == 0) set_mode(&options, HIModeShowVolumeInfo);
@@ -744,7 +746,7 @@ NOPE:
                 PrintJournalInfoBlock(ctx, &block);
 
                 journal_header   header  = {0};
-                success = hfs_get_journalheader(&header, block, options.hfs);
+                success = hfs_get_journalheader(&header, &block, options.hfs);
                 if (!success) die(1, "Could not get the journal header!");
                 PrintJournalHeader(ctx, &header);
 
@@ -844,9 +846,9 @@ NOPE:
         bool showHex = 0;
 
         if (showHex) {
-            size_t   length = options.tree->headerRecord.nodeSize;
-            off_t    offset = length * options.node_id;
-            uint8_t* buf    = NULL;
+            size_t length = options.tree->headerRecord.nodeSize;
+            off_t  offset = length * options.node_id;
+            void*  buf    = NULL;
             SALLOC(buf, length);
             fpread(options.tree->fp, buf, length, offset);
             VisualizeData(buf, length);

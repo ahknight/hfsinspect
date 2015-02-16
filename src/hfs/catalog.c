@@ -35,6 +35,7 @@ wchar_t*       HFSPlusDirMetadataFolder = L".HFS+ Private Directory Data\xd";
 
 int hfs_get_catalog_btree(BTreePtr* tree, const HFS* hfs)
 {
+    trace("tree (%p), hfs (%p)", tree, hfs);
     debug("Getting catalog B-Tree");
 
     static BTreePtr cachedTree;
@@ -71,6 +72,9 @@ int hfs_get_catalog_btree(BTreePtr* tree, const HFS* hfs)
         }
         cachedTree->treeID  = kHFSCatalogFileID;
         cachedTree->getNode = hfs_catalog_get_node;
+
+        // Load the bitmap.
+        (void)BTIsNodeUsed(cachedTree, 0);
     }
 
     // Copy the cached tree out.
@@ -82,6 +86,7 @@ int hfs_get_catalog_btree(BTreePtr* tree, const HFS* hfs)
 
 int hfs_catalog_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodeid_t nodeNum)
 {
+    trace("out_node (%p), bTree (%p), nodeNum %u", out_node, bTree, nodeNum);
     assert(out_node);
     assert(bTree);
     assert(bTree->treeID == kHFSCatalogFileID);
@@ -97,11 +102,10 @@ int hfs_catalog_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodeid
 
     // Swap catalog-specific structs in the records
     if ((node->nodeDescriptor->kind == kBTIndexNode) || (node->nodeDescriptor->kind == kBTLeafNode)) {
-        for (int recNum = 0; recNum < node->recordCount; recNum++) {
-            uint8_t*              record        = NULL;
-            HFSPlusCatalogKey*    catalogKey    = NULL;
-            BTRecOffset           keyLen        = 0;
-            HFSPlusCatalogRecord* catalogRecord = NULL;
+        for (unsigned recNum = 0; recNum < node->recordCount; recNum++) {
+            void*              record     = NULL;
+            HFSPlusCatalogKey* catalogKey = NULL;
+            BTRecOffset        keyLen     = 0;
 
             // Get the raw record
             record     = BTGetRecord(node, recNum);
@@ -118,9 +122,10 @@ int hfs_catalog_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodeid
 
             // Index nodes are already swapped, so only swap leaf nodes
             if (node->nodeDescriptor->kind == kBTLeafNode) {
+                void* catalogRecord = NULL;
                 keyLen        = BTGetRecordKeyLength(node, recNum);
-                catalogRecord = (HFSPlusCatalogRecord*)(record + keyLen);
-                swap_HFSPlusCatalogRecord(catalogRecord);
+                catalogRecord = ((char*)record + keyLen);
+                swap_HFSPlusCatalogRecord((HFSPlusCatalogRecord*)catalogRecord);
             }
         }
     }
@@ -167,15 +172,17 @@ int hfs_catalog_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodeid
 
 int8_t hfs_catalog_find_record(BTreeNodePtr* node, BTRecNum* recordID, FSSpec spec)
 {
-    const HFS*        hfs          = spec.hfs;
-    bt_nodeid_t       parentFolder = spec.parentID;
-    HFSUniStr255      name         = spec.name;
+    hfs_wc_str   wc_name      = {0};
+    const HFS*   hfs          = spec.hfs;
+    bt_nodeid_t  parentFolder = spec.parentID;
+    HFSUniStr255 name         = spec.name;
 
-    hfs_wc_str        wc_name      = {0};
+    trace("node (%p), recordID (%p), spec (%p, %u, (%u))", node, recordID, spec.hfs, spec.parentID, spec.name.length);
+
     hfsuctowcs(wc_name, &name);
     debug("Searching catalog for %d:%ls", parentFolder, wc_name);
 
-    HFSPlusCatalogKey catalogKey   = {0};
+    HFSPlusCatalogKey catalogKey = {0};
     catalogKey.parentID  = parentFolder;
     catalogKey.nodeName  = name;
     catalogKey.keyLength = sizeof(catalogKey.parentID) + catalogKey.nodeName.length;
@@ -200,6 +207,11 @@ int8_t hfs_catalog_find_record(BTreeNodePtr* node, BTRecNum* recordID, FSSpec sp
 int hfs_catalog_compare_keys_cf(const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2)
 {
     int result = 0;
+
+    trace("key1 (%p) (%u, %u), key2 (%p) (%u, %u)",
+          key1, key1->keyLength, key1->parentID,
+          key2, key2->keyLength, key2->parentID);
+
     if ( (result = cmp(key1->parentID, key2->parentID)) != 0) return result;
 
     result = FastUnicodeCompare(key1->nodeName.unicode, key1->nodeName.length, key2->nodeName.unicode, key2->nodeName.length);
@@ -209,7 +221,12 @@ int hfs_catalog_compare_keys_cf(const HFSPlusCatalogKey* key1, const HFSPlusCata
 
 int hfs_catalog_compare_keys_bc(const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2)
 {
-    int        result = 0;
+    int result = 0;
+
+    trace("key1 (%p) (%u, %u), key2 (%p) (%u, %u)",
+          key1, key1->keyLength, key1->parentID,
+          key2, key2->keyLength, key2->parentID);
+
     if ( (result = cmp(key1->parentID, key2->parentID)) != 0) return result;
 
     hfs_wc_str key1Name, key2Name;
@@ -224,11 +241,12 @@ int HFSPlusGetCNIDName(wchar_t* name, FSSpec spec)
 {
     const HFS*        hfs      = spec.hfs;
     bt_nodeid_t       cnid     = spec.parentID;
-
     BTreePtr          tree     = NULL;
     BTreeNodePtr      node     = NULL;
     BTRecNum          recordID = 0;
     HFSPlusCatalogKey key      = {0};
+
+    trace("name %ls, spec (%p, %u, (%u))", name, spec.hfs, spec.parentID, spec.name.length);
 
     key.parentID  = cnid;
     key.keyLength = kHFSPlusCatalogKeyMinimumLength;
@@ -245,7 +263,7 @@ int HFSPlusGetCNIDName(wchar_t* name, FSSpec spec)
     debug("Found thread record %d:%d", node->nodeNumber, recordID);
 
     BTreeKeyPtr           recordKey    = NULL;
-    uint8_t*              recordValue  = NULL;
+    void*                 recordValue  = NULL;
     btree_get_record(&recordKey, &recordValue, node, recordID);
 
     HFSPlusCatalogThread* threadRecord = (HFSPlusCatalogThread*)recordValue;
@@ -256,41 +274,48 @@ int HFSPlusGetCNIDName(wchar_t* name, FSSpec spec)
 
 #pragma mark Searching
 
-/** Tries to follow all possible references from a catalog record, but only once. Returns 1 if the FSSpec refers to a new record, 0 if the source was not a reference, and -1 on error. */
-int HFSPlusGetTargetOfCatalogRecord(FSSpec* targetSpec, const HFSPlusCatalogRecord* sourceRecord, const HFS* hfs)
-{
-    switch(sourceRecord->record_type) {
-        case kHFSPlusFileRecord:
-        {
-            if (HFSPlusCatalogRecordIsHardLink(sourceRecord)) {
-                bt_nodeid_t targetCNID = sourceRecord->catalogFile.bsdInfo.special.iNodeNum;
-                FSSpec      spec       = {0};
-                if ( HFSPlusGetCatalogInfoByCNID(&spec, NULL, hfs, targetCNID) < 0)
-                    return -1;
-                *targetSpec = spec;
-                return 1;
-            }
-        }
-
-        case kHFSPlusFolderRecord:
-        {
-
-        }
-
-        case kHFSPlusFolderThreadRecord:
-        case kHFSPlusFileThreadRecord:
-        {
-
-        }
-
-        default:
-            return -1;
-    }
-    return 0;
-}
+/**
+   FIXME: Incomplete
+   Tries to follow all possible references from a catalog record, but only once. Returns 1 if the FSSpec refers to a new record, 0 if the source was not a reference, and -1 on error.
+ */
+//int HFSPlusGetTargetOfCatalogRecord(FSSpec* targetSpec, const HFSPlusCatalogRecord* sourceRecord, const HFS* hfs)
+//{
+//    trace("targetSpec (%p), sourceRecord (%p), hfs (%p)", targetSpec, sourceRecord, hfs);
+//
+//    switch(sourceRecord->record_type) {
+//        case kHFSPlusFileRecord:
+//        {
+//            if (HFSPlusCatalogRecordIsHardLink(sourceRecord)) {
+//                bt_nodeid_t targetCNID = sourceRecord->catalogFile.bsdInfo.special.iNodeNum;
+//                FSSpec      spec       = {0};
+//                if ( HFSPlusGetCatalogInfoByCNID(&spec, NULL, hfs, targetCNID) < 0)
+//                    return -1;
+//                *targetSpec = spec;
+//                return 1;
+//            }
+//        }
+//
+//        case kHFSPlusFolderRecord:
+//        {
+//
+//        }
+//
+//        case kHFSPlusFolderThreadRecord:
+//        case kHFSPlusFileThreadRecord:
+//        {
+//
+//        }
+//
+//        default:
+//            return -1;
+//    }
+//    return 0;
+//}
 
 int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord* out_catalogRecord, const char* path, const HFS* hfs)
 {
+    trace("out_spec (%p), out_catalogRecord (%p), path '%s', hfs (%p)", out_spec, out_catalogRecord, path, hfs);
+
     debug("Finding record for path: %s", path);
 
     if (strlen(path) == 0) {
@@ -369,6 +394,8 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord* out_ca
 
 HFSPlusCatalogKey HFSPlusCatalogKeyFromFSSpec(FSSpec spec)
 {
+    trace("spec (%p, %u, (%u)", spec.hfs, spec.parentID, spec.name.length);
+
     HFSPlusCatalogKey catalogKey = {0};
     catalogKey.parentID  = spec.parentID;
     catalogKey.nodeName  = spec.name;
@@ -379,6 +406,8 @@ HFSPlusCatalogKey HFSPlusCatalogKeyFromFSSpec(FSSpec spec)
 
 FSSpec HFSPlusFSSpecFromCatalogKey(HFSPlusCatalogKey key)
 {
+    trace("key (%u, %u)", key.keyLength, key.parentID);
+
     FSSpec spec = { .parentID = key.parentID, .name = key.nodeName };
     return spec;
 }
@@ -386,19 +415,20 @@ FSSpec HFSPlusFSSpecFromCatalogKey(HFSPlusCatalogKey key)
 int HFSPlusGetCatalogRecordByFSSpec(HFSPlusCatalogRecord* catalogRecord, FSSpec spec)
 {
     const HFS*        hfs         = spec.hfs;
-
     HFSPlusCatalogKey catalogKey  = HFSPlusCatalogKeyFromFSSpec(spec);
-
     BTreePtr          catalogTree = NULL;
     BTreeNodePtr      searchNode  = NULL;
     BTRecNum          searchIndex = 0;
+    bool              result      = false;
+    BTNodeRecord      record      = {0};
+
+    trace("catalogRecord (%p), spec (%p, %u, (%u)", catalogRecord, spec.hfs, spec.parentID, spec.name.length);
 
     if ( hfs_get_catalog_btree(&catalogTree, hfs) < 0 ) return -1;
 
-    bool              result      = btree_search(&searchNode, &searchIndex, catalogTree, &catalogKey);
+    result = btree_search(&searchNode, &searchIndex, catalogTree, &catalogKey);
     if (result != true) return -1;
 
-    BTNodeRecord      record      = {0};
     if ( BTGetBTNodeRecord(&record, searchNode, searchIndex) < 0) {
         debug("Get record failed.");
         return -1;
@@ -416,6 +446,8 @@ int HFSPlusGetCatalogInfoByCNID(FSSpec* out_spec, HFSPlusCatalogRecord* out_cata
 {
     FSSpec               spec          = { .hfs = hfs, .parentID = cnid };
     HFSPlusCatalogRecord catalogRecord = {0};
+
+    trace("out_spec (%p), out_catalogRecord (%p), hfs (%p), cnid %u", out_spec, out_catalogRecord, hfs, cnid);
 
     if ( HFSPlusGetCatalogRecordByFSSpec(&catalogRecord, spec) < 0 )
         return -1;
@@ -438,6 +470,8 @@ int HFSPlusGetCatalogInfoByCNID(FSSpec* out_spec, HFSPlusCatalogRecord* out_cata
 
 bool HFSPlusCatalogFileIsHardLink(const HFSPlusCatalogRecord* record)
 {
+    trace("record (%p)", record);
+
     return (
         (record->record_type == kHFSPlusFileRecord) &&
         (record->catalogFile.userInfo.fdCreator == kHFSPlusCreator && record->catalogFile.userInfo.fdType == kHardLinkFileType)
@@ -446,6 +480,8 @@ bool HFSPlusCatalogFileIsHardLink(const HFSPlusCatalogRecord* record)
 
 bool HFSPlusCatalogFolderIsHardLink(const HFSPlusCatalogRecord* record)
 {
+    trace("record (%p)", record);
+
     return (
         (record->record_type == kHFSPlusFileRecord) &&
         ( (record->catalogFile.flags & kHFSHasLinkChainMask) && HFSPlusCatalogRecordIsFolderAlias(record) )
@@ -454,11 +490,15 @@ bool HFSPlusCatalogFolderIsHardLink(const HFSPlusCatalogRecord* record)
 
 bool HFSPlusCatalogRecordIsHardLink(const HFSPlusCatalogRecord* record)
 {
+    trace("record (%p)", record);
+
     return ( HFSPlusCatalogFileIsHardLink(record) || HFSPlusCatalogFolderIsHardLink(record) );
 }
 
 bool HFSPlusCatalogRecordIsSymLink(const HFSPlusCatalogRecord* record)
 {
+    trace("record (%p)", record);
+
     return (
         (record->record_type == kHFSPlusFileRecord) &&
         (record->catalogFile.userInfo.fdCreator == kSymLinkCreator) &&
@@ -468,6 +508,8 @@ bool HFSPlusCatalogRecordIsSymLink(const HFSPlusCatalogRecord* record)
 
 bool HFSPlusCatalogRecordIsFileAlias(const HFSPlusCatalogRecord* record)
 {
+    trace("record (%p)", record);
+
     return (
         (record->record_type == kHFSPlusFileRecord) &&
 //            (record->catalogFile.userInfo.fdFlags & kIsAlias) &&
@@ -478,6 +520,8 @@ bool HFSPlusCatalogRecordIsFileAlias(const HFSPlusCatalogRecord* record)
 
 bool HFSPlusCatalogRecordIsFolderAlias(const HFSPlusCatalogRecord* record)
 {
+    trace("record (%p)", record);
+
     return (
         (record->record_type == kHFSPlusFileRecord) &&
 //            (record->catalogFile.userInfo.fdFlags & kIsAlias) &&
@@ -488,129 +532,8 @@ bool HFSPlusCatalogRecordIsFolderAlias(const HFSPlusCatalogRecord* record)
 
 bool HFSPlusCatalogRecordIsAlias(const HFSPlusCatalogRecord* record)
 {
+    trace("record (%p)", record);
+
     return ( HFSPlusCatalogRecordIsFileAlias(record) || HFSPlusCatalogRecordIsFolderAlias(record) );
-}
-
-#pragma mark Endian Madness
-
-void swap_HFSPlusBSDInfo(HFSPlusBSDInfo* record)
-{
-    Swap32(record->ownerID);
-    Swap32(record->groupID);
-    // noswap: adminFlags is a byte
-    // noswap: ownerFlags is a byte
-    Swap16(record->fileMode);
-    Swap32(record->special.iNodeNum);
-}
-
-void swap_FndrDirInfo(FndrDirInfo* record)
-{
-    Swap16(record->frRect.top);
-    Swap16(record->frRect.left);
-    Swap16(record->frRect.bottom);
-    Swap16(record->frRect.right);
-    // noswap: frFlags is an undocumented short
-    Swap16(record->frLocation.v);
-    Swap16(record->frLocation.h);
-    Swap16(record->opaque);
-}
-
-void swap_FndrFileInfo(FndrFileInfo* record)
-{
-    Swap32(record->fdType);
-    Swap32(record->fdCreator);
-    Swap16(record->fdFlags);
-    Swap16(record->fdLocation.v);
-    Swap16(record->fdLocation.h);
-    Swap16(record->opaque);
-}
-
-void swap_FndrOpaqueInfo(FndrOpaqueInfo* record)
-{
-    // A bunch of undocumented bytes.  Included for completeness.
-}
-
-void swap_HFSPlusCatalogKey(HFSPlusCatalogKey* record)
-{
-//    noswap: keyLength; swapped in swap_BTNode
-    Swap32(record->parentID);
-    swap_HFSUniStr255(&record->nodeName);
-}
-
-void swap_HFSPlusCatalogRecord(HFSPlusCatalogRecord* record)
-{
-    Swap16(record->record_type);
-    switch (record->record_type) {
-        case kHFSPlusFileRecord:
-        {
-            swap_HFSPlusCatalogFile(&record->catalogFile);
-            break;
-        }
-
-        case kHFSPlusFolderRecord:
-        {
-            swap_HFSPlusCatalogFolder(&record->catalogFolder);
-            break;
-        }
-
-        case kHFSPlusFileThreadRecord:
-        case kHFSPlusFolderThreadRecord:
-        {
-            swap_HFSPlusCatalogThread(&record->catalogThread);
-            break;
-        }
-
-        default:
-        {
-            break;
-        }
-    }
-}
-
-void swap_HFSPlusCatalogFile(HFSPlusCatalogFile* record)
-{
-//    Swap16(record->recordType);
-    Swap16(record->flags);
-    Swap32(record->reserved1);
-    Swap32(record->fileID);
-    Swap32(record->createDate);
-    Swap32(record->contentModDate);
-    Swap32(record->attributeModDate);
-    Swap32(record->accessDate);
-    Swap32(record->backupDate);
-    swap_HFSPlusBSDInfo(&record->bsdInfo);
-    swap_FndrFileInfo(&record->userInfo);
-    swap_FndrOpaqueInfo(&record->finderInfo);
-    Swap32(record->textEncoding);
-    Swap32(record->reserved2);
-
-    swap_HFSPlusForkData(&record->dataFork);
-    swap_HFSPlusForkData(&record->resourceFork);
-}
-
-void swap_HFSPlusCatalogFolder(HFSPlusCatalogFolder* record)
-{
-//    Swap16(record->recordType);
-    Swap16(record->flags);
-    Swap32(record->valence);
-    Swap32(record->folderID);
-    Swap32(record->createDate);
-    Swap32(record->contentModDate);
-    Swap32(record->attributeModDate);
-    Swap32(record->accessDate);
-    Swap32(record->backupDate);
-    swap_HFSPlusBSDInfo(&record->bsdInfo);
-    swap_FndrDirInfo(&record->userInfo);
-    swap_FndrOpaqueInfo(&record->finderInfo);
-    Swap32(record->textEncoding);
-    Swap32(record->folderCount);
-}
-
-void swap_HFSPlusCatalogThread(HFSPlusCatalogThread* record)
-{
-//    Swap16(record->recordType);
-    Swap32(record->reserved);
-    Swap32(record->parentID);
-    swap_HFSUniStr255(&record->nodeName);
 }
 

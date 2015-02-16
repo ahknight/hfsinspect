@@ -18,11 +18,12 @@
 #define MEMBER_LABEL(s, m) #m, s->m
 
 struct out_ctx {
-    bool     decimal_sizes;
     unsigned indent_level;
     unsigned indent_step;
     char     indent_string[32];
     char*    prefix;
+    bool     decimal_sizes;
+    uint8_t  _reserved[7];
 };
 typedef struct out_ctx out_ctx;
 

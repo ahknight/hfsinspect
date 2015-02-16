@@ -12,6 +12,7 @@
 #include <libgen.h>
 #include <signal.h>         //raise
 #include <sys/param.h>      //MIN/MAX
+#include <sys/ioctl.h>
 
 #include <string.h>         // memcpy, strXXX, etc.
 #if defined(__linux__)
@@ -19,15 +20,14 @@
 #endif
 
 #include "logging.h"
-#include "nullstream.h"
 #include "memdmp/output.h"
 
 
-#define PrintLine_MAX_LINE_LEN 1024
+#define PrintLine_MAX_LINE_LEN 0xffff
 #define PrintLine_MAX_DEPTH    40
 #define USE_EMOJI              0
 
-bool DEBUG = false;
+enum LogLevel log_level = L_STANDARD;
 
 struct _colorState {
     struct {
@@ -74,6 +74,12 @@ void _printColor(FILE* f, unsigned level)
             break;
         }
 
+        case L_STANDARD:
+        {
+            current = (colorState){ { .white = 23 }, { 0 } };
+            break;
+        }
+
         case L_INFO:
         {
             // Info: shades of green
@@ -88,9 +94,16 @@ void _printColor(FILE* f, unsigned level)
             break;
         }
 
+        case L_DEBUG2:
+        {
+            // Debug: shades of blue
+            current = (colorState){ { 3, 3, 5}, { 0 } };
+            break;
+        }
+
         default:
         {
-            current = (colorState){ { .white = 23 }, { 0 } };
+            current = (colorState){ { 5, 5, 1 }, { 0 } };
             break;
         }
     }
@@ -110,67 +123,61 @@ void _printColor(FILE* f, unsigned level)
 
 int LogLine(enum LogLevel level, const char* format, ...)
 {
-    va_list      argp;
+    va_list argp;
     va_start(argp, format);
 
-    int          nchars      = 0;
-    FILE*        fp          = stdout;
-    static FILE* streams[6]  = {0};
-    char*        prefixes[6] = {
+    int     nchars      = 0;
+    FILE*   fp          = stderr;
+    char*   prefixes[8] = {
 #if USE_EMOJI
         "❕",
         "⛔️",
         "🚸 ",
         "🆗 ",
-        "ℹ️",
+        "ℹ️ ",
+        "🐞 ",
+        "🐞 ",
         "🐞 ",
 #else
-        "[CRIT] ",
-        "[ERR] ",
-        "[WARN] ",
-        "  ",
-        "[INFO] ",
-        "[DEBUG] ",
+        "[CRIT]   ",
+        "[ERR]    ",
+        "[WARN]   ",
+        "",
+        "[INFO]   ",
+        "[DEBUG]  ",
+        "[DEBUG2] ",
+        "[TRACE]  ",
 #endif
     };
+    char*   prefix = NULL;
 
-    if (streams[0] == NULL) {
-        streams[L_CRITICAL] = stderr;
-        streams[L_ERROR]    = stderr;
-        streams[L_WARNING]  = stderr;
-        streams[L_STANDARD] = stdout;
+    if (level > log_level)   return 0;
 
-        if (DEBUG) {
-            streams[L_INFO]  = stderr;
-            streams[L_DEBUG] = stderr;
-        } else {
-            streams[L_INFO]  = nullstream();
-            streams[L_DEBUG] = nullstream();
-        }
+    if (level == L_STANDARD) fp = stdout;
+
+    if (level >= L_TRACE) {
+        prefix = prefixes[L_TRACE];
+    } else {
+        prefix = prefixes[level];
     }
 
-    if (level <= L_DEBUG)
-        fp = streams[level];
-    else
-        fprintf(stderr, "Uh oh. %u isn't a valid log level.", level);
-
     _printColor(fp, level);
-    nchars += fputs(prefixes[level], fp);
+    nchars += fputs(prefix, fp);
     nchars += fputs(" ", fp);
     nchars += vfprintf(fp, format, argp);
-    fputc('\n', fp);
+    nchars += fputc('\n', fp);
     _print_reset(fp);
 
     va_end(argp);
 
-    if ( DEBUG && (level <= L_WARNING) ) {
+    if ( (log_level > L_INFO) && (level <= L_WARNING) ) {
         print_trace(fp, 2);
     }
 
     fflush(fp);
 
     if ((level <= L_CRITICAL)) {
-        if (DEBUG)
+        if (log_level > L_INFO)
             raise(SIGTRAP);
         else
             abort();
@@ -179,42 +186,77 @@ int LogLine(enum LogLevel level, const char* format, ...)
     return nchars;
 }
 
-int PrintLine(enum LogLevel level, const char* file, const char* function, unsigned int line, const char* format, ...)
+int PrintLine(enum LogLevel level, const char* file, const char* function, unsigned int line_no, const char* format, ...)
 {
-    va_list      argp;
+    va_list        argp;
     va_start(argp, format);
 
-    char         inputstr[PrintLine_MAX_LINE_LEN];
-    char         indent[PrintLine_MAX_LINE_LEN];
-    int          out_bytes = 0;
-    unsigned int depth     = stack_depth(PrintLine_MAX_DEPTH) - 1; // remove our frame
+    unsigned short term_width = 0;
+    struct winsize w          = {0};
+    int            fd         = fileno(stdout);
+    char*          in_line    = NULL;
+    char*          out_line   = NULL;
+    int            out_bytes  = 0;
+    unsigned int   depth      = stack_depth(PrintLine_MAX_DEPTH) - 1; // remove our frame
 
-    // "Print" the input format string to a string.
-    if (argp != NULL)
-        vsnprintf((char*)&inputstr, PrintLine_MAX_LINE_LEN, format, argp);
-    else
-        (void)strlcpy(inputstr, format, PrintLine_MAX_LINE_LEN);
+    // Get the terminal's line width.
+    if (isatty(fd)) {
+        ioctl(fd, TIOCGWINSZ, &w);
+        term_width = w.ws_col;
+    } else {
+        term_width = PrintLine_MAX_LINE_LEN;
+    }
+
+    term_width -= 10; // Account for prefix.
+
+    SALLOC(out_line, term_width);
+    SALLOC(in_line, term_width);
+
+    // Fill the line with spaces.
+    memset(out_line, ' ', term_width);
 
     // Indent the string with the call depth.
-    depth = MIN(depth, PrintLine_MAX_DEPTH);
+    depth = MIN(depth, term_width);
 
-    // Fill the indent string with spaces.
-    memset(indent, ' ', depth);
-
-    // Mark the current depth.
-    indent[depth] = '\0';
+    // "Print" the input format string to a string.
+    unsigned in_line_len = 0;
+//    if (argp != NULL)
+    in_line_len = vsnprintf(in_line, term_width, format, argp);
+//    else
+//        in_line_len = strlcpy(in_line, format, term_width);
 
     // Append the text after the indentation.
-    (void)strlcat(indent, inputstr, PrintLine_MAX_LINE_LEN);
+    (void)memcpy((char*)(out_line+depth), in_line, in_line_len);
 
     // Now add our format to that string and print to stdout.
-    if (DEBUG && (level != L_STANDARD))
-        out_bytes += LogLine(level, "%-80s [%s:%u %s()]", indent, basename((char*)file), line, function);
-    else
-        out_bytes += LogLine(level, "%s", inputstr);
+    if ((log_level > L_INFO) && (level != L_STANDARD)) {
+        char*  debug_info   = NULL;
+        size_t debug_len    = 0;
+        int    debug_offset = 0;
+
+        debug_info   = ALLOC(term_width);
+        debug_len    = snprintf(debug_info, term_width, "[%s:%u %s()]", basename((char*)file), line_no, function);
+        debug_offset = (term_width-1) - debug_len;
+
+        if (debug_offset > 0) {
+            memcpy((char*)(out_line + debug_offset), debug_info, debug_len);
+        }
+
+        SFREE(debug_info);
+    }
+
+
+    // Cap the string
+    out_line[term_width] = '\0';
+
+    out_bytes           += LogLine(level, "%s", out_line);
+
+    // printf("%s\n", out_line);
 
     // Clean up.
     va_end(argp);
+    SFREE(in_line);
+    SFREE(out_line);
 
     return out_bytes;
 }

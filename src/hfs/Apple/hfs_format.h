@@ -31,8 +31,6 @@
 #include <sys/types.h>
 //#include <sys/appleapiopts.h>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
 /*
  * hfs_format.h
  *
@@ -803,7 +801,5 @@ enum {
 #ifdef __cplusplus
 }
 #endif
-
-#pragma GCC diagnostic pop
 
 #endif /* __HFS_FORMAT__ */

@@ -16,18 +16,21 @@
 
 void swap_HFSExtentDescriptor(HFSExtentDescriptor* record)
 {
+    // trace("record (%p)", record);
     Swap(record->startBlock);
     Swap(record->blockCount);
 }
 
 void swap_HFSExtentRecord(HFSExtentRecord* record)
 {
-    for(int i = 0; i < kHFSExtentDensity; i++)
+    // trace("record (%p)", record);
+    for(unsigned i = 0; i < kHFSExtentDensity; i++)
         swap_HFSExtentDescriptor(record[i]);
 }
 
 void swap_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* record)
 {
+    // trace("record (%p)", record);
     Swap(record->drSigWord);                          /* == kHFSSigWord */
     Swap(record->drCrDate);                           /* date and time of volume creation */
     Swap(record->drLsMod);                            /* date and time of last modification */
@@ -61,6 +64,7 @@ void swap_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* record)
 
 void swap_HFSPlusVolumeHeader(HFSPlusVolumeHeader* record)
 {
+    // trace("record (%p)", record);
     Swap16(record->signature);
     Swap16(record->version);
     Swap32(record->attributes);
@@ -87,7 +91,7 @@ void swap_HFSPlusVolumeHeader(HFSPlusVolumeHeader* record)
     Swap32(record->writeCount);
     Swap64(record->encodingsBitmap);
 
-    HFSPlusVolumeFinderInfo* finderInfo = (HFSPlusVolumeFinderInfo*)&record->finderInfo;
+    HFSPlusVolumeFinderInfo* finderInfo = (void*)&record->finderInfo;
     Swap32(finderInfo->bootDirID);
     Swap32(finderInfo->bootParentID);
     Swap32(finderInfo->openWindowDirID);
@@ -105,6 +109,8 @@ void swap_HFSPlusVolumeHeader(HFSPlusVolumeHeader* record)
 
 void swap_JournalInfoBlock(JournalInfoBlock* record)
 {
+    // trace("record (%p)", record);
+
     /*
        struct JournalInfoBlock {
        uint32_t	flags;
@@ -118,7 +124,7 @@ void swap_JournalInfoBlock(JournalInfoBlock* record)
        typedef struct JournalInfoBlock JournalInfoBlock;
      */
     Swap32(record->flags);
-    for(int i = 0; i < 8; i++)
+    for(unsigned i = 0; i < 8; i++)
         Swap32(record->device_signature[i]);
     Swap64(record->offset);
     Swap64(record->size);
@@ -129,6 +135,7 @@ void swap_JournalInfoBlock(JournalInfoBlock* record)
 
 void swap_HFSPlusForkData(HFSPlusForkData* record)
 {
+    // trace("record (%p)", record);
     Swap64(record->logicalSize);
     Swap32(record->totalBlocks);
     Swap32(record->clumpSize);
@@ -137,18 +144,21 @@ void swap_HFSPlusForkData(HFSPlusForkData* record)
 
 void swap_HFSPlusExtentRecord(HFSPlusExtentDescriptor record[])
 {
-    for(int i = 0; i < kHFSPlusExtentDensity; i++)
+    // trace("record (%p)", record);
+    for(unsigned i = 0; i < kHFSPlusExtentDensity; i++)
         swap_HFSPlusExtentDescriptor(&record[i]);
 }
 
 void swap_HFSPlusExtentDescriptor(HFSPlusExtentDescriptor* record)
 {
+    // trace("record (%p)", record);
     Swap32(record->startBlock);
     Swap32(record->blockCount);
 }
 
 void swap_HFSPlusExtentKey(HFSPlusExtentKey* record)
 {
+    // trace("record (%p)", record);
 //    noswap: keyLength; swapped in swap_BTNode
     Swap32(record->fileID);
     Swap32(record->startBlock);
@@ -156,26 +166,168 @@ void swap_HFSPlusExtentKey(HFSPlusExtentKey* record)
 
 void swap_HFSUniStr255(HFSUniStr255* unistr)
 {
+    // trace("unistr (%p)", unistr);
     Swap16(unistr->length);
     if (unistr->length > 256) {
         warning("Invalid HFSUniStr255 length: %d", unistr->length);
     }
-    for(int i = 0; i < MIN(256, unistr->length); i++)
+    for(unsigned i = 0; i < MIN(256, unistr->length); i++)
         Swap16(unistr->unicode[i]);
+}
+
+void swap_HFSPlusBSDInfo(HFSPlusBSDInfo* record)
+{
+    // trace("record (%p)", record);
+
+    Swap32(record->ownerID);
+    Swap32(record->groupID);
+    // noswap: adminFlags is a byte
+    // noswap: ownerFlags is a byte
+    Swap16(record->fileMode);
+    Swap32(record->special.iNodeNum);
+}
+
+void swap_FndrDirInfo(FndrDirInfo* record)
+{
+    // trace("record (%p)", record);
+
+    Swap16(record->frRect.top);
+    Swap16(record->frRect.left);
+    Swap16(record->frRect.bottom);
+    Swap16(record->frRect.right);
+    // noswap: frFlags is an undocumented short
+    Swap16(record->frLocation.v);
+    Swap16(record->frLocation.h);
+    Swap16(record->opaque);
+}
+
+void swap_FndrFileInfo(FndrFileInfo* record)
+{
+    // trace("record (%p)", record);
+
+    Swap32(record->fdType);
+    Swap32(record->fdCreator);
+    Swap16(record->fdFlags);
+    Swap16(record->fdLocation.v);
+    Swap16(record->fdLocation.h);
+    Swap16(record->opaque);
+}
+
+void swap_FndrOpaqueInfo(FndrOpaqueInfo* record)
+{
+    // trace("record (%p)", record);
+
+    // A bunch of undocumented bytes.  Included for completeness.
+}
+
+void swap_HFSPlusCatalogKey(HFSPlusCatalogKey* record)
+{
+    // trace("record (%p)", record);
+
+//    noswap: keyLength; swapped in swap_BTNode
+    Swap32(record->parentID);
+    swap_HFSUniStr255(&record->nodeName);
+}
+
+void swap_HFSPlusCatalogRecord(HFSPlusCatalogRecord* record)
+{
+    // trace("record (%p)", record);
+
+    Swap16(record->record_type);
+    switch (record->record_type) {
+        case kHFSPlusFileRecord:
+        {
+            swap_HFSPlusCatalogFile(&record->catalogFile);
+            break;
+        }
+
+        case kHFSPlusFolderRecord:
+        {
+            swap_HFSPlusCatalogFolder(&record->catalogFolder);
+            break;
+        }
+
+        case kHFSPlusFileThreadRecord:
+        case kHFSPlusFolderThreadRecord:
+        {
+            swap_HFSPlusCatalogThread(&record->catalogThread);
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+}
+
+void swap_HFSPlusCatalogFile(HFSPlusCatalogFile* record)
+{
+    // trace("record (%p)", record);
+
+//    Swap16(record->recordType);
+    Swap16(record->flags);
+    Swap32(record->reserved1);
+    Swap32(record->fileID);
+    Swap32(record->createDate);
+    Swap32(record->contentModDate);
+    Swap32(record->attributeModDate);
+    Swap32(record->accessDate);
+    Swap32(record->backupDate);
+    swap_HFSPlusBSDInfo(&record->bsdInfo);
+    swap_FndrFileInfo(&record->userInfo);
+    swap_FndrOpaqueInfo(&record->finderInfo);
+    Swap32(record->textEncoding);
+    Swap32(record->reserved2);
+
+    swap_HFSPlusForkData(&record->dataFork);
+    swap_HFSPlusForkData(&record->resourceFork);
+}
+
+void swap_HFSPlusCatalogFolder(HFSPlusCatalogFolder* record)
+{
+    // trace("record (%p)", record);
+
+//    Swap16(record->recordType);
+    Swap16(record->flags);
+    Swap32(record->valence);
+    Swap32(record->folderID);
+    Swap32(record->createDate);
+    Swap32(record->contentModDate);
+    Swap32(record->attributeModDate);
+    Swap32(record->accessDate);
+    Swap32(record->backupDate);
+    swap_HFSPlusBSDInfo(&record->bsdInfo);
+    swap_FndrDirInfo(&record->userInfo);
+    swap_FndrOpaqueInfo(&record->finderInfo);
+    Swap32(record->textEncoding);
+    Swap32(record->folderCount);
+}
+
+void swap_HFSPlusCatalogThread(HFSPlusCatalogThread* record)
+{
+    // trace("record (%p)", record);
+
+//    Swap16(record->recordType);
+    Swap32(record->reserved);
+    Swap32(record->parentID);
+    swap_HFSUniStr255(&record->nodeName);
 }
 
 void swap_HFSPlusAttrKey(HFSPlusAttrKey* record)
 {
+    // trace("record (%p)", record);
 //    noswap: keyLength; swapped in swap_BTNode
     Swap16(record->pad);
     Swap32(record->fileID);
     Swap32(record->startBlock);
     Swap16(record->attrNameLen);
-    for(int i = 0; i < record->attrNameLen; i++) Swap16(record->attrName[i]);
+    for(unsigned i = 0; i < record->attrNameLen; i++) Swap16(record->attrName[i]);
 }
 
 void swap_HFSPlusAttrData(HFSPlusAttrData* record)
 {
+    // trace("record (%p)", record);
     // noswap: Swap32(record->recordType); (previously swapped)
     // noswap: Swap32(record->reserved[0]);
     // noswap: Swap32(record->reserved[1]);
@@ -184,6 +336,7 @@ void swap_HFSPlusAttrData(HFSPlusAttrData* record)
 
 void swap_HFSPlusAttrForkData(HFSPlusAttrForkData* record)
 {
+    // trace("record (%p)", record);
     // noswap: Swap32(record->recordType); (previously swapped)
     // noswap: Swap32(record->reserved);
     swap_HFSPlusForkData(&record->theFork);
@@ -191,6 +344,7 @@ void swap_HFSPlusAttrForkData(HFSPlusAttrForkData* record)
 
 void swap_HFSPlusAttrExtents(HFSPlusAttrExtents* record)
 {
+    // trace("record (%p)", record);
     // noswap: Swap32(record->recordType); (previously swapped)
     // noswap: Swap32(record->reserved);
     swap_HFSPlusExtentRecord(record->extents);
@@ -198,6 +352,7 @@ void swap_HFSPlusAttrExtents(HFSPlusAttrExtents* record)
 
 void swap_HFSPlusAttrRecord(HFSPlusAttrRecord* record)
 {
+    // trace("record (%p)", record);
     record->recordType = be32toh(record->recordType);
     switch (record->recordType) {
         case kHFSPlusAttrInlineData:

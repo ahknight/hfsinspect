@@ -16,15 +16,15 @@
 
 #include "gc.h"
 
-#define ALLOC(buf_size)         GC_MALLOC((buf_size))
-#define REALLOC(buf, buf_size)  GC_REALLOC((buf), (buf_size))
-#define FREE(buf)               ;;
+#define ALLOC(buf_size)        GC_MALLOC((buf_size))
+#define REALLOC(buf, buf_size) GC_REALLOC((buf), (buf_size))
+#define FREE(buf)              ;;
 
 #else                           // !GC_ENABLED
 
-#define ALLOC(buf_size)         calloc(1, (buf_size))
-#define REALLOC(buf, buf_size)  realloc((buf), (buf_size))
-#define FREE(buf)               free((buf))
+#define ALLOC(buf_size)        calloc(1, (buf_size))
+#define REALLOC(buf, buf_size) realloc((buf), (buf_size))
+#define FREE(buf)              free((buf))
 
 #endif                          // defined(GC_ENABLED)
 

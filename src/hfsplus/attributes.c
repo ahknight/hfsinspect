@@ -89,17 +89,17 @@ int hfs_attributes_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nod
 
     // Swap tree-specific structs in the records
     if ((node->nodeDescriptor->kind == kBTIndexNode) || (node->nodeDescriptor->kind == kBTLeafNode)) {
-        for (int recNum = 0; recNum < node->recordCount; recNum++) {
-            uint8_t*        record = BTGetRecord(node, recNum);
+        for (unsigned recNum = 0; recNum < node->recordCount; recNum++) {
+            void*           record = BTGetRecord(node, recNum);
             HFSPlusAttrKey* key    = (HFSPlusAttrKey*)record;
 
             swap_HFSPlusAttrKey(key);
 
             if (node->nodeDescriptor->kind == kBTLeafNode) {
-                BTRecOffset        keyLen     = BTGetRecordKeyLength(node, recNum);
-                HFSPlusAttrRecord* attrRecord = (HFSPlusAttrRecord*)(record + keyLen);
+                BTRecOffset keyLen     = BTGetRecordKeyLength(node, recNum);
+                void*       attrRecord = ((char*)record + keyLen);
 
-                swap_HFSPlusAttrRecord(attrRecord);
+                swap_HFSPlusAttrRecord((HFSPlusAttrRecord*)attrRecord);
             }
         }
     }

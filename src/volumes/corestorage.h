@@ -21,6 +21,10 @@ enum CSBlockTypes {
     kCSDiskLabelBlock    = 0x11,
 };
 
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpacked"
+
 // 64 bytes
 typedef struct CSBlockHeader CSBlockHeader;
 struct CSBlockHeader
@@ -95,7 +99,8 @@ struct CSMetadataBlockType11
     } ukwn_records[1];                          // 192
 } __attribute__((aligned(2), packed));
 
-typedef struct CSVolumeGroupsDescriptor {
+typedef struct CSVolumeGroupsDescriptor CSVolumeGroupsDescriptor;
+struct CSVolumeGroupsDescriptor {
     uint64_t field_1;                           // 0
     uint64_t field_2;                           // 8
     uint64_t field_3;                           // 16
@@ -103,7 +108,10 @@ typedef struct CSVolumeGroupsDescriptor {
     uint64_t field_5;                           // 32
     uint64_t field_6;                           // 40
     char     plist[4];                          // 48
-} CSVolumeGroupsDescriptor;
+} __attribute__((aligned(2), packed));
+
+#pragma GCC diagnostic pop
+
 
 #pragma mark - Functions
 
