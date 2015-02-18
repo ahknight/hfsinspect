@@ -6,12 +6,9 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <errno.h>              // errno/perror
-#include <string.h>             // memcpy, strXXX, etc.
-
 #include "hfs/hfs_io.h"
 
-#include "hfsinspect/range.h"
+#include "hfs/range.h"
 #include "hfs/extents.h"
 #include "hfs/output_hfs.h"
 #include "logging/logging.h"    // console printing routines
@@ -290,7 +287,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, siz
             critical("We're stuck in a read loop: request (%zd, %zd); remaining (%zd, %zd)", request.start, request.count, remaining.start, remaining.count);
         }
 
-        trace("Remaining: (%zd, %zd)", remaining.start, remaining.count);
+        debug2("Remaining: (%zd, %zd)", remaining.start, remaining.count);
 
         found = extentlist_find(extentList, remaining.start, &read_range.start, &read_range.count);
         if (!found) {

@@ -6,21 +6,11 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <stdarg.h>         // va_list, etc.
-#include <errno.h>          // errno/perror
-#include <sys/param.h>      // MIN/MAX
-#include <uuid/uuid.h>      // uuid_t, etc.
 #include <time.h>           // gmtime
-#include <assert.h>         // assert()
-
-#include <string.h>         // memcpy, strXXX, etc.
-#if defined(__linux__)
-    #include <bsd/string.h> // strlcpy, etc.
-#endif
 
 #include "output.h"
 
-#include "hfsinspect/stringtools.h"
+#include "stringtools.h"
 #include "logging/logging.h"    // console printing routines
 #include "memdmp/memdmp.h"
 

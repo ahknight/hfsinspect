@@ -11,9 +11,6 @@
 #ifndef volumes_crc32_h
 #define volumes_crc32_h
 
-#include <stdlib.h>
-#include <stdint.h>
-
 uint32_t crc32 (uint32_t crc, const void* buf, size_t len);
 
 #endif

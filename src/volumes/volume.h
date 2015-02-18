@@ -9,8 +9,6 @@
 #ifndef volumes_volume_h
 #define volumes_volume_h
 
-#include <stdio.h>
-#include <stdint.h>
 #include <sys/param.h>          //PATH_MAX
 
 #include "output.h"

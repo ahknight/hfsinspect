@@ -9,9 +9,6 @@
 #ifndef hfsinspect_logging_h
 #define hfsinspect_logging_h
 
-#include <stdint.h>     //uint#_t etc.
-#include <stdio.h>      //FILE*
-#include <stdbool.h>    //bool
 #include "debug.h"      //print_trace
 
 /*

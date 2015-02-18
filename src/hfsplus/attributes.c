@@ -6,11 +6,6 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <errno.h>              // errno/perror
-#include <wchar.h>
-#include <string.h>             // memcpy, strXXX, etc.
-#include <assert.h>             // assert()
-
 #include "hfsplus/hfsplus.h"
 
 #include "hfs/hfs_io.h"

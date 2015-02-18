@@ -6,15 +6,6 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <string.h>             // memcpy, strXXX, etc.
-#if defined(__linux__)
-    #include <bsd/string.h>     // strlcpy, etc.
-#endif
-
-#include <stdbool.h>
-#include <math.h>
-#include <errno.h>              // errno/perror
-
 #include "gpt.h"
 #include "output.h"
 #include "_endian.h"

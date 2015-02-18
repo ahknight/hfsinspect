@@ -7,7 +7,6 @@
 //
 
 #include "operations.h"
-#include <errno.h>              // errno/perror
 
 ssize_t extractFork(const HFSFork* fork, const char* extractPath)
 {

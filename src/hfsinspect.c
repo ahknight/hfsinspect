@@ -29,9 +29,8 @@
 #include "hfsplus/hfsplus.h"
 #include "logging/logging.h"    // console printing routines
 
-#include "hfsinspect/operations/operations.h"
+#include "operations/operations.h"
 #include "hfs/unicode.h"
-#include "hfsinspect/types.h"
 #include "volumes/utilities.h"     // commonly-used utility functions
 
 

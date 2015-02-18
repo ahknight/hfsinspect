@@ -6,18 +6,10 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <stdlib.h>
-#include <stdarg.h>
-#include <unistd.h>
 #include <libgen.h>
-#include <signal.h>         //raise
-#include <sys/param.h>      //MIN/MAX
-#include <sys/ioctl.h>
-
-#include <string.h>         // memcpy, strXXX, etc.
-#if defined(__linux__)
-    #include <bsd/string.h> // strlcpy, etc.
-#endif
+#include <signal.h>         // raise
+#include <sys/param.h>      // MIN/MAX
+#include <sys/ioctl.h>      // ioctl
 
 #include "logging.h"
 #include "memdmp/output.h"

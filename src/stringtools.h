@@ -9,8 +9,8 @@
 #ifndef hfsinspect_stringtools_h
 #define hfsinspect_stringtools_h
 
-#include <stdio.h>          // FILE*
-#include <stdint.h>         // uint*
+//#include <stdio.h>          // FILE*
+//#include <stdint.h>         // uint*
 
 enum {
     DUMP_ADDRESS = 0x0001,

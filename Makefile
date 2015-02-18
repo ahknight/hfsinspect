@@ -49,7 +49,7 @@ endif
 ifeq ($(CC_name), clang)
 sys_CFLAGS += -fstack-protector-all -fstrict-enums -ftrapv
 # Warnings
-sys_CFLAGS += -Weverything -Wno-four-char-constants
+sys_CFLAGS += -Wno-four-char-constants # -Weverything 
 cc_CFLAGS = -include-pch $(PCHFILE)
 endif
 
@@ -70,18 +70,31 @@ BUILDDIR = build/$(OS)-$(MACHINE)
 BINARYPATH = $(BUILDDIR)/$(PRODUCTNAME)
 OBJDIR = $(BUILDDIR)/obj
 
-AUXFILES := Makefile README.md
-PROJDIRS := src/hfsinspect src/hfs src/hfsplus src/logging src/vendor/memdmp src/vendor/crc-32c/crc32c src/volumes
-SRCFILES := $(shell find $(PROJDIRS) -type f -name *.c)
-HDRFILES := $(shell find $(PROJDIRS) -type f -name *.h)
-OBJFILES := $(patsubst src/%.c, $(OBJDIR)/%.o, $(SRCFILES))
-DEPFILES := $(patsubst src/%.c, $(OBJDIR)/%.d, $(SRCFILES))
-PCHFILENAME := cdefs.h
-PCHFILE  := $(OBJDIR)/$(PCHFILENAME).pch
-ALLFILES := $(SRCFILES) $(HDRFILES) $(AUXFILES)
+AUXFILES = Makefile README.md CHANGELOG LICENSE
+
+SOURCEDIR = src
+VENDORDIR = vendor
+
+SOURCES = $(shell find $(SOURCEDIR) -type f -name *.c)
+SOURCES += $(wildcard $(VENDORDIR)/crc32c/*.c)
+SOURCES += $(wildcard $(VENDORDIR)/memdmp/*.c)
+
+HEADERS = $(shell find $(SOURCEDIR) -type f -name *.h)
+HEADERS += $(wildcard $(VENDORDIR)/crc32c/*.h)
+HEADERS += $(wildcard $(VENDORDIR)/memdmp/*.h)
+
+OBJFILES = $(patsubst %.c, $(OBJDIR)/%.o, $(SOURCES))
+OBJFILES += $(patsubst %.c, $(OBJDIR)/%.o, $(SOURCES))
+
+DEPFILES = $(patsubst %.c, $(OBJDIR)/%.d, $(SOURCES))
+DEPFILES = $(patsubst %.c, $(OBJDIR)/%.d, $(SOURCES))
+
+PCHFILENAME = $(SOURCEDIR)/cdefs.h
+PCHFILE  = $(OBJDIR)/$(PCHFILENAME).pch
+ALLFILES = $(SOURCES) $(HEADERS) $(AUXFILES)
 
 # Required CFLAGS
-bin_CFLAGS = -std=c1x -msse4.2 -Isrc -Isrc/vendor -Isrc/vendor/crc-32c
+bin_CFLAGS = -std=c1x -msse4.2 -I$(SOURCEDIR) -I$(VENDORDIR)
 
 INSTALL = install
 RM = rm -f
@@ -108,17 +121,17 @@ $(BINARYPATH): $(OBJFILES)
 	@$(CC) -o $(BINARYPATH) $^ $(ALL_CFLAGS) $(ALL_LDFLAGS) $(LIBS)
 	@echo "=> $(BINARYPATH)"
 
-$(OBJDIR)/%.o: src/%.c $(PCHFILE)
+$(OBJDIR)/%.o: %.c $(PCHFILE)
 	@echo Compiling $<
 	@mkdir -p `dirname $@`
 	@$(CC) -o $@ -c $< $(cc_CFLAGS) $(ALL_CFLAGS)
 
-$(OBJDIR)/%.h.pch: src/%.h
+$(OBJDIR)/%.h.pch: %.h
 	@echo Precompiling $<
 	@mkdir -p `dirname $@`
 	@$(CC) -o $@ -x c-header $< $(ALL_CFLAGS)
 
-$(OBJDIR)/%.d: src/%.c
+$(OBJDIR)/%.d: %.c
 	@echo Generating dependancies $<
 	@mkdir -p `dirname $@`
 	@$(CC) -M -c $< -MF $@
@@ -132,7 +145,7 @@ distclean: clean-hfsinspect clean-test clean-docs
 	@$(RM) -r build
 
 pretty:
-	find src -iname '*.[hc]' -and \! -path '*vendor*' -and \! -path '*Apple*' | uncrustify -c uncrustify.cfg -F- --replace --no-backup --mtime -lC
+	find $(SOURCEDIR) -iname '*.[hc]' -and \! -path '*Apple*' | uncrustify -c uncrustify.cfg -F- --replace --no-backup --mtime -lC
 
 docs:
 	@echo "Building documentation."

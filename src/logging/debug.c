@@ -10,8 +10,6 @@
 
 #include "debug.h"
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <execinfo.h>
 
 #define MAX_STACK 128

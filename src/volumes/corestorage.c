@@ -7,12 +7,10 @@
 //
 
 
-#include <string.h>             // memcpy, strXXX, etc.
-
 #include "volumes/corestorage.h"
 #include "volumes/output.h"
 
-#include "hfsinspect/stringtools.h"
+#include "stringtools.h"
 
 #include "crc32c/crc32c.h"
 #include "logging/logging.h"    // console printing routines

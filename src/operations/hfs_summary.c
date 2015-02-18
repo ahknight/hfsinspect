@@ -183,3 +183,54 @@ void generateForkSummary(HIOptions* options, ForkSummary* forkSummary, const HFS
     hfsfork_free(hfsfork);
 }
 
+void PrintVolumeSummary(out_ctx* ctx, const VolumeSummary* summary)
+{
+    BeginSection  (ctx, "Volume Summary");
+    PrintUI             (ctx, summary, nodeCount);
+    PrintUI             (ctx, summary, recordCount);
+    PrintUI             (ctx, summary, fileCount);
+    PrintUI             (ctx, summary, folderCount);
+    PrintUI             (ctx, summary, aliasCount);
+    PrintUI             (ctx, summary, hardLinkFileCount);
+    PrintUI             (ctx, summary, hardLinkFolderCount);
+    PrintUI             (ctx, summary, symbolicLinkCount);
+    PrintUI             (ctx, summary, invisibleFileCount);
+    PrintUI             (ctx, summary, emptyFileCount);
+    PrintUI             (ctx, summary, emptyDirectoryCount);
+
+    BeginSection        (ctx, "Data Fork");
+    PrintForkSummary    (ctx, &summary->dataFork);
+    EndSection(ctx);
+
+    BeginSection        (ctx, "Resource Fork");
+    PrintForkSummary    (ctx, &summary->resourceFork);
+    EndSection(ctx);
+
+    BeginSection  (ctx, "Largest Files");
+    print("# %10s %10s", "Size", "CNID");
+    for (unsigned i = 9; i > 0; i--) {
+        if (summary->largestFiles[i].cnid == 0) continue;
+
+        char       size[50];
+        (void)format_size(ctx, size, summary->largestFiles[i].measure, 50);
+        hfs_wc_str name = L"";
+        HFSPlusGetCNIDName(name, (FSSpec){get_hfs_volume(), summary->largestFiles[i].cnid});
+        print("%d %10s %10u %ls", 10-i, size, summary->largestFiles[i].cnid, name);
+    }
+    EndSection(ctx); // largest files
+
+    EndSection(ctx); // volume summary
+}
+
+void PrintForkSummary(out_ctx* ctx, const ForkSummary* summary)
+{
+    PrintUI             (ctx, summary, count);
+    PrintAttribute(ctx, "fragmentedCount", "%llu (%0.2f)", summary->fragmentedCount, (float)summary->fragmentedCount/(float)summary->count);
+//    PrintUI             (ctx, summary, fragmentedCount);
+    PrintHFSBlocks      (ctx, summary, blockCount);
+    PrintDataLength     (ctx, summary, logicalSpace);
+    PrintUI             (ctx, summary, extentRecords);
+    PrintUI             (ctx, summary, extentDescriptors);
+    PrintUI             (ctx, summary, overflowExtentRecords);
+    PrintUI             (ctx, summary, overflowExtentDescriptors);
+}

@@ -7,7 +7,6 @@
 //
 
 #include "operations.h"
-#include <errno.h>              // errno/perror
 
 
 void showFreeSpace(HIOptions* options)

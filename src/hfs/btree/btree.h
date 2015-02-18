@@ -9,16 +9,7 @@
 #ifndef hfsinspect_hfs_btree_btree_h
 #define hfsinspect_hfs_btree_btree_h
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-
 #include "cache.h"
-
-#ifndef _UUID_STRING_T
-#define _UUID_STRING_T
-typedef char uuid_string_t[37];
-#endif /* _UUID_STRING_T */
 
 #include "hfs/Apple/hfs_types.h"
 

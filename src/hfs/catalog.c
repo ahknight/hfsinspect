@@ -6,21 +6,12 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <string.h>             // memcpy, strXXX, etc.
-#if defined(__linux__)
-    #include <bsd/string.h>     // strlcpy, etc.
-#endif
 
-#include <errno.h>              // errno/perror
-#include <wchar.h>
-#include <assert.h>             // assert()
-
+#include "hfs/Apple/hfs_types.h"   // Apple's FastUnicodeCompare and conversion table.
 #include "hfs/catalog.h"
-
+#include "hfs/hfs_endian.h"
 #include "hfs/hfs_io.h"
 #include "hfs/output_hfs.h"
-#include "hfs/Apple/hfs_types.h"   // Apple's FastUnicodeCompare and conversion table.
-#include "hfs/hfs_endian.h"
 #include "hfs/unicode.h"
 #include "volumes/utilities.h"     // commonly-used utility functions
 #include "logging/logging.h"       // console printing routines
@@ -224,15 +215,26 @@ int hfs_catalog_compare_keys_bc(const HFSPlusCatalogKey* key1, const HFSPlusCata
     int result = 0;
 
     trace("key1 (%p) (%u, %u), key2 (%p) (%u, %u)",
-          key1, key1->keyLength, key1->parentID,
-          key2, key2->keyLength, key2->parentID);
+          key1, key1->parentID, key1->nodeName.length,
+          key2, key2->parentID, key2->nodeName.length);
 
     if ( (result = cmp(key1->parentID, key2->parentID)) != 0) return result;
 
     hfs_wc_str key1Name, key2Name;
     hfsuctowcs(key1Name, &key1->nodeName);
     hfsuctowcs(key2Name, &key2->nodeName);
-    result = wcscmp(key1Name, key2Name);
+//    result = wcscmp(key1Name, key2Name);
+    debug2("%ls, %ls", key1Name, key2Name);
+    
+    for (unsigned i = 0; i < 256; i++) {
+        if ((result = cmp(key1->nodeName.unicode[i], key2->nodeName.unicode[i])) != 0)
+            break;
+    }
+    
+    if (result == 0) {
+        // The shared prefix sorted the same, so the shorter one wins.
+        result = -1 * cmp(key1->nodeName.length, key2->nodeName.length);
+    }
 
     return result;
 }

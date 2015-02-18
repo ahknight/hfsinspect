@@ -6,17 +6,9 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <unistd.h>
-#include <errno.h>              // errno/perror
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <libgen.h>
-#include <assert.h>             // assert()
-
-#include <string.h>             // memcpy, strXXX, etc.
-#if defined(__linux__)
-    #include <bsd/string.h>     // strlcpy, etc.
-#endif
 
 #if defined (__APPLE__)
     #include <sys/disk.h>

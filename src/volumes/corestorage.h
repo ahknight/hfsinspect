@@ -9,8 +9,6 @@
 #ifndef volumes_corestorage_h
 #define volumes_corestorage_h
 
-#include <uuid/uuid.h>
-
 #include "volume.h"
 #include "output.h"
 

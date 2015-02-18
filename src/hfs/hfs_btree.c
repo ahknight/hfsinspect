@@ -6,8 +6,6 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <errno.h>              // errno/perror
-
 #include "hfs/hfs_btree.h"
 #include "hfs/hfs_io.h"
 

@@ -9,9 +9,6 @@
 #ifndef volumes_apm_h
 #define volumes_apm_h
 
-#include <stdint.h>
-#include <stdbool.h>
-
 #include "volume.h"
 
 #pragma GCC diagnostic push

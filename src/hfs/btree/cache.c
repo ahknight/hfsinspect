@@ -8,11 +8,7 @@
 
 #include "cache.h"
 
-#include <stdlib.h>     // calloc/free
-#include <string.h>     // memset/memcpy
-#include <errno.h>      // errno
 #include <search.h>     // tfind/insque
-#include <sys/param.h>  // MIN
 
 
 typedef struct CacheRecord CacheRecord;

@@ -7,12 +7,6 @@
 //
 
 #include "hfsplus/journal.h"
-
-#include <string.h>         // memcpy, strXXX, etc.
-#if defined(__linux__)
-#include <bsd/string.h>     // strlcpy, etc.
-#endif
-
 #include "hfs/output_hfs.h"
 
 void PrintJournalInfoBlock(out_ctx* ctx, const JournalInfoBlock* record)

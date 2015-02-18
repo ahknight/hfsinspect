@@ -9,10 +9,6 @@
 #ifndef volumes_output_h
 #define volumes_output_h
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <unistd.h>
 #include <time.h>
 
 #define MEMBER_LABEL(s, m) #m, s->m

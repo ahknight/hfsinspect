@@ -11,9 +11,6 @@
 
 #include "volume.h"
 
-#include <stdint.h>
-#include <stdbool.h>
-
 
 #pragma mark - Structures
 

@@ -9,20 +9,17 @@
 #ifndef hfsinspect_output_hfs_h
 #define hfsinspect_output_hfs_h
 
-#include <stdint.h>
-
 #include "hfs/types.h"
 #include "hfs/hfs_extentlist.h"
 
 #include "volumes/output.h"
-#include "hfsinspect/types.h"
 
 #define MAC_GMT_FACTOR 2082844800UL
 
 #define _NONNULL       __attribute__((nonnull))
 
-void set_hfs_volume                 (HFS* v) _NONNULL;
-
+void set_hfs_volume(HFS* v) _NONNULL;
+HFS* get_hfs_volume(void);
 
 #define PrintCatalogName(ctx, record, value)  _PrintCatalogName(ctx, #value, record->value)
 #define PrintHFSBlocks(ctx, record, value)    _PrintHFSBlocks(ctx, #value, record->value)
@@ -52,9 +49,6 @@ void PrintHFSPlusCatalogFile        (out_ctx* ctx, const HFSPlusCatalogFile* rec
 void PrintHFSPlusFolderThreadRecord (out_ctx* ctx, const HFSPlusCatalogThread* record) _NONNULL;
 void PrintHFSPlusFileThreadRecord   (out_ctx* ctx, const HFSPlusCatalogThread* record) _NONNULL;
 void PrintHFSPlusCatalogThread      (out_ctx* ctx, const HFSPlusCatalogThread* record) _NONNULL;
-
-void PrintVolumeSummary             (out_ctx* ctx, const VolumeSummary* summary) _NONNULL;
-void PrintForkSummary               (out_ctx* ctx, const ForkSummary* summary) _NONNULL;
 
 void VisualizeHFSPlusExtentKey      (out_ctx* ctx, const HFSPlusExtentKey* record, const char* label, bool oneLine) _NONNULL;
 void VisualizeHFSPlusCatalogKey     (out_ctx* ctx, const HFSPlusCatalogKey* record, const char* label, bool oneLine) _NONNULL;

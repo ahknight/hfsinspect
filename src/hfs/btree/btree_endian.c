@@ -6,8 +6,6 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <errno.h>              // errno/perror
-
 #include "hfs/btree/btree_endian.h"
 #include "volumes/_endian.h"
 

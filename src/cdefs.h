@@ -9,8 +9,42 @@
 #ifndef hfsinspect_cdefs_h
 #define hfsinspect_cdefs_h
 
+
+#pragma mark - ANSI C
+
 #include <stdlib.h>             // malloc, free
+#include <stdint.h>             // uint*
+#include <stdbool.h>            // bool, true, false
+#include <math.h>               // log and friends
+#include <stdio.h>              // FILE*
+#include <wchar.h>
 #include <assert.h>             // assert
+#include <errno.h>              // errno/perror
+#include <string.h>             // memcpy, strXXX, etc.
+#if defined(__linux__)
+#include <bsd/string.h>         // strlcpy, etc.
+#endif
+
+
+#pragma mark - POSIX
+
+#include <unistd.h>
+
+
+#pragma mark - BSD
+
+#include <sys/param.h>          // MIN/MAX
+#include <sys/stat.h>           // stat, statfs
+
+
+#include <uuid/uuid.h>
+#ifndef _UUID_STRING_T
+#define _UUID_STRING_T
+typedef char uuid_string_t[37];
+#endif /* _UUID_STRING_T */
+
+
+#pragma mark - Memory Management
 
 #if defined(GC_ENABLED)         // GC_ENABLED
 

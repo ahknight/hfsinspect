@@ -6,9 +6,6 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <errno.h>              // errno/perror
-#include <assert.h>             // assert()
-
 #include "hfsplus/hfsplus.h"
 #include "hfs/catalog.h"
 #include "hfs/hfs_io.h"

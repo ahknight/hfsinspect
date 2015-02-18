@@ -9,11 +9,6 @@
 #ifndef hfsinspect_operations_h
 #define hfsinspect_operations_h
 
-#include <stdlib.h>
-#include <string.h>             // memcpy, strXXX, etc.
-#if defined(__linux__)
-    #include <bsd/string.h>     // strlcpy, etc.
-#endif
 
 #include "volumes/volume.h"
 #include "hfs/hfs.h"
@@ -21,7 +16,6 @@
 #include "hfs/catalog.h"
 #include "hfs/output_hfs.h"
 #include "hfs/unicode.h"
-#include "hfsinspect/types.h"
 #include "logging/logging.h"    // console printing routines
 
 extern char* BTreeOptionCatalog;
@@ -84,7 +78,49 @@ void    showCatalogRecord(HIOptions* options, FSSpec spec, bool followThreads);
 ssize_t extractFork(const HFSFork* fork, const char* extractPath);
 void    extractHFSPlusCatalogFile(const HFS* hfs, const HFSPlusCatalogFile* file, const char* extractPath);
 
+
+// For volume statistics
+typedef struct Rank {
+    uint64_t measure;
+    uint32_t cnid;
+    uint32_t _reserved;
+} Rank;
+
+typedef struct ForkSummary {
+    uint64_t count;
+    uint64_t fragmentedCount;
+    uint64_t blockCount;
+    uint64_t logicalSpace;
+    uint64_t extentRecords;
+    uint64_t extentDescriptors;
+    uint64_t overflowExtentRecords;
+    uint64_t overflowExtentDescriptors;
+} ForkSummary;
+
+typedef struct VolumeSummary {
+    uint64_t    nodeCount;
+    uint64_t    recordCount;
+    uint64_t    fileCount;
+    uint64_t    folderCount;
+    uint64_t    aliasCount;
+    uint64_t    hardLinkFileCount;
+    uint64_t    hardLinkFolderCount;
+    uint64_t    symbolicLinkCount;
+    uint64_t    invisibleFileCount;
+    uint64_t    emptyFileCount;
+    uint64_t    emptyDirectoryCount;
+    
+    Rank        largestFiles[10];
+    Rank        mostFragmentedFiles[10];
+    
+    ForkSummary dataFork;
+    ForkSummary resourceFork;
+} VolumeSummary;
+
+
 VolumeSummary generateVolumeSummary(HIOptions* options);
 void          generateForkSummary(HIOptions* options, ForkSummary* forkSummary, const HFSPlusCatalogFile* file, const HFSPlusForkData* fork, hfs_forktype_t type);
+void PrintVolumeSummary             (out_ctx* ctx, const VolumeSummary* summary) _NONNULL;
+void PrintForkSummary               (out_ctx* ctx, const ForkSummary* summary) _NONNULL;
 
 #endif

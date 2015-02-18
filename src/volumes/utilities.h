@@ -9,9 +9,6 @@
 #ifndef volumes_utilities_h
 #define volumes_utilities_h
 
-#include <stdlib.h>
-#include <stdio.h>
-
 ssize_t fpread(FILE* f, void* buf, size_t nbytes, off_t offset) __attribute__((nonnull(1,2)));
 
 #endif

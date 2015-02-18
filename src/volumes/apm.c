@@ -6,10 +6,6 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <errno.h>              // errno/perror
-#include <string.h>             // memcpy, strXXX, etc.
-#include <assert.h>
-
 #include "apm.h"
 #include "logging/logging.h"    // console printing routines
 

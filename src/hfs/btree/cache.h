@@ -6,9 +6,6 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <sys/types.h>
-#include <stdint.h>
-
 typedef uint64_t ckey_t;
 
 struct _Cache;

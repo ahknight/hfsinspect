@@ -6,10 +6,10 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "hfsinspect/stringtools.h"
+#include "stringtools.h"
 
-#include <string.h>             // memcpy, strXXX, etc.
-#include <sys/param.h>          // MIN/MAX
+//#include <string.h>             // memcpy, strXXX, etc.
+//#include <sys/param.h>          // MIN/MAX
 #include <math.h>               // log
 
 #include "memdmp/memdmp.h"

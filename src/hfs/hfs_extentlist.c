@@ -6,9 +6,7 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <errno.h>              // errno/perror
-
-#include "hfsinspect/range.h"
+#include "hfs/range.h"
 #include "hfs/hfs_extentlist.h"
 #include "hfs/output_hfs.h"
 #include "logging/logging.h"    // console printing routines

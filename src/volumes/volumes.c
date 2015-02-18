@@ -28,9 +28,9 @@ int volumes_load(Volume* vol)
         info("Testing for a %s partition.", (*ops)->name);
         if ((*ops)->test(vol) == 1) {
             info("Detected a %s partition.", (*ops)->name);
-            if ((log_level >= L_DEBUG) && ((*ops)->dump != NULL)) {
-                (*ops)->dump(vol);
-            }
+//            if ((log_level >= L_DEBUG) && ((*ops)->dump != NULL)) {
+//                (*ops)->dump(vol);
+//            }
             if ((*ops)->load != NULL) {
                 if ( (*ops)->load(vol) < 0) {
                     warning("Can't load %s partition: load returned failure.", (*ops)->name);

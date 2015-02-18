@@ -9,15 +9,8 @@
 #ifndef volumes_gpt_h
 #define volumes_gpt_h
 
-#include <uuid/uuid.h>
-
 #include "volume.h"
 #include "mbr.h"
-
-#ifndef _UUID_STRING_T
-#define _UUID_STRING_T
-typedef char uuid_string_t[37];
-#endif /* _UUID_STRING_T */
 
 #pragma mark - Structures
 

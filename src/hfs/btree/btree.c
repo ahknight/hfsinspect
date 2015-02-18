@@ -6,17 +6,13 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include <stdio.h>
-#include <errno.h>              // errno/perror
-#include <string.h>             // memcpy, strXXX, etc.
 #include <search.h>
-#include <assert.h>             // assert()
 
+#include "stringtools.h"            // memdump
 #include "hfs/btree/btree.h"
 #include "hfs/btree/btree_endian.h"
-#include "hfsinspect/stringtools.h" // memdump
-#include "volumes/utilities.h"      // fpread
 #include "hfs/unicode.h"
+#include "volumes/utilities.h"      // fpread
 #include "logging/logging.h"        // console printing routines
 
 
@@ -143,7 +139,7 @@ BTRecOffset BTGetRecordOffset(const BTreeNodePtr node, uint16_t recNum)
     BTRecOffset    result      = 0;
 
     int            recordCount = node->nodeDescriptor->numRecords;
-    BTRecOffsetPtr offsets     = ((BTRecOffsetPtr)((char*)node->data + node->nodeSize)) - recordCount - 1;
+    BTRecOffsetPtr offsets     = (BTRecOffsetPtr)((void*)((char*)node->data + node->nodeSize)) - recordCount - 1;
     if ( offsets[recordCount] != 14 ) {
         memdump(stderr, node->data, node->nodeSize, 16, 4, 4, DUMP_FULL);
         critical("Bad sentinel @ %ld! (%d != 14)", (long)((char*)offsets - (char*)node->data) + recordCount, offsets[recordCount]); /*sizeof(BTNodeDescriptor)*/
