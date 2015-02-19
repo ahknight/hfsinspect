@@ -139,6 +139,10 @@ int cache_init(Cache* cache, uint64_t num_records)
     c->max_records  = num_records;
     c->record_count = 0;
     c->records      = ALLOC(sizeof(CacheRecord));
+    if (c->records == NULL) {
+        SFREE(cache);
+        return -1;
+    }
 
     return 0;
 }
