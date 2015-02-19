@@ -47,7 +47,10 @@ HFSUniStr255 wcstohfsuc(const wchar_t* input)
     // Iterate over the input
     for (unsigned i = 0; i < len; i++) {
         // Copy the input to the output
-        output.unicode[i] = input[i];
+        wchar_t wchar   = input[i];
+        UChar16 u16char = UChar32toUChar16(wchar);
+        UTF16   uchar   = UChar16toUTF16( u16char );
+        output.unicode[i] = uchar;
     }
 
     // Terminate the output at the length
@@ -63,13 +66,13 @@ HFSUniStr255 strtohfsuc(const char* input)
     size_t       char_count      = 0;
     size_t       wide_char_count = 0;
     size_t       str_size        = 0;
-    
+
     trace("input '%s'", input)
 
-    str_size = 256 * sizeof(wchar_t);
-    wide = ALLOC(str_size);
+    str_size        = 256 * sizeof(wchar_t);
+    wide            = ALLOC(str_size);
     assert(wide != NULL);
-    
+
     wide_char_count = mbstowcs(wide, input, 255);
     if (wide_char_count > 0) {
         output = wcstohfsuc(wide);
@@ -84,24 +87,38 @@ HFSUniStr255 strtohfsuc(const char* input)
     return output;
 }
 
-#ifndef __GNUC__
+//#if !defined(__GNUC__)
+
 const UTF16 HI_SURROGATE_START = 0xD800;
 const UTF16 LO_SURROGATE_START = 0xDC00;
 
 const UTF32 LEAD_OFFSET        = HI_SURROGATE_START - (0x10000 >> 10);
 const UTF32 SURROGATE_OFFSET   = 0x10000 - (HI_SURROGATE_START << 10) - LO_SURROGATE_START;
 
-UChar32 uc16touc32( UChar16 u16 )
+UChar32 UChar16toUChar32( UChar16 u16 )
 {
     return ( (u16.hi << 10) + u16.lo + SURROGATE_OFFSET );
 }
 
-UChar16 uc32touc16( UChar32 codepoint )
+UChar16 UChar32toUChar16( UChar32 codepoint )
 {
-    UChar16 u16;
-    u16.hi = LEAD_OFFSET + (codepoint >> 10);
-    u16.lo = 0xDC00 + (codepoint & 0x3FF);
+    UChar16 u16 = {0};
+
+    if (codepoint < 0x10000) {
+        u16.lo = codepoint;
+    } else if (codepoint <= 0x10FFFF) {
+        u16.hi = LEAD_OFFSET + (codepoint >> 10);
+        u16.lo = 0xDC00 + (codepoint & 0x3FF);
+    } else {
+        error("invalid code_point");
+    }
+
     return u16;
 }
 
-#endif
+UTF16 UChar16toUTF16(UChar16 u16)
+{
+    return ((u16.hi << 8) + u16.lo);
+}
+
+//#endif

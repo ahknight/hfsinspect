@@ -24,14 +24,15 @@ HFSUniStr255 strtohfsuc (const char* input) __attribute__((nonnull));
 typedef uint16_t UTF16;
 typedef uint32_t UTF32;
 
-typedef UTF32 UChar32;
-
 typedef struct UChar16 {
     UTF16 hi;
     UTF16 lo;
 } UChar16;
 
-UChar32 uc16touc32( UChar16 u16 );
-UChar16 uc32touc16( UChar32 codepoint );
+typedef UTF32 UChar32;
+
+UChar32 UChar16toUChar32( UChar16 u16 );
+UChar16 UChar32toUChar16( UChar32 codepoint );
+UTF16   UChar16toUTF16(UChar16 u16);
 
 #endif
