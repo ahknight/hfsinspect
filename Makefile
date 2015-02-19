@@ -70,7 +70,7 @@ BUILDDIR = build/$(OS)-$(MACHINE)
 BINARYPATH = $(BUILDDIR)/$(PRODUCTNAME)
 OBJDIR = $(BUILDDIR)/obj
 
-AUXFILES = Makefile README.md CHANGELOG LICENSE
+AUXFILES = CHANGELOG LICENSE Makefile README.md hfsinspect.1
 
 SOURCEDIR = src
 VENDORDIR = vendor
@@ -157,7 +157,7 @@ install: $(BINARYPATH)
 	@$(INSTALL) $(BINARYPATH) $(PREFIX)/bin
 	@echo "Installing manpage in $(PREFIX)"
 	@mkdir -p $(PREFIX)/share/man/man1
-	@$(INSTALL) docs/hfsinspect.1 $(PREFIX)/share/man/man1
+	@$(INSTALL) hfsinspect.1 $(PREFIX)/share/man/man1
 
 uninstall:
 	$(RM) $(PREFIX)/bin/$(PRODUCTNAME)

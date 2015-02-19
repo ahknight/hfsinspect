@@ -48,7 +48,7 @@ typedef char uuid_string_t[37];
 
 #if defined(GC_ENABLED)         // GC_ENABLED
 
-#include "gc.h"
+#include <gc.h>
 
 #define ALLOC(buf_size)        GC_MALLOC((buf_size))
 #define REALLOC(buf, buf_size) GC_REALLOC((buf), (buf_size))
