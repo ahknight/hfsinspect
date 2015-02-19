@@ -717,7 +717,7 @@ NOPE:
 #pragma mark Volume Requests
 
     // Always detail what volume we're working on at the very least
-//    PrintVolumeInfo(ctx, options.hfs);
+    PrintVolumeInfo(ctx, options.hfs);
 
     // Default to volume info if there are no other specifiers.
     if (options.mode == 0) set_mode(&options, HIModeShowVolumeInfo);

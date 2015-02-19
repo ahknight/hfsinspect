@@ -78,7 +78,7 @@ void showFreeSpace(HIOptions* options)
     out_ctx* ctx = fork->hfs->vol->ctx;
 
     BeginSection(ctx, "Allocation File Statistics");
-    PrintAttribute(ctx, "Extents", "%zu", total_extents);
+    PrintAttribute(ctx, "Segments", "%zu", total_extents);
     _PrintHFSBlocks(ctx, "Used Blocks", total_used);
     _PrintHFSBlocks(ctx, "Free Blocks", total_free);
     _PrintHFSBlocks(ctx, "Total Blocks", total_used + total_free);

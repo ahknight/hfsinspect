@@ -40,7 +40,7 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
 
     // Load the tree bitmap, if needed.
     if (bTree->nodeBitmap == NULL) {
-        info("Tree %u: loading node bitmap.", bTree->treeID);
+        debug("Tree %u: loading node bitmap.", bTree->treeID);
         bTree->_loadingBitmap = true;
 
         // Get the B-Tree's header node (#0)
@@ -65,7 +65,7 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
             size_t      old_size = bTree->nodeBitmapSize;
             bt_nodeid_t node_id  = node->nodeDescriptor->fLink;
 
-            info("Loading bitmap continuation node %d", node_id);
+            debug("Loading bitmap continuation node %d", node_id);
 
             BTFreeNode(node);
             node   = NULL;
@@ -83,7 +83,7 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
 
             memcpy(bTree->nodeBitmap + old_size, record.record, record.recordLen);
         }
-        info("Done loading nodes.");
+        debug("Done loading nodes.");
 
         // Clean up
         BTFreeNode(node);
@@ -93,7 +93,7 @@ bool BTIsNodeUsed(const BTreePtr bTree, bt_nodeid_t nodeNum)
 
     // Check the bit in the data.
     bool result = BTIsBlockUsed(nodeNum, bTree->nodeBitmap, bTree->nodeBitmapSize);
-    info("returning %d", result);
+    debug2("returning %d", result);
 
     return result;
 }
@@ -255,7 +255,7 @@ int btree_get_node(BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeN
     BTreeNodePtr node       = NULL;
     ssize_t      bytes_read = 0;
 
-    info("Tree %u: getting node %d", tree->treeID, nodeNumber);
+    trace("Tree %u: getting node %d", tree->treeID, nodeNumber);
 
     if(nodeNumber >= tree->headerRecord.totalNodes) {
         error("Node %u is beyond file range.", nodeNumber);
@@ -263,7 +263,7 @@ int btree_get_node(BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeN
     }
 
     if ((nodeNumber != 0) && (BTIsNodeUsed(tree, nodeNumber) == false)) {
-        info("Node %u is unused.", nodeNumber);
+        debug2("Node %u is unused.", nodeNumber);
         return -1;
     }
 
@@ -284,7 +284,7 @@ int btree_get_node(BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeN
 
     // Check the tree's node cache for a previous load.
     if (cache_get(tree->nodeCache, (void*)node->data, node->nodeSize, nodeNumber) == 1) {
-        info("Loaded a cached node for %u:%u", node->treeID, nodeNumber);
+        debug("Loaded a cached node for %u:%u", node->treeID, nodeNumber);
 
     } else {
         assert(node->data != NULL);
@@ -411,7 +411,7 @@ int btree_search(BTreeNodePtr* node, BTRecNum* recordID, const BTreePtr btree, c
             critical("Current node is %u but tree only has %u nodes. Aborting search.", currentNode, btree->headerRecord.totalNodes);
         }
 
-        info("SEARCHING NODE %d (CNID %d; level %d)", currentNode, btree->treeID, level);
+        debug2("SEARCHING NODE %d (CNID %d; level %d)", currentNode, btree->treeID, level);
 
         errno = 0;
         void* r = lfind(&currentNode, &history, &num_nodes, sizeof(bt_nodeid_t), icmp);
@@ -450,7 +450,7 @@ int btree_search(BTreeNodePtr* node, BTRecNum* recordID, const BTreePtr btree, c
 
         // Search the node
         search_result = btree_search_node(&searchIndex, btree, searchNode, searchKey);
-        info("SEARCH NODE RESULT: %d; idx %d", search_result, searchIndex);
+        debug2("SEARCH NODE RESULT: %d; idx %d", search_result, searchIndex);
 
         // If this was a leaf node, return it as there's no next node to search.
         if ( ((BTNodeDescriptor*)searchNode->data)->kind == kBTLeafNode) {
@@ -464,7 +464,7 @@ int btree_search(BTreeNodePtr* node, BTRecNum* recordID, const BTreePtr btree, c
         BTreeKeyPtr  currentKey    = currentRecord.key;
         void*        currentValue  = currentRecord.value;
 
-        info("FOLLOWING RECORD %d from node %d", searchIndex, searchNode->nodeNumber);
+        debug2("FOLLOWING RECORD %d from node %d", searchIndex, searchNode->nodeNumber);
 
         currentNode = *( (bt_nodeid_t*)currentValue );
         if (currentNode == 0) {
