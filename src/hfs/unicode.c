@@ -60,19 +60,26 @@ HFSUniStr255 strtohfsuc(const char* input)
 {
     HFSUniStr255 output          = {0};
     wchar_t*     wide            = NULL;
-    size_t       char_count      = strlen(input);
-    size_t       wide_char_count = mbstowcs(wide, input, 255);
-
+    size_t       char_count      = 0;
+    size_t       wide_char_count = 0;
+    size_t       str_size        = 0;
+    
     trace("input '%s'", input)
 
-    SALLOC(wide, 256 * sizeof(wchar_t));
+    str_size = 256 * sizeof(wchar_t);
+    wide = ALLOC(str_size);
+    assert(wide != NULL);
+    
+    wide_char_count = mbstowcs(wide, input, 255);
+    if (wide_char_count > 0) {
+        output = wcstohfsuc(wide);
+    }
+    SFREE(wide);
 
-    if (wide_char_count > 0) output = wcstohfsuc(wide);
-
+    char_count = strlen(input);
     if (char_count != wide_char_count) {
         error("Conversion error: mbstowcs returned a string of a different length than the input: %zd in; %zd out", char_count, wide_char_count);
     }
-    SFREE(wide);
 
     return output;
 }
