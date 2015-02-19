@@ -212,30 +212,35 @@ int hfs_catalog_compare_keys_cf(const HFSPlusCatalogKey* key1, const HFSPlusCata
 
 int hfs_catalog_compare_keys_bc(const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2)
 {
-    int result = 0;
-
-    trace("key1 (%p) (%u, %u), key2 (%p) (%u, %u)",
-          key1, key1->parentID, key1->nodeName.length,
-          key2, key2->parentID, key2->nodeName.length);
-
-    if ( (result = cmp(key1->parentID, key2->parentID)) != 0) return result;
+    int        result = 0;
 
     hfs_wc_str key1Name, key2Name;
     hfsuctowcs(key1Name, &key1->nodeName);
     hfsuctowcs(key2Name, &key2->nodeName);
-//    result = wcscmp(key1Name, key2Name);
-    debug2("%ls, %ls", key1Name, key2Name);
-    
-    for (unsigned i = 0; i < 256; i++) {
-        if ((result = cmp(key1->nodeName.unicode[i], key2->nodeName.unicode[i])) != 0)
-            break;
-    }
-    
-    if (result == 0) {
-        // The shared prefix sorted the same, so the shorter one wins.
-        result = -1 * cmp(key1->nodeName.length, key2->nodeName.length);
+
+    trace("BC compare: key1 (%p) (%u, %u, '%ls'), key2 (%p) (%u, %u, '%ls')",
+          key1, key1->parentID, key1->nodeName.length, key1Name,
+          key2, key2->parentID, key2->nodeName.length, key2Name);
+
+    if ( (result = cmp(key1->parentID, key2->parentID)) != 0) {
+        trace("* Different parents")
+        return result;
     }
 
+    unsigned len = MIN(key1->nodeName.length, key2->nodeName.length);
+    for (unsigned i = 0; i < len; i++) {
+        if ((result = cmp(key1->nodeName.unicode[i], key2->nodeName.unicode[i])) != 0) {
+            trace("* Character difference at position %u", i);
+            break;
+        }
+    }
+
+    if (result == 0) {
+        // The shared prefix sorted the same, so the shorter one wins.
+        result = cmp(key1->nodeName.length, key2->nodeName.length);
+        if (result != 0) trace("* Shorter wins.")
+    }
+        
     return result;
 }
 
@@ -248,7 +253,7 @@ int HFSPlusGetCNIDName(wchar_t* name, FSSpec spec)
     BTRecNum          recordID = 0;
     HFSPlusCatalogKey key      = {0};
 
-    trace("name %ls, spec (%p, %u, (%u))", name, spec.hfs, spec.parentID, spec.name.length);
+    trace("name %p, spec (%p, %u, (%u))", name, spec.hfs, spec.parentID, spec.name.length);
 
     key.parentID  = cnid;
     key.keyLength = kHFSPlusCatalogKeyMinimumLength;
@@ -326,20 +331,26 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord* out_ca
     }
 
     int                  found                  = 0;
-    hfs_cnid_t           parentID               = kHFSRootFolderID, last_parentID = 0;
-    char*                file_path, * dup_path;
+    hfs_cnid_t           parentID               = kHFSRootFolderID;
+    hfs_cnid_t           last_parentID          = 0;
+    char*                file_path              = NULL;
+    char*                dup_path               = NULL;
     char*                segment                = NULL;
     char                 last_segment[PATH_MAX] = "";
-
     HFSPlusCatalogRecord catalogRecord          = {0};
 
+    // Copy the path for tokenization.
     file_path = dup_path = strdup(path);
 
+    // Iterate over path segments.
     while ( (segment = strsep(&file_path, "/")) != NULL ) {
         debug("Segment: %d:%s", parentID, segment);
+        
+        // Persist the search info for later.
         (void)strlcpy(last_segment, segment, PATH_MAX);
         last_parentID = parentID;
 
+        // Perform the search
         FSSpec spec = { .hfs = hfs, .parentID = last_parentID, .name = strtohfsuc(segment) };
         found         = !(HFSPlusGetCatalogRecordByFSSpec(&catalogRecord, spec) < 0);
         if ( !found ) {
@@ -350,8 +361,12 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord* out_ca
 
         debug("Record found:");
         debug("%s: parent: %d ", segment, parentID);
+        
+        // If this was a null segment (eg. ///bar) then move to the next without
+        // changing the parent.
         if (strlen(segment) == 0) continue;
 
+        // Get the parent information from the folder or thread record.
         switch (catalogRecord.record_type) {
             case kHFSPlusFolderRecord:
             {
@@ -377,9 +392,11 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord* out_ca
                 break;
             }
         }
+        
+        if (catalogRecord.record_type == kHFSPlusFileRecord) break;
     }
 
-    if (found && (last_segment != NULL)) {
+    if (found) {
         if (out_spec != NULL) {
             out_spec->hfs      = hfs;
             out_spec->parentID = last_parentID;
