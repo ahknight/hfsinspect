@@ -15,9 +15,12 @@
 #include "memdmp/output.h"
 
 
-#define PrintLine_MAX_LINE_LEN 0xffff
-#define PrintLine_MAX_DEPTH    40
-#define USE_EMOJI              0
+#define MIN_LINE_LENGTH     40
+#define DEFAULT_LINE_LENGTH 160
+#define MAX_LINE_LENGTH     0xff
+
+#define PrintLine_MAX_DEPTH 40
+#define USE_EMOJI           0
 
 enum LogLevel log_level = L_STANDARD;
 
@@ -195,10 +198,15 @@ int PrintLine(enum LogLevel level, const char* file, const char* function, unsig
     if (isatty(fd)) {
         ioctl(fd, TIOCGWINSZ, &w);
         term_width = w.ws_col;
-    } else {
-        term_width = PrintLine_MAX_LINE_LEN;
+    }
+    
+    if (term_width == 0) {
+        term_width = DEFAULT_LINE_LENGTH;
     }
 
+    term_width = MAX(MIN_LINE_LENGTH, term_width);
+    term_width = MIN(MAX_LINE_LENGTH, term_width);
+    
     term_width -= 10; // Account for prefix.
 
     SALLOC(out_line, term_width);
@@ -208,19 +216,20 @@ int PrintLine(enum LogLevel level, const char* file, const char* function, unsig
     memset(out_line, ' ', term_width);
 
     // Indent the string with the call depth.
-    depth = MIN(depth, term_width);
+    depth       = MIN(depth, term_width);
 
     // "Print" the input format string to a string.
-    unsigned in_line_len = 0;
-//    if (argp != NULL)
+    int in_line_len = 0;
     in_line_len = vsnprintf(in_line, term_width, format, argp);
-//    else
-//        in_line_len = strlcpy(in_line, format, term_width);
+    if (in_line_len < 0) {
+        perror("vsnprintf");
+        exit(1);
+    }
 
     // Append the text after the indentation.
-    (void)memcpy((char*)(out_line+depth), in_line, in_line_len);
+    (void)memcpy((char*)(out_line+depth), in_line, MIN(term_width - depth, in_line_len));
 
-    // Now add our format to that string and print to stdout.
+    // Now add our debug format to the end of that string and print it.
     if ((log_level > L_INFO) && (level != L_STANDARD)) {
         char*  debug_info   = NULL;
         size_t debug_len    = 0;
