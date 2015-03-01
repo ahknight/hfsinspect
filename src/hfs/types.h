@@ -23,10 +23,10 @@ typedef wchar_t hfs_wc_str[256];     // Wide char version of HFSUniStr255
 
 typedef int (* hfs_compare_keys)(const void*, const void*);
 
-typedef struct HFS     HFS;
-typedef struct HFSFork HFSFork;
+typedef struct HFSPlus     HFSPlus;
+typedef struct HFSPlusFork HFSPlusFork;
 
-struct HFS {
+struct HFSPlus {
     Volume*             vol;                // Volume containing the filesystem
     HFSPlusVolumeHeader vh;                 // Volume header
     off_t               offset;             // Partition offset, if known/needed (bytes)
@@ -35,8 +35,8 @@ struct HFS {
     size_t              block_count;        // Number of blocks. (blocks of block_size size)
 };
 
-struct HFSFork {
-    HFS*                hfs;                // File system descriptor
+struct HFSPlusFork {
+    HFSPlus*            hfs;                // File system descriptor
     hfs_size_t          logicalSize;
     hfs_block_t         totalBlocks;
     bt_nodeid_t         cnid;               // For extents overflow lookups

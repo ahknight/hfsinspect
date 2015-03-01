@@ -8,7 +8,7 @@
 
 #include "operations.h"
 
-ssize_t extractFork(const HFSFork* fork, const char* extractPath)
+ssize_t extractFork(const HFSPlusFork* fork, const char* extractPath)
 {
     FILE*    f_out         = NULL;
     FILE*    f_in          = NULL;
@@ -34,7 +34,7 @@ ssize_t extractFork(const HFSFork* fork, const char* extractPath)
         die(1, "could not open %s", extractPath);
     }
 
-    f_in       = fopen_hfsfork((HFSFork*)fork);
+    f_in       = fopen_hfsfork((HFSPlusFork*)fork);
     fseeko(f_in, 0, SEEK_SET);
 
     chunkSize  = fork->hfs->block_size*256;    //1-2MB, generally.
@@ -68,14 +68,14 @@ ssize_t extractFork(const HFSFork* fork, const char* extractPath)
     return offset;
 }
 
-void extractHFSPlusCatalogFile(const HFS* hfs, const HFSPlusCatalogFile* file, const char* extractPath)
+void extractHFSPlusCatalogFile(const HFSPlus* hfs, const HFSPlusCatalogFile* file, const char* extractPath)
 {
     if (file->dataFork.logicalSize > 0) {
-        HFSFork* fork = NULL;
+        HFSPlusFork* fork = NULL;
         if ( hfsfork_make(&fork, hfs, file->dataFork, HFSDataForkType, file->fileID) < 0 ) {
             die(1, "Could not create fork for fileID %u", file->fileID);
         }
-        ssize_t  size = extractFork(fork, extractPath);
+        ssize_t      size = extractFork(fork, extractPath);
         if (size < 0) {
             perror("extract");
             die(1, "Extract data fork failed.");
@@ -91,7 +91,7 @@ void extractHFSPlusCatalogFile(const HFS* hfs, const HFSPlusCatalogFile* file, c
         size = strlcat(outputPath, ".rsrc", sizeof(outputPath));
         if (size < 1) die(1, "Could not create destination filename.");
 
-        HFSFork* fork = NULL;
+        HFSPlusFork* fork = NULL;
         if ( hfsfork_make(&fork, hfs, file->resourceFork, HFSResourceForkType, file->fileID) < 0 )
             die(1, "Could not create fork for fileID %u", file->fileID);
 

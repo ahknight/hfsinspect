@@ -27,10 +27,10 @@ VolumeSummary generateVolumeSummary(HIOptions* options)
      */
 
     VolumeSummary summary = {0};
-    HFS*          hfs     = options->hfs;
+    HFSPlus*      hfs     = options->hfs;
 
     BTreePtr      catalog = NULL;
-    hfs_get_catalog_btree(&catalog, hfs);
+    hfsplus_get_catalog_btree(&catalog, hfs);
     hfs_cnid_t    cnid    = catalog->headerRecord.firstLeafNode;
 
     while (1) {
@@ -160,7 +160,7 @@ void generateForkSummary(HIOptions* options, ForkSummary* forkSummary, const HFS
         if (fork->extents[i].blockCount > 0) forkSummary->extentDescriptors++; else break;
     }
 
-    HFSFork* hfsfork;
+    HFSPlusFork* hfsfork;
     if ( hfsfork_make(&hfsfork, options->hfs, *fork, type, file->fileID) < 0 ) {
         die(1, "Could not create fork reference for fileID %u", file->fileID);
     }
@@ -211,7 +211,7 @@ void PrintVolumeSummary(out_ctx* ctx, const VolumeSummary* summary)
     for (unsigned i = 9; i > 0; i--) {
         if (summary->largestFiles[i].cnid == 0) continue;
 
-        char       size[50];
+        char    size[50];
         (void)format_size(ctx, size, summary->largestFiles[i].measure, 50);
         hfs_wc_str name = L"";
         HFSPlusGetCNIDName(name, (FSSpec){get_hfs_volume(), summary->largestFiles[i].cnid});
@@ -234,3 +234,4 @@ void PrintForkSummary(out_ctx* ctx, const ForkSummary* summary)
     PrintUI             (ctx, summary, overflowExtentRecords);
     PrintUI             (ctx, summary, overflowExtentDescriptors);
 }
+

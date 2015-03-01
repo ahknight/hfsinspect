@@ -183,8 +183,13 @@ int LogLine(enum LogLevel level, const char* format, ...)
 
 int PrintLine(enum LogLevel level, const char* file, const char* function, unsigned int line_no, const char* format, ...)
 {
-    va_list        argp;
+    va_list argp;
     va_start(argp, format);
+
+    if (level > log_level) {
+        va_end(argp);
+        return 0;
+    }
 
     unsigned short term_width = 0;
     struct winsize w          = {0};
@@ -199,14 +204,14 @@ int PrintLine(enum LogLevel level, const char* file, const char* function, unsig
         ioctl(fd, TIOCGWINSZ, &w);
         term_width = w.ws_col;
     }
-    
+
     if (term_width == 0) {
         term_width = DEFAULT_LINE_LENGTH;
     }
 
-    term_width = MAX(MIN_LINE_LENGTH, term_width);
-    term_width = MIN(MAX_LINE_LENGTH, term_width);
-    
+    term_width  = MAX(MIN_LINE_LENGTH, term_width);
+    term_width  = MIN(MAX_LINE_LENGTH, term_width);
+
     term_width -= 10; // Account for prefix.
 
     SALLOC(out_line, term_width);

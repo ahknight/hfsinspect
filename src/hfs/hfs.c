@@ -31,7 +31,7 @@ int hfs_load_mbd(Volume* vol, HFSMasterDirectoryBlock* mdb)
     return 0;
 }
 
-int hfs_load_header(Volume* vol, HFSPlusVolumeHeader* vh)
+int hfsplus_load_header(Volume* vol, HFSPlusVolumeHeader* vh)
 {
     trace("vol (%p), vh (%p)", vol, vh);
 
@@ -43,14 +43,14 @@ int hfs_load_header(Volume* vol, HFSPlusVolumeHeader* vh)
     return 0;
 }
 
-int hfs_close(HFS* hfs) {
+int hfs_close(HFSPlus* hfs) {
     trace("hfs (%p)", hfs);
     debug("Closing volume.");
     int result = vol_close(hfs->vol);
     return result;
 }
 
-int hfs_open(HFS* hfs, Volume* vol)
+int hfs_open(HFSPlus* hfs, Volume* vol)
 {
     int type   = 0;
     int result = 0;
@@ -71,7 +71,7 @@ int hfs_open(HFS* hfs, Volume* vol)
     }
 
     // Clear the HFSVolume struct (hope you didn't need that)
-    memset(hfs, 0, sizeof(struct HFS));
+    memset(hfs, 0, sizeof(struct HFSPlus));
 
     // Handle wrapped volumes.
     if (type == kFSTypeWrappedHFSPlus) {
@@ -83,7 +83,7 @@ int hfs_open(HFS* hfs, Volume* vol)
     }
 
     // Load the volume header.
-    if ( hfs_load_header(vol, &hfs->vh) < 0 )
+    if ( hfsplus_load_header(vol, &hfs->vh) < 0 )
         return -1;
 
     // Update the HFSVolume struct.
@@ -118,20 +118,21 @@ int hfs_test(Volume* vol)
         return -1;
     }
 
-    if ((mdb.drSigWord == kHFSSigWord) && (mdb.drEmbedSigWord == kHFSPlusSigWord)) {
-        info("Found a wrapped HFS+ volume");
-        type = kFSTypeWrappedHFSPlus;
-
-    } else if (mdb.drSigWord == kHFSSigWord) {
-        info("Found an HFS volume");
-        type = kFSTypeHFS;
+    if (mdb.drSigWord == kHFSSigWord) {
+        if (mdb.drEmbedSigWord == kHFSPlusSigWord) {
+            info("Found an HFS-wrapped HFS+ volume");
+            type = kFSTypeWrappedHFSPlus;
+        } else {
+            info("Found an HFS volume.");
+            type = kFSTypeHFS;
+        }
     }
 
     if (type != kTypeUnknown)
         return type;
 
     // Now test for a modern HFS+ volume.
-    if ( hfs_load_header(vol, &vh) < 0 )
+    if ( hfsplus_load_header(vol, &vh) < 0 )
         return -1;
 
     if ((vh.signature == kHFSPlusSigWord) || (vh.signature == kHFSXSigWord)) {
@@ -145,14 +146,14 @@ int hfs_test(Volume* vol)
 }
 
 /** returns the first HFS+ volume in a tree of volumes */
-Volume* hfs_find(Volume* vol)
+Volume* hfsplus_find(Volume* vol)
 {
     Volume* result = NULL;
     int     test   = 0;
 
     trace("vol (%p)", vol);
 
-    debug("hfs_find");
+    debug("hfsplus_find");
 
     assert(vol != NULL);
     test = hfs_test(vol);
@@ -162,7 +163,7 @@ Volume* hfs_find(Volume* vol)
     } else if (vol->partition_count) {
         for(unsigned i = 0; i < vol->partition_count; i++) {
             if (vol->partitions[i] != NULL) {
-                result = hfs_find(vol->partitions[i]);
+                result = hfsplus_find(vol->partitions[i]);
                 if (result != NULL)
                     break;
             }
@@ -174,7 +175,7 @@ Volume* hfs_find(Volume* vol)
 
 #pragma mark Volume Structures
 
-bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFS* hfs)
+bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFSPlus* hfs)
 {
     void*   buffer = NULL;
     ssize_t size   = 0;
@@ -205,37 +206,7 @@ bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFS* hfs
     return false;
 }
 
-bool hfs_get_HFSPlusVolumeHeader(HFSPlusVolumeHeader* vh, const HFS* hfs)
-{
-    void*   buffer = NULL;
-    ssize_t size   = 0;
-
-    trace("vh (%p), hfs (%p)", vh, hfs);
-
-    if (hfs->vol) {
-        SALLOC(buffer, 2048)
-
-        size = hfs_read(buffer, hfs, 2048, 0);
-
-        if (size < 1) {
-            perror("read");
-            critical("Cannot read volume.");
-            SFREE(buffer);
-            return -1;
-        }
-
-        void* vhp = (char*)buffer + 1024;
-        *vh = *(HFSPlusVolumeHeader*)vhp;
-        swap_HFSPlusVolumeHeader(vh);
-
-        SFREE(buffer);
-        return true;
-    }
-
-    return false;
-}
-
-bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFS* hfs)
+bool hfsplus_get_JournalInfoBlock(JournalInfoBlock* block, const HFSPlus* hfs)
 {
     trace("block (%p), hfs (%p)", block, hfs);
 
@@ -262,7 +233,7 @@ bool hfs_get_JournalInfoBlock(JournalInfoBlock* block, const HFS* hfs)
     return false;
 }
 
-bool hfs_get_journalheader(journal_header* header, JournalInfoBlock* info, const HFS* hfs)
+bool hfsplus_get_journalheader(journal_header* header, JournalInfoBlock* info, const HFSPlus* hfs)
 {
     ssize_t nbytes = 0;
 

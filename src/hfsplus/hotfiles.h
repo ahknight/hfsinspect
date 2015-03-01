@@ -63,9 +63,9 @@ typedef struct HotFileThreadRecord HotFileThreadRecord;
     (HotFileKey){ .keyLength = HFC_KEYLENGTH, .forkType = forkType, .pad = 0, .temperature = HFC_LOOKUPTAG, .fileID = fileID }
 
 
-int hfs_get_hotfiles_btree(BTreePtr* tree, const HFS* hfs) __attribute__((nonnull));
+int hfs_get_hotfiles_btree(BTreePtr* tree, const HFSPlus* hfs) __attribute__((nonnull));
 int hfs_hotfiles_get_node(BTreeNodePtr* node, const BTreePtr bTree, bt_nodeid_t nodeNum) __attribute__((nonnull));
 
-uint32_t HFCGetFileTemperature(HFS* hfs, bt_nodeid_t fileID, hfs_forktype_t forkType) __attribute__((nonnull));
+uint32_t HFCGetFileTemperature(HFSPlus* hfs, bt_nodeid_t fileID, hfs_forktype_t forkType) __attribute__((nonnull));
 
 #endif

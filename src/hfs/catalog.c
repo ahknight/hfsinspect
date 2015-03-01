@@ -24,7 +24,7 @@ const uint32_t kFolderAliasType         = 'fdrp';
 wchar_t*       HFSPlusMetadataFolder    = L"\0\0\0\0HFS+ Private Data";
 wchar_t*       HFSPlusDirMetadataFolder = L".HFS+ Private Directory Data\xd";
 
-int hfs_get_catalog_btree(BTreePtr* tree, const HFS* hfs)
+int hfsplus_get_catalog_btree(BTreePtr* tree, const HFSPlus* hfs)
 {
     trace("tree (%p), hfs (%p)", tree, hfs);
     debug("Getting catalog B-Tree");
@@ -32,14 +32,14 @@ int hfs_get_catalog_btree(BTreePtr* tree, const HFS* hfs)
     static BTreePtr cachedTree;
 
     if (cachedTree == NULL) {
-        HFSFork* fork = NULL;
-        FILE*    fp   = NULL;
+        HFSPlusFork* fork = NULL;
+        FILE*        fp   = NULL;
 
         debug("Creating catalog B-Tree");
 
         SALLOC(cachedTree, sizeof(struct _BTree));
 
-        if ( hfsfork_get_special(&fork, hfs, kHFSCatalogFileID) < 0 ) {
+        if ( hfsplus_get_special_fork(&fork, hfs, kHFSCatalogFileID) < 0 ) {
             critical("Could not create fork for Catalog B-Tree!");
         }
 
@@ -50,32 +50,32 @@ int hfs_get_catalog_btree(BTreePtr* tree, const HFS* hfs)
         if (hfs->vh.signature == kHFSXSigWord) {
             if (cachedTree->headerRecord.keyCompareType == kHFSCaseFolding) {
                 // Case Folding (normal; case-insensitive)
-                cachedTree->keyCompare = (btree_key_compare_func)hfs_catalog_compare_keys_cf;
+                cachedTree->keyCompare = (btree_key_compare_func)hfsplus_catalog_compare_keys_cf;
 
             } else if (cachedTree->headerRecord.keyCompareType == kHFSBinaryCompare) {
                 // Binary Compare (case-sensitive)
-                cachedTree->keyCompare = (btree_key_compare_func)hfs_catalog_compare_keys_bc;
+                cachedTree->keyCompare = (btree_key_compare_func)hfsplus_catalog_compare_keys_bc;
 
             }
         } else {
             // Case Folding (normal; case-insensitive)
-            cachedTree->keyCompare = (btree_key_compare_func)hfs_catalog_compare_keys_cf;
+            cachedTree->keyCompare = (btree_key_compare_func)hfsplus_catalog_compare_keys_cf;
         }
         cachedTree->treeID  = kHFSCatalogFileID;
-        cachedTree->getNode = hfs_catalog_get_node;
+        cachedTree->getNode = hfsplus_catalog_get_node;
 
         // Load the bitmap.
         (void)BTIsNodeUsed(cachedTree, 0);
     }
 
     // Copy the cached tree out.
-    // Note this copies a reference to the same extent list in the HFSFork struct so NEVER free that fork.
+    // Note this copies a reference to the same extent list in the HFSPlusFork struct so NEVER free that fork.
     *tree = cachedTree;
 
     return 0;
 }
 
-int hfs_catalog_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodeid_t nodeNum)
+int hfsplus_catalog_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodeid_t nodeNum)
 {
     trace("out_node (%p), bTree (%p), nodeNum %u", out_node, bTree, nodeNum);
     assert(out_node);
@@ -161,7 +161,7 @@ int hfs_catalog_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodeid
 //     return ((HFSPlusCatalogRecord*)record.value)->record_type;
 // }
 
-int8_t hfs_catalog_find_record(BTreeNodePtr* node, BTRecNum* recordID, FSSpec spec)
+int8_t hfsplus_catalog_find_record(BTreeNodePtr* node, BTRecNum* recordID, FSSpec spec)
 {
     hfs_wc_str   wc_name      = {0};
     const HFS*   hfs          = spec.hfs;
@@ -180,7 +180,7 @@ int8_t hfs_catalog_find_record(BTreeNodePtr* node, BTRecNum* recordID, FSSpec sp
     catalogKey.keyLength = MAX(kHFSPlusCatalogKeyMinimumLength, catalogKey.keyLength);
 
     BTreePtr     catalogTree = NULL;
-    hfs_get_catalog_btree(&catalogTree, hfs);
+    hfsplus_get_catalog_btree(&catalogTree, hfs);
     BTreeNodePtr searchNode  = NULL;
     BTRecNum     searchIndex = 0;
 
@@ -195,7 +195,7 @@ int8_t hfs_catalog_find_record(BTreeNodePtr* node, BTRecNum* recordID, FSSpec sp
     return 0;
 }
 
-int hfs_catalog_compare_keys_cf(const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2)
+int hfsplus_catalog_compare_keys_cf(const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2)
 {
     int result = 0;
 
@@ -210,7 +210,7 @@ int hfs_catalog_compare_keys_cf(const HFSPlusCatalogKey* key1, const HFSPlusCata
     return result;
 }
 
-int hfs_catalog_compare_keys_bc(const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2)
+int hfsplus_catalog_compare_keys_bc(const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2)
 {
     int        result = 0;
 
@@ -238,15 +238,15 @@ int hfs_catalog_compare_keys_bc(const HFSPlusCatalogKey* key1, const HFSPlusCata
     if (result == 0) {
         // The shared prefix sorted the same, so the shorter one wins.
         result = cmp(key1->nodeName.length, key2->nodeName.length);
-        if (result != 0) trace("* Shorter wins.")
+        if (result != 0) trace("* Shorter wins.");
     }
-        
+
     return result;
 }
 
 int HFSPlusGetCNIDName(wchar_t* name, FSSpec spec)
 {
-    const HFS*        hfs      = spec.hfs;
+    const HFSPlus*    hfs      = spec.hfs;
     bt_nodeid_t       cnid     = spec.parentID;
     BTreePtr          tree     = NULL;
     BTreeNodePtr      node     = NULL;
@@ -258,7 +258,7 @@ int HFSPlusGetCNIDName(wchar_t* name, FSSpec spec)
     key.parentID  = cnid;
     key.keyLength = kHFSPlusCatalogKeyMinimumLength;
 
-    if (hfs_get_catalog_btree(&tree, hfs) < 0)
+    if (hfsplus_get_catalog_btree(&tree, hfs) < 0)
         return -1;
 
     int found = btree_search(&node, &recordID, tree, &key);
@@ -279,13 +279,13 @@ int HFSPlusGetCNIDName(wchar_t* name, FSSpec spec)
     return wcslen(name);
 }
 
-#pragma mark Searching
+#pragma mark - Searching
 
 /**
    FIXME: Incomplete
    Tries to follow all possible references from a catalog record, but only once. Returns 1 if the FSSpec refers to a new record, 0 if the source was not a reference, and -1 on error.
  */
-//int HFSPlusGetTargetOfCatalogRecord(FSSpec* targetSpec, const HFSPlusCatalogRecord* sourceRecord, const HFS* hfs)
+//int HFSPlusGetTargetOfCatalogRecord(FSSpec* targetSpec, const HFSPlusCatalogRecord* sourceRecord, const HFSPlus* hfs)
 //{
 //    trace("targetSpec (%p), sourceRecord (%p), hfs (%p)", targetSpec, sourceRecord, hfs);
 //
@@ -319,7 +319,7 @@ int HFSPlusGetCNIDName(wchar_t* name, FSSpec spec)
 //    return 0;
 //}
 
-int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord* out_catalogRecord, const char* path, const HFS* hfs)
+int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord* out_catalogRecord, const char* path, const HFSPlus* hfs)
 {
     trace("out_spec (%p), out_catalogRecord (%p), path '%s', hfs (%p)", out_spec, out_catalogRecord, path, hfs);
 
@@ -345,7 +345,7 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord* out_ca
     // Iterate over path segments.
     while ( (segment = strsep(&file_path, "/")) != NULL ) {
         debug("Segment: %d:%s", parentID, segment);
-        
+
         // Persist the search info for later.
         (void)strlcpy(last_segment, segment, PATH_MAX);
         last_parentID = parentID;
@@ -361,7 +361,7 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord* out_ca
 
         debug("Record found:");
         debug("%s: parent: %d ", segment, parentID);
-        
+
         // If this was a null segment (eg. ///bar) then move to the next without
         // changing the parent.
         if (strlen(segment) == 0) continue;
@@ -392,7 +392,7 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord* out_ca
                 break;
             }
         }
-        
+
         if (catalogRecord.record_type == kHFSPlusFileRecord) break;
     }
 
@@ -433,7 +433,7 @@ FSSpec HFSPlusFSSpecFromCatalogKey(HFSPlusCatalogKey key)
 
 int HFSPlusGetCatalogRecordByFSSpec(HFSPlusCatalogRecord* catalogRecord, FSSpec spec)
 {
-    const HFS*        hfs         = spec.hfs;
+    const HFSPlus*    hfs         = spec.hfs;
     HFSPlusCatalogKey catalogKey  = HFSPlusCatalogKeyFromFSSpec(spec);
     BTreePtr          catalogTree = NULL;
     BTreeNodePtr      searchNode  = NULL;
@@ -443,7 +443,7 @@ int HFSPlusGetCatalogRecordByFSSpec(HFSPlusCatalogRecord* catalogRecord, FSSpec 
 
     trace("catalogRecord (%p), spec (%p, %u, (%u)", catalogRecord, spec.hfs, spec.parentID, spec.name.length);
 
-    if ( hfs_get_catalog_btree(&catalogTree, hfs) < 0 ) return -1;
+    if ( hfsplus_get_catalog_btree(&catalogTree, hfs) < 0 ) return -1;
 
     result = btree_search(&searchNode, &searchIndex, catalogTree, &catalogKey);
     if (result != true) return -1;
@@ -461,7 +461,7 @@ int HFSPlusGetCatalogRecordByFSSpec(HFSPlusCatalogRecord* catalogRecord, FSSpec 
     return 0;
 }
 
-int HFSPlusGetCatalogInfoByCNID(FSSpec* out_spec, HFSPlusCatalogRecord* out_catalogRecord, const HFS* hfs, bt_nodeid_t cnid)
+int HFSPlusGetCatalogInfoByCNID(FSSpec* out_spec, HFSPlusCatalogRecord* out_catalogRecord, const HFSPlus* hfs, bt_nodeid_t cnid)
 {
     FSSpec               spec          = { .hfs = hfs, .parentID = cnid };
     HFSPlusCatalogRecord catalogRecord = {0};
@@ -485,7 +485,7 @@ int HFSPlusGetCatalogInfoByCNID(FSSpec* out_spec, HFSPlusCatalogRecord* out_cata
     return 0;
 }
 
-#pragma mark Property Tests
+#pragma mark - Property Tests
 
 bool HFSPlusCatalogFileIsHardLink(const HFSPlusCatalogRecord* record)
 {

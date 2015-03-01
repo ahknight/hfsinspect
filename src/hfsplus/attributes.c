@@ -6,6 +6,8 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
+#include <wchar.h>
+
 #include "hfsplus/hfsplus.h"
 
 #include "hfs/hfs_io.h"
@@ -14,21 +16,21 @@
 #include "logging/logging.h"   // console printing routines
 
 
-int hfs_get_attribute_btree(BTreePtr* tree, const HFS* hfs)
+int hfs_get_attribute_btree(BTreePtr* tree, const HFSPlus* hfs)
 {
     static BTreePtr cachedTree = NULL;
 
     debug("Getting attribute B-Tree");
 
     if (cachedTree == NULL) {
-        HFSFork* fork = NULL;
-        FILE*    fp   = NULL;
+        HFSPlusFork* fork = NULL;
+        FILE*        fp   = NULL;
 
         debug("Creating attribute B-Tree");
 
         SALLOC(cachedTree, sizeof(struct _BTree));
 
-        if ( hfsfork_get_special(&fork, hfs, kHFSAttributesFileID) < 0 ) {
+        if ( hfsplus_get_special_fork(&fork, hfs, kHFSAttributesFileID) < 0 ) {
             critical("Could not create fork for Attributes B-Tree!");
             return -1;
         }
@@ -45,6 +47,7 @@ int hfs_get_attribute_btree(BTreePtr* tree, const HFS* hfs)
     return 0;
 }
 
+// FIXME: Almost certainly not right.
 int hfs_attributes_compare_keys (const HFSPlusAttrKey* key1, const HFSPlusAttrKey* key2)
 {
     int     result     = 0;

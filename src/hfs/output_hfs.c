@@ -16,9 +16,9 @@
 #include "logging/logging.h"    // console printing routines
 
 
-static HFS* volume_ = NULL;
-void set_hfs_volume(HFS* v) { volume_ = v; }
-HFS* get_hfs_volume(void) { return volume_; }
+static HFSPlus* volume_ = NULL;
+void set_hfs_volume(HFSPlus* v) { volume_ = v; }
+HFSPlus* get_hfs_volume(void) { return volume_; }
 
 #pragma mark Value Print Functions
 
@@ -67,7 +67,7 @@ void PrintHFSUniStr255(out_ctx* ctx, const char* label, const HFSUniStr255* reco
 
 #pragma mark Structure Print Functions
 
-void PrintVolumeInfo(out_ctx* ctx, const HFS* hfs)
+void PrintVolumeInfo(out_ctx* ctx, const HFSPlus* hfs)
 {
     if (hfs->vh.signature == kHFSPlusSigWord)
         BeginSection(ctx, "HFS+ Volume Format (v%d)", hfs->vh.version);
@@ -81,8 +81,8 @@ void PrintVolumeInfo(out_ctx* ctx, const HFS* hfs)
     if (success)
         PrintAttribute(ctx, "volume name", "%ls", volumeName);
 
-    BTreePtr   catalog    = NULL;
-    hfs_get_catalog_btree(&catalog, hfs);
+    BTreePtr catalog    = NULL;
+    hfsplus_get_catalog_btree(&catalog, hfs);
 
     if ((hfs->vh.signature == kHFSXSigWord) && (catalog->headerRecord.keyCompareType == kHFSBinaryCompare)) {
         PrintAttribute(ctx, "case sensitivity", "case sensitive");
@@ -291,7 +291,7 @@ void PrintExtentList(out_ctx* ctx, const ExtentList* list, uint32_t totalBlocks)
     PrintAttribute(ctx, "", "%0.2f blocks per extent on average.", ( (float)catalogBlocks / (float)usedExtents) );
 }
 
-void PrintForkExtentsSummary(out_ctx* ctx, const HFSFork* fork)
+void PrintForkExtentsSummary(out_ctx* ctx, const HFSPlusFork* fork)
 {
     info("Printing extents summary");
 
@@ -315,7 +315,7 @@ void PrintHFSPlusForkData(out_ctx* ctx, const HFSPlusForkData* fork, uint32_t cn
     PrintHFSBlocks  (ctx, fork, totalBlocks);
 
     if (fork->totalBlocks) {
-        HFSFork* hfsfork;
+        HFSPlusFork* hfsfork;
         if ( hfsfork_make(&hfsfork, volume_, *fork, forktype, cnid) < 0 ) {
             critical("Could not create fork for fileID %u", cnid);
             return;
@@ -672,7 +672,7 @@ void PrintHFSPlusCatalogThread(out_ctx* ctx, const HFSPlusCatalogThread* record)
 {
     PrintUI             (ctx, record, reserved);
     PrintUI             (ctx, record, parentID);
-    PrintHFSUniStr255  (ctx, "nodeName", &record->nodeName);
+    PrintHFSUniStr255   (ctx, "nodeName", &record->nodeName);
 }
 
 void PrintHFSPlusAttrForkData(out_ctx* ctx, const HFSPlusAttrForkData* record)
@@ -800,6 +800,7 @@ void VisualizeHFSPlusCatalogKey(out_ctx* ctx, const HFSPlusCatalogKey* record, c
         Print(ctx, format, record->keyLength, record->parentID, record->nodeName.length, name);
         Print(ctx, line_f, dashes);
     }
+    printf("\n");
 }
 
 void VisualizeHFSPlusAttrKey(out_ctx* ctx, const HFSPlusAttrKey* record, const char* label, bool oneLine)
@@ -919,7 +920,7 @@ void PrintFolderListing(out_ctx* ctx, uint32_t folderID)
     BTreeNodePtr node         = NULL;
     BTRecNum     recordID     = 0;
 
-    if (hfs_catalog_find_record(&node, &recordID, spec) < 0) {
+    if (hfsplus_catalog_find_record(&node, &recordID, spec) < 0) {
         error("No thread record for %d found.", folderID);
         return;
     }

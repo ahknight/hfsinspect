@@ -9,15 +9,15 @@
 #include "hfs/hfs_btree.h"
 #include "hfs/hfs_io.h"
 
-int hfs_get_btree(BTreePtr* btree, const HFS* hfs, hfs_cnid_t cnid)
+int hfs_get_btree(BTreePtr* btree, const HFSPlus* hfs, hfs_cnid_t cnid)
 {
 //    static BTreePtr trees[16] = {{0}};
-    BTreePtr tree = NULL;
-    HFSFork* fork = NULL;
+    BTreePtr     tree = NULL;
+    HFSPlusFork* fork = NULL;
 
     SALLOC(tree, sizeof(struct _BTree));
 
-    if ( hfsfork_get_special(&fork, hfs, cnid) < 0 )
+    if ( hfsplus_get_special_fork(&fork, hfs, cnid) < 0 )
         goto ERR;
 
     FILE* fp = NULL;

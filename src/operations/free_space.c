@@ -11,11 +11,11 @@
 
 void showFreeSpace(HIOptions* options)
 {
-    HFSFork* fork = NULL;
-    if ( hfsfork_get_special(&fork, options->hfs, kHFSAllocationFileID) < 0 )
+    HFSPlusFork* fork = NULL;
+    if ( hfsplus_get_special_fork(&fork, options->hfs, kHFSAllocationFileID) < 0 )
         die(1, "Couldn't get a reference to the volume allocation file.");
 
-    char*    data = NULL;
+    char*        data = NULL;
     SALLOC(data, fork->logicalSize);
     {
         size_t  block_size = 128*1024, offset = 0;

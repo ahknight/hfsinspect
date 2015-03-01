@@ -12,17 +12,17 @@
 #include "hfs/unicode.h"
 #include "logging/logging.h"    // console printing routines
 
-int hfs_get_hotfiles_btree(BTreePtr* tree, const HFS* hfs)
+int hfs_get_hotfiles_btree(BTreePtr* tree, const HFSPlus* hfs)
 {
     static BTreePtr cachedTree;
 
     debug("Getting hotfiles B-Tree");
 
     if (cachedTree == NULL) {
-        BTreeNodePtr node         = NULL;
-        BTreeKeyPtr  recordKey    = NULL;
-        void*        recordValue  = NULL;
-        HFSFork*     fork         = NULL;
+        BTreeNodePtr node          = NULL;
+        BTreeKeyPtr  recordKey     = NULL;
+        void*        recordValue   = NULL;
+        HFSPlusFork* fork          = NULL;
         FILE*        fp           = NULL;
         BTRecNum     recordID     = 0;
         bt_nodeid_t  parentfolder = kHFSRootFolderID;
@@ -56,7 +56,7 @@ int hfs_get_hotfiles_btree(BTreePtr* tree, const HFS* hfs)
     }
 
     // Copy the cached tree out.
-    // Note this copies a reference to the same extent list in the HFSFork struct so NEVER free that fork.
+    // Note this copies a reference to the same extent list in the HFSPlusFork struct so NEVER free that fork.
     *tree = cachedTree;
 
     return 0;

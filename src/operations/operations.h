@@ -48,10 +48,10 @@ enum HIModes {
 
 // Configuration context
 typedef struct HIOptions {
-    HFS*                hfs;
+    HFSPlus*            hfs;
     BTreePtr            tree;
     FILE*               extract_fp;
-    HFSFork*            extract_HFSFork;
+    HFSPlusFork*        extract_HFSPlusFork;
     HFSPlusCatalogFile* extract_HFSPlusCatalogFile;
 
     uint32_t            mode;
@@ -75,8 +75,8 @@ void die(int val, char* format, ...) __attribute__(( noreturn ));
 void    showFreeSpace(HIOptions* options);
 void    showPathInfo(HIOptions* options);
 void    showCatalogRecord(HIOptions* options, FSSpec spec, bool followThreads);
-ssize_t extractFork(const HFSFork* fork, const char* extractPath);
-void    extractHFSPlusCatalogFile(const HFS* hfs, const HFSPlusCatalogFile* file, const char* extractPath);
+ssize_t extractFork(const HFSPlusFork* fork, const char* extractPath);
+void    extractHFSPlusCatalogFile(const HFSPlus* hfs, const HFSPlusCatalogFile* file, const char* extractPath);
 
 
 // For volume statistics
@@ -109,10 +109,10 @@ typedef struct VolumeSummary {
     uint64_t    invisibleFileCount;
     uint64_t    emptyFileCount;
     uint64_t    emptyDirectoryCount;
-    
+
     Rank        largestFiles[10];
     Rank        mostFragmentedFiles[10];
-    
+
     ForkSummary dataFork;
     ForkSummary resourceFork;
 } VolumeSummary;
@@ -120,7 +120,7 @@ typedef struct VolumeSummary {
 
 VolumeSummary generateVolumeSummary(HIOptions* options);
 void          generateForkSummary(HIOptions* options, ForkSummary* forkSummary, const HFSPlusCatalogFile* file, const HFSPlusForkData* fork, hfs_forktype_t type);
-void PrintVolumeSummary             (out_ctx* ctx, const VolumeSummary* summary) _NONNULL;
-void PrintForkSummary               (out_ctx* ctx, const ForkSummary* summary) _NONNULL;
+void          PrintVolumeSummary             (out_ctx* ctx, const VolumeSummary* summary) _NONNULL;
+void          PrintForkSummary               (out_ctx* ctx, const ForkSummary* summary) _NONNULL;
 
 #endif

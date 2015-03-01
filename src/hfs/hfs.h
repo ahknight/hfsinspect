@@ -22,14 +22,13 @@
 #pragma mark Struct Conveniences
 
 int     hfs_test (Volume* vol) __attribute__((nonnull));
-Volume* hfs_find (Volume* vol) __attribute__((nonnull));
+Volume* hfsplus_find (Volume* vol) __attribute__((nonnull));
 
-int hfs_open (HFS* hfs, Volume* vol) __attribute__((nonnull));
-int hfs_close (HFS* hfs) __attribute__((nonnull));
+int hfs_open (HFSPlus* hfs, Volume* vol) __attribute__((nonnull));
+int hfs_close (HFSPlus* hfs) __attribute__((nonnull));
 
-bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFS* hfs) __attribute__((nonnull));
-bool hfs_get_HFSPlusVolumeHeader    (HFSPlusVolumeHeader* vh, const HFS* hfs) __attribute__((nonnull));
-bool hfs_get_JournalInfoBlock       (JournalInfoBlock* block, const HFS* hfs) __attribute__((nonnull));
-bool hfs_get_journalheader          (journal_header* header, JournalInfoBlock* info, const HFS* hfs) __attribute__((nonnull));
+bool hfs_get_HFSMasterDirectoryBlock(HFSMasterDirectoryBlock* vh, const HFSPlus* hfs) __attribute__((nonnull));
+bool hfsplus_get_JournalInfoBlock       (JournalInfoBlock* block, const HFSPlus* hfs) __attribute__((nonnull));
+bool hfsplus_get_journalheader          (journal_header* header, JournalInfoBlock* info, const HFSPlus* hfs) __attribute__((nonnull));
 
 #endif

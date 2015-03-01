@@ -21,7 +21,7 @@ hfs_forktype_t HFSResourceForkType = 0xFF;
 
 #pragma mark HFS Volume
 
-ssize_t hfs_read(void* buffer, const HFS* hfs, size_t size, size_t offset)
+ssize_t hfs_read(void* buffer, const HFSPlus* hfs, size_t size, size_t offset)
 {
     trace("buffer (%p), hfs (%p), size %zu, offset %zu", buffer, hfs, size, offset);
 
@@ -32,7 +32,7 @@ ssize_t hfs_read(void* buffer, const HFS* hfs, size_t size, size_t offset)
 }
 
 // Block arguments are relative to the volume.
-ssize_t hfs_read_blocks(void* buffer, const HFS* hfs, size_t block_count, size_t start_block)
+ssize_t hfs_read_blocks(void* buffer, const HFSPlus* hfs, size_t block_count, size_t start_block)
 {
     ASSERT_PTR(buffer);
     ASSERT_PTR(hfs);
@@ -43,8 +43,8 @@ ssize_t hfs_read_blocks(void* buffer, const HFS* hfs, size_t block_count, size_t
 #pragma mark funopen - HFSVolume
 
 typedef struct HFSVolumeCookie {
-    off_t cursor;
-    HFS*  hfs;
+    off_t    cursor;
+    HFSPlus* hfs;
 } HFSVolumeCookie;
 
 #if defined (BSD)
@@ -108,11 +108,11 @@ int hfs_closefn(void* c)
     return 0;
 }
 
-FILE* fopen_hfs(HFS* hfs)
+FILE* fopen_hfs(HFSPlus* hfs)
 {
     HFSVolumeCookie* cookie = NULL;
     SALLOC(cookie, sizeof(HFSVolumeCookie));
-    SALLOC(cookie->hfs, sizeof(HFS));
+    SALLOC(cookie->hfs, sizeof(HFSPlus));
     *cookie->hfs = *hfs; // copy
 
 #if defined(BSD)
@@ -140,7 +140,7 @@ FILE* fopen_hfs(HFS* hfs)
 
 #pragma mark HFS Fork
 
-int hfsfork_get_special(HFSFork** fork, const HFS* hfs, bt_nodeid_t cnid)
+int hfsplus_get_special_fork(HFSPlusFork** fork, const HFSPlus* hfs, bt_nodeid_t cnid)
 {
     ASSERT_PTR(fork);
     ASSERT_PTR(hfs);
@@ -204,15 +204,15 @@ int hfsfork_get_special(HFSFork** fork, const HFS* hfs, bt_nodeid_t cnid)
     return 0;
 }
 
-int hfsfork_make (HFSFork** fork, const HFS* hfs, const HFSPlusForkData forkData, hfs_forktype_t forkType, bt_nodeid_t cnid)
+int hfsfork_make (HFSPlusFork** fork, const HFSPlus* hfs, const HFSPlusForkData forkData, hfs_forktype_t forkType, bt_nodeid_t cnid)
 {
     ASSERT_PTR(fork);
     ASSERT_PTR(hfs);
 
-    HFSFork* f = NULL;
-    SALLOC(f, sizeof(HFSFork));
+    HFSPlusFork* f = NULL;
+    SALLOC(f, sizeof(HFSPlusFork));
 
-    f->hfs         = (HFS*)hfs;
+    f->hfs         = (HFSPlus*)hfs;
     f->forkData    = forkData;
     f->forkType    = forkType;
     f->cnid        = cnid;
@@ -220,7 +220,7 @@ int hfsfork_make (HFSFork** fork, const HFS* hfs, const HFSPlusForkData forkData
     f->logicalSize = forkData.logicalSize;
 
     f->extents     = extentlist_make();
-    if ( hfs_extents_get_extentlist_for_fork(f->extents, f) == false) {
+    if ( hfsplus_extents_get_extentlist_for_fork(f->extents, f) == false) {
         critical("Failed to get extents for new fork!");
         SFREE(f);
         return -1;
@@ -231,13 +231,13 @@ int hfsfork_make (HFSFork** fork, const HFS* hfs, const HFSPlusForkData forkData
     return 0;
 }
 
-void hfsfork_free(HFSFork* fork)
+void hfsfork_free(HFSPlusFork* fork)
 {
     extentlist_free(fork->extents);
     SFREE(fork);
 }
 
-ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, size_t start_block)
+ssize_t hfs_read_fork(void* buffer, const HFSPlusFork* fork, size_t block_count, size_t start_block)
 {
     ASSERT_PTR(buffer);
     ASSERT_PTR(fork);
@@ -323,7 +323,7 @@ ssize_t hfs_read_fork(void* buffer, const HFSFork* fork, size_t block_count, siz
 }
 
 // Grab a specific byte range of a fork.
-ssize_t hfs_read_fork_range(void* buffer, const HFSFork* fork, size_t size, size_t offset)
+ssize_t hfs_read_fork_range(void* buffer, const HFSPlusFork* fork, size_t size, size_t offset)
 {
     ASSERT_PTR(buffer);
     ASSERT_PTR(fork);
@@ -375,12 +375,12 @@ ssize_t hfs_read_fork_range(void* buffer, const HFSFork* fork, size_t size, size
     return size;
 }
 
-#pragma mark funopen - HFSFork
+#pragma mark funopen - HFSPlusFork
 
-typedef struct HFSForkCookie {
-    off_t    cursor;
-    HFSFork* fork;
-} HFSForkCookie;
+typedef struct HFSPlusForkCookie {
+    off_t        cursor;
+    HFSPlusFork* fork;
+} HFSPlusForkCookie;
 
 #if defined (BSD)
 int fork_readfn(void* c, char* buf, int nbytes)
@@ -388,9 +388,9 @@ int fork_readfn(void* c, char* buf, int nbytes)
 ssize_t fork_readfn(void* c, char* buf, size_t nbytes)
 #endif
 {
-    HFSForkCookie* cookie = (HFSForkCookie*)c;
-    off_t          offset = cookie->cursor;
-    size_t         bytes  = 0;
+    HFSPlusForkCookie* cookie = (HFSPlusForkCookie*)c;
+    off_t              offset = cookie->cursor;
+    size_t             bytes  = 0;
 
     bytes = hfs_read_fork_range(buf, cookie->fork, nbytes, offset);
     if (bytes > 0) cookie->cursor += bytes;
@@ -404,9 +404,9 @@ fpos_t fork_seekfn(void* c, fpos_t pos, int mode)
 #else
 int fork_seekfn(void* c, off_t* p, int mode)
 {
-    off_t          pos    = *p;
+    off_t              pos    = *p;
 #endif
-    HFSForkCookie* cookie = (HFSForkCookie*)c;
+    HFSPlusForkCookie* cookie = (HFSPlusForkCookie*)c;
 
     switch (mode) {
         case SEEK_CUR:
@@ -438,17 +438,17 @@ int fork_seekfn(void* c, off_t* p, int mode)
 
 int fork_closefn(void* c)
 {
-    HFSForkCookie* cookie = (HFSForkCookie*)c;
+    HFSPlusForkCookie* cookie = (HFSPlusForkCookie*)c;
     SFREE(cookie->fork);
     SFREE(cookie);
     return 0;
 }
 
-FILE* fopen_hfsfork(HFSFork* fork)
+FILE* fopen_hfsfork(HFSPlusFork* fork)
 {
-    HFSForkCookie* cookie = NULL;
-    SALLOC(cookie, sizeof(HFSForkCookie));
-    SALLOC(cookie->fork, sizeof(HFSFork));
+    HFSPlusForkCookie* cookie = NULL;
+    SALLOC(cookie, sizeof(HFSPlusForkCookie));
+    SALLOC(cookie->fork, sizeof(HFSPlusFork));
     *cookie->fork = *fork; // copy
 
 #if defined(BSD)

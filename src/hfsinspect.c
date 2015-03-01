@@ -151,11 +151,11 @@ void loadBTree(HIOptions* options)
 {
     // Load the tree
     if (options->tree_type == BTreeTypeCatalog) {
-        if ( hfs_get_catalog_btree(&options->tree, options->hfs) < 0)
+        if ( hfsplus_get_catalog_btree(&options->tree, options->hfs) < 0)
             die(1, "Could not get Catalog B-Tree!");
 
     } else if (options->tree_type == BTreeTypeExtents) {
-        if ( hfs_get_extents_btree(&options->tree, options->hfs) < 0)
+        if ( hfsplus_get_extents_btree(&options->tree, options->hfs) < 0)
             die(1, "Could not get Extents B-Tree!");
 
     } else if (options->tree_type == BTreeTypeAttributes) {
@@ -264,7 +264,7 @@ int main (int argc, char* const* argv)
     GC_INIT();
 #endif                          // GC_ENABLED
 
-    SALLOC(options.hfs, sizeof(struct HFS));
+    SALLOC(options.hfs, sizeof(struct HFSPlus));
 
     (void)strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
 
@@ -546,7 +546,7 @@ OPEN:
 
     // Device loaded. Find the first HFS+ filesystem.
     info("Looking for HFS filesystems on %s.", basename((char*)&vol->source));
-    Volume* tmp = hfs_find(vol);
+    Volume* tmp = hfsplus_find(vol);
     if (tmp == NULL) {
         // No HFS Plus volumes found.
         die(1, "No HFS+ filesystems found.");
@@ -638,7 +638,7 @@ OPEN:
         strlcat(journalBlockPath,   "/journal.block",               PATH_MAX);
         strlcat(journalPath,        "/journal.buf",                 PATH_MAX);
 
-        HFSFork* fork        = NULL;
+        HFSPlusFork* fork        = NULL;
 
         // Volume Header Blocks
         unsigned sectorCount = 16;
@@ -740,12 +740,12 @@ NOPE:
         if (options.hfs->vh.attributes & kHFSVolumeJournaledMask) {
             if (options.hfs->vh.journalInfoBlock != 0) {
                 JournalInfoBlock block   = {0};
-                bool             success = hfs_get_JournalInfoBlock(&block, options.hfs);
+                bool             success = hfsplus_get_JournalInfoBlock(&block, options.hfs);
                 if (!success) die(1, "Could not get the journal info block!");
                 PrintJournalInfoBlock(ctx, &block);
 
                 journal_header   header  = {0};
-                success = hfs_get_journalheader(&header, &block, options.hfs);
+                success = hfsplus_get_journalheader(&header, &block, options.hfs);
                 if (!success) die(1, "Could not get the journal header!");
                 PrintJournalHeader(ctx, &header);
 
@@ -865,10 +865,10 @@ NOPE:
 
     // Extract any found files (not complete; FIXME: dropping perms breaks right now)
     if (check_mode(&options, HIModeExtractFile)) {
-        if ((options.extract_HFSFork == NULL) && options.tree && (options.tree->treeID != 0)) {
-            HFSFork* fork;
-            hfsfork_get_special(&fork, options.hfs, options.tree->treeID);
-            options.extract_HFSFork = fork;
+        if ((options.extract_HFSPlusFork == NULL) && options.tree && (options.tree->treeID != 0)) {
+            HFSPlusFork* fork;
+            hfsplus_get_special_fork(&fork, options.hfs, options.tree->treeID);
+            options.extract_HFSPlusFork = fork;
         }
 
         // Extract any found data, if requested.
@@ -877,8 +877,8 @@ NOPE:
 //            if (options.extract_HFSPlusCatalogFile->fileID != 0) {
 //                extractHFSPlusCatalogFile(options.hfs, options.extract_HFSPlusCatalogFile, options.extract_path);
 //            } else
-            if (options.extract_HFSFork != NULL) {
-                extractFork(options.extract_HFSFork, options.extract_path);
+            if (options.extract_HFSPlusFork != NULL) {
+                extractFork(options.extract_HFSPlusFork, options.extract_path);
             }
         }
     }

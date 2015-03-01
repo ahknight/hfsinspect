@@ -18,8 +18,8 @@
 
 #define _NONNULL       __attribute__((nonnull))
 
-void set_hfs_volume(HFS* v) _NONNULL;
-HFS* get_hfs_volume(void);
+void     set_hfs_volume(HFSPlus* v) _NONNULL;
+HFSPlus* get_hfs_volume(void);
 
 #define PrintCatalogName(ctx, record, value)  _PrintCatalogName(ctx, #value, record->value)
 #define PrintHFSBlocks(ctx, record, value)    _PrintHFSBlocks(ctx, #value, record->value)
@@ -31,11 +31,11 @@ void _PrintHFSBlocks                (out_ctx* ctx, const char* label, uint64_t b
 void _PrintHFSChar                  (out_ctx* ctx, const char* label, const char* i, size_t nbytes) _NONNULL;
 void _PrintHFSTimestamp             (out_ctx* ctx, const char* label, uint32_t timestamp) _NONNULL;
 
-void PrintVolumeInfo                (out_ctx* ctx, const HFS* hfs) _NONNULL;
+void PrintVolumeInfo                (out_ctx* ctx, const HFSPlus* hfs) _NONNULL;
 void PrintHFSMasterDirectoryBlock   (out_ctx* ctx, const HFSMasterDirectoryBlock* vcb) _NONNULL;
 void PrintVolumeHeader              (out_ctx* ctx, const HFSPlusVolumeHeader* vh) _NONNULL;
 void PrintExtentList                (out_ctx* ctx, const ExtentList* list, uint32_t totalBlocks) _NONNULL;
-void PrintForkExtentsSummary        (out_ctx* ctx, const HFSFork* fork) _NONNULL;
+void PrintForkExtentsSummary        (out_ctx* ctx, const HFSPlusFork* fork) _NONNULL;
 void PrintHFSPlusForkData           (out_ctx* ctx, const HFSPlusForkData* fork, uint32_t cnid, uint8_t forktype) _NONNULL;
 void PrintBTNodeDescriptor          (out_ctx* ctx, const BTNodeDescriptor* node) _NONNULL;
 void PrintBTHeaderRecord            (out_ctx* ctx, const BTHeaderRec* hr) _NONNULL;

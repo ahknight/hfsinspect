@@ -11,7 +11,7 @@
 
 #include "hfs/types.h"
 
-int hfs_get_attribute_btree     (BTreePtr* tree, const HFS* hfs) __attribute__((nonnull));
+int hfs_get_attribute_btree     (BTreePtr* tree, const HFSPlus* hfs) __attribute__((nonnull));
 int hfs_attributes_compare_keys (const HFSPlusAttrKey* key1, const HFSPlusAttrKey* key2) __attribute__((nonnull));
 int hfs_attributes_get_node     (BTreeNodePtr* node, const BTreePtr bTree, bt_nodeid_t nodeNum) __attribute__((nonnull));
 

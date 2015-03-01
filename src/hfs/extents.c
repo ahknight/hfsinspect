@@ -15,7 +15,7 @@
 #include "logging/logging.h"   // console printing routines
 
 
-int hfs_get_extents_btree(BTreePtr* tree, const HFS* hfs)
+int hfsplus_get_extents_btree(BTreePtr* tree, const HFSPlus* hfs)
 {
     trace("tree (%p), hfs (%p)", tree, hfs);
 
@@ -31,18 +31,18 @@ int hfs_get_extents_btree(BTreePtr* tree, const HFS* hfs)
 
         SALLOC(cachedTree, sizeof(struct _BTree));
 
-        HFSFork* fork;
-        if ( hfsfork_get_special(&fork, hfs, kHFSExtentsFileID) < 0 ) {
+        HFSPlusFork* fork;
+        if ( hfsplus_get_special_fork(&fork, hfs, kHFSExtentsFileID) < 0 ) {
             critical("Could not create fork for Extents B-Tree!");
         }
-        FILE*    fp = fopen_hfsfork(fork);
+        FILE*        fp = fopen_hfsfork(fork);
         if (fp == NULL)
             return -1;
         btree_init(cachedTree, fp);
 
         cachedTree->treeID     = kHFSExtentsFileID;
-        cachedTree->keyCompare = (btree_key_compare_func)hfs_extents_compare_keys;
-        cachedTree->getNode    = hfs_extents_get_node;
+        cachedTree->keyCompare = (btree_key_compare_func)hfsplus_extents_compare_keys;
+        cachedTree->getNode    = hfsplus_extents_get_node;
 
         // Load the bitmap.
         (void)BTIsNodeUsed(cachedTree, 0);
@@ -53,7 +53,7 @@ int hfs_get_extents_btree(BTreePtr* tree, const HFS* hfs)
     return 0;
 }
 
-int hfs_extents_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodeid_t nodeNum)
+int hfsplus_extents_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodeid_t nodeNum)
 {
     BTreeNodePtr node = NULL;
     out_ctx      ctx  = OCMake(0, 2, "extents");
@@ -96,10 +96,10 @@ int hfs_extents_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_nodeid
     return 0;
 }
 
-int hfs_extents_find_record(HFSPlusExtentRecord* record, hfs_block_t* record_start_block, const HFSFork* fork, size_t startBlock)
+int hfsplus_extents_find_record(HFSPlusExtentRecord* record, hfs_block_t* record_start_block, const HFSPlusFork* fork, size_t startBlock)
 {
     int                  result         = 0;
-    HFS*                 hfs            = fork->hfs;
+    HFSPlus*             hfs            = fork->hfs;
     bt_nodeid_t          fileID         = fork->cnid;
     hfs_forktype_t       forkType       = fork->forkType;
     BTreePtr             extentsTree    = NULL;
@@ -114,7 +114,7 @@ int hfs_extents_find_record(HFSPlusExtentRecord* record, hfs_block_t* record_sta
     trace("record (%p), record_start_block (%p), fork (%p), startBlock %zu", record, record_start_block, fork, startBlock);
     debug("Finding extents record for CNID %d with start block %zu", fork->cnid, startBlock);
 
-    if ( hfs_get_extents_btree(&extentsTree, hfs) < 0)
+    if ( hfsplus_get_extents_btree(&extentsTree, hfs) < 0)
         return -1;
 
     if (extentsTree->headerRecord.rootNode == 0) {
@@ -170,7 +170,7 @@ RETURN:
     return result;
 }
 
-int hfs_extents_compare_keys(const HFSPlusExtentKey* key1, const HFSPlusExtentKey* key2)
+int hfsplus_extents_compare_keys(const HFSPlusExtentKey* key1, const HFSPlusExtentKey* key2)
 {
     trace("key1 (%p) (%u, %u, %u, %u), key2 (%p) (%u, %u, %u, %u)",
           key1, key1->keyLength, key1->forkType, key1->fileID, key1->startBlock,
@@ -189,7 +189,7 @@ int hfs_extents_compare_keys(const HFSPlusExtentKey* key1, const HFSPlusExtentKe
     return 0;
 }
 
-bool hfs_extents_get_extentlist_for_fork(ExtentList* list, const HFSFork* fork)
+bool hfsplus_extents_get_extentlist_for_fork(ExtentList* list, const HFSPlusFork* fork)
 {
     unsigned blocks = 0;
 
@@ -206,7 +206,7 @@ bool hfs_extents_get_extentlist_for_fork(ExtentList* list, const HFSFork* fork)
         HFSPlusExtentRecord record     = {{0}};
         hfs_block_t         startBlock = 0;
 
-        int                 found      = hfs_extents_find_record(&record, &startBlock, fork, blocks);
+        int                 found      = hfsplus_extents_find_record(&record, &startBlock, fork, blocks);
 
         if (found < 0) {
             error("Error while searching extent B-Tree for additional extents.");

@@ -14,10 +14,10 @@
 
 // and a hat tip to Carbon ...
 struct FSSpec {
-    const HFS*   hfs;
-    hfs_cnid_t   parentID;
-    HFSUniStr255 name;
-    uint8_t      _reserved[4];
+    const HFSPlus* hfs;
+    hfs_cnid_t     parentID;
+    HFSUniStr255   name;
+    uint8_t        _reserved[4];
 };
 typedef struct FSSpec FSSpec;
 typedef FSSpec*       FSSpecPtr;
@@ -35,16 +35,16 @@ extern wchar_t*       HFSPlusDirMetadataFolder;
 int HFSPlusGetCatalogRecordByFSSpec (HFSPlusCatalogRecord* catalogRecord, FSSpec spec) __attribute__((nonnull));
 
 /** Looks up a CNID and returns a file or folder.  Follows thread records. */
-int HFSPlusGetCatalogInfoByCNID (FSSpecPtr spec, HFSPlusCatalogRecord* catalogRecord, const HFS* hfs, bt_nodeid_t cnid) __attribute__((nonnull(3)));
+int HFSPlusGetCatalogInfoByCNID (FSSpecPtr spec, HFSPlusCatalogRecord* catalogRecord, const HFSPlus* hfs, bt_nodeid_t cnid) __attribute__((nonnull(3)));
 
 /** Follows all thread records from the root to the given path. Returns a file/folder record, or a folder thread if the final component is a folder without a trailing slash. */
-int HFSPlusGetCatalogInfoByPath (FSSpecPtr spec, HFSPlusCatalogRecord* catalogRecord, const char* path, const HFS* hfs) __attribute__((nonnull(3,4)));
+int HFSPlusGetCatalogInfoByPath (FSSpecPtr spec, HFSPlusCatalogRecord* catalogRecord, const char* path, const HFSPlus* hfs) __attribute__((nonnull(3,4)));
 
 /** Looks up the thread record for the CNID, follows it to the record, then returns the name of that record. */
 int HFSPlusGetCNIDName (wchar_t* name, FSSpec spec) __attribute__((nonnull));
 
 /** Tries to follow all possible references from a catalog record, but only once. Returns 1 if the FSSpec refers to a new record, 0 if the source was not a reference, and -1 on error. */
-int HFSPlusGetTargetOfCatalogRecord (FSSpec* targetSpec, const HFSPlusCatalogRecord* sourceRecord, const HFS* hfs);
+int HFSPlusGetTargetOfCatalogRecord (FSSpec* targetSpec, const HFSPlusCatalogRecord* sourceRecord, const HFSPlus* hfs);
 
 bool HFSPlusCatalogFileIsHardLink       (const HFSPlusCatalogRecord* record) __attribute__((nonnull));
 bool HFSPlusCatalogFolderIsHardLink     (const HFSPlusCatalogRecord* record) __attribute__((nonnull));
@@ -59,12 +59,12 @@ FSSpec            HFSPlusFSSpecFromCatalogKey (HFSPlusCatalogKey key);
 
 #pragma mark Low Level Commands
 
-int hfs_get_catalog_btree (BTreePtr* tree, const HFS* hfs) __attribute__((nonnull));
-int hfs_catalog_get_node (BTreeNodePtr* node, const BTreePtr bTree, bt_nodeid_t nodeNum) __attribute__((nonnull));
+int hfsplus_get_catalog_btree (BTreePtr* tree, const HFSPlus* hfs) __attribute__((nonnull));
+int hfsplus_catalog_get_node (BTreeNodePtr* node, const BTreePtr bTree, bt_nodeid_t nodeNum) __attribute__((nonnull));
 // int hfs_get_catalog_leaf_record (HFSPlusCatalogKey* const record_key, HFSPlusCatalogRecord* const record_value, const BTreeNodePtr node, BTRecNum recordID) __deprecated;
 
-int8_t hfs_catalog_find_record     (BTreeNodePtr* node, BTRecNum* recordID, FSSpec spec) __attribute__((nonnull));
-int    hfs_catalog_compare_keys_cf (const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2) __attribute__((nonnull));
-int    hfs_catalog_compare_keys_bc (const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2) __attribute__((nonnull));
+int8_t hfsplus_catalog_find_record     (BTreeNodePtr* node, BTRecNum* recordID, FSSpec spec) __attribute__((nonnull));
+int    hfsplus_catalog_compare_keys_cf (const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2) __attribute__((nonnull));
+int    hfsplus_catalog_compare_keys_bc (const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2) __attribute__((nonnull));
 
 #endif
