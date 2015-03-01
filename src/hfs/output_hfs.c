@@ -24,11 +24,9 @@ HFSPlus* get_hfs_volume(void) { return volume_; }
 
 void _PrintCatalogName(out_ctx* ctx, char* label, bt_nodeid_t cnid)
 {
-    hfs_wc_str name;
+    hfs_str name = "";
     if (cnid != 0)
-        HFSPlusGetCNIDName(name, (FSSpec){volume_, cnid});
-    else
-        name[0] = L'\0';
+        HFSPlusGetCNIDName(&name, (FSSpec){volume_, cnid});
 
     PrintAttribute(ctx, label, "%d (%ls)", cnid, name);
 }
@@ -60,9 +58,9 @@ void _PrintHFSChar(out_ctx* ctx, const char* label, const char* i, size_t nbytes
 
 void PrintHFSUniStr255(out_ctx* ctx, const char* label, const HFSUniStr255* record)
 {
-    hfs_wc_str wide;
-    hfsuctowcs(wide, record);
-    PrintAttribute(ctx, label, "\"%ls\" (%u)", wide, record->length);
+    hfs_str name = "";
+    hfsuc_to_str(&name, record);
+    PrintAttribute(ctx, label, "\"%s\" (%u)", name, record->length);
 }
 
 #pragma mark Structure Print Functions
@@ -76,10 +74,10 @@ void PrintVolumeInfo(out_ctx* ctx, const HFSPlus* hfs)
     else
         BeginSection(ctx, "Unknown Volume Format"); // Curious.
 
-    hfs_wc_str volumeName = {0};
-    int        success    = HFSPlusGetCNIDName(volumeName, (FSSpec){hfs, kHFSRootFolderID});
+    hfs_str  volumeName = {0};
+    int      success    = HFSPlusGetCNIDName(&volumeName, (FSSpec){hfs, kHFSRootFolderID});
     if (success)
-        PrintAttribute(ctx, "volume name", "%ls", volumeName);
+        PrintAttribute(ctx, "volume name", "%s", volumeName);
 
     BTreePtr catalog    = NULL;
     hfsplus_get_catalog_btree(&catalog, hfs);
@@ -773,10 +771,10 @@ void VisualizeHFSPlusExtentKey(out_ctx* ctx, const HFSPlusExtentKey* record, con
 
 void VisualizeHFSPlusCatalogKey(out_ctx* ctx, const HFSPlusCatalogKey* record, const char* label, bool oneLine)
 {
-    hfs_wc_str name;
-    hfsuctowcs(name, &record->nodeName);
+    hfs_str name = "";
+    hfsuc_to_str(&name, &record->nodeName);
     if (oneLine) {
-        Print(ctx, "%s: %s:%-6u; %s:%-10u; %s:%-6u; %s:%-50ls",
+        Print(ctx, "%s: %s:%-6u; %s:%-10u; %s:%-6u; %s:%-50s",
               label,
               "length",
               record->keyLength,
@@ -789,7 +787,7 @@ void VisualizeHFSPlusCatalogKey(out_ctx* ctx, const HFSPlusCatalogKey* record, c
               );
     } else {
         char* names  = "| %-6s | %-10s | %-6s | %-50s |";
-        char* format = "| %-6u | %-10u | %-6u | %-50ls |";
+        char* format = "| %-6u | %-10u | %-6u | %-50s |";
         char* line_f =  "+%s+";
         char  dashes[90];
         memset(dashes, '-', 83);
@@ -810,10 +808,10 @@ void VisualizeHFSPlusAttrKey(out_ctx* ctx, const HFSPlusAttrKey* record, const c
     memset(&hfsName.unicode, 0, 255);
     memcpy(&hfsName.unicode, &record->attrName, record->attrNameLen * sizeof(uint16_t));
 
-    hfs_wc_str name;
-    hfsuctowcs(name, &hfsName);
+    hfs_str name = "";
+    hfsuc_to_str(&name, &hfsName);
     if (oneLine) {
-        Print(ctx, "%s: %s = %-6u; %s = %-10u; %s = %-10u; %s = %-6u; %s = %-50ls",
+        Print(ctx, "%s: %s = %-6u; %s = %-10u; %s = %-10u; %s = %-6u; %s = %-50s",
               label,
               "length",
               record->keyLength,
@@ -828,7 +826,7 @@ void VisualizeHFSPlusAttrKey(out_ctx* ctx, const HFSPlusAttrKey* record, const c
               );
     } else {
         char* names      = "| %-6s | %-10s | %-10s | %-6s | %-50s |";
-        char* format     = "| %-6u | %-10u | %-10u | %-6u | %-50ls |";
+        char* format     = "| %-6u | %-10u | %-10u | %-6u | %-50s |";
 
         char* line_f     =  "+%s+";
         char  dashes[97] = {'\0'};
@@ -932,9 +930,9 @@ void PrintFolderListing(out_ctx* ctx, uint32_t folderID)
     HFSPlusCatalogRecord* catalogRecord = NULL;
     btree_get_record((void*)&recordKey, (void*)&catalogRecord, node, recordID);
 
-    hfs_wc_str            name;
-    hfsuctowcs(name, &catalogRecord->catalogThread.nodeName);
-    uint32_t              threadID = recordKey->parentID;
+    uint32_t              threadID      = recordKey->parentID;
+    hfs_str               name          = "";
+    hfsuc_to_str(&name, &catalogRecord->catalogThread.nodeName);
 
     struct {
         uint64_t fileCount;
@@ -948,7 +946,7 @@ void PrintFolderListing(out_ctx* ctx, uint32_t folderID)
     } folderStats = {0};
 
     // Start output
-    BeginSection(ctx, "Listing for %ls", name);
+    BeginSection(ctx, "Listing for %s", name);
     Print(ctx, headerFormat, "CNID", "kind", "mode", "user", "group", "data", "rsrc", "name");
 
     // Loop over siblings until NULL
@@ -976,7 +974,7 @@ void PrintFolderListing(out_ctx* ctx, uint32_t folderID)
                 char     dataSize[20] = {'-', '\0'};
                 char     rsrcSize[20] = {'-', '\0'};
 
-                hfsuctowcs(name, &recordKey->nodeName);
+                hfsuc_to_str(&name, &recordKey->nodeName);
 
                 if ( HFSPlusCatalogRecordIsHardLink(catalogRecord) && HFSPlusCatalogRecordIsAlias(catalogRecord) ) {
                     folderStats.hardLinkCount++;
@@ -1093,9 +1091,9 @@ void PrintNodeRecord(out_ctx* ctx, const BTreeNodePtr node, int recordNumber)
             }
             bt_nodeid_t        next_node = *(bt_nodeid_t*)record->value;
             HFSPlusCatalogKey* key       = (HFSPlusCatalogKey*)record->key;
-            hfs_wc_str         nodeName;
-            hfsuctowcs(nodeName, &key->nodeName);
-            Print(ctx, "%-3u %-12u %-5u %-12u %ls", recordNumber, next_node, key->keyLength, key->parentID, nodeName);
+            hfs_str            nodeName  = "";
+            hfsuc_to_str(&nodeName, &key->nodeName);
+            Print(ctx, "%-3u %-12u %-5u %-12u %s", recordNumber, next_node, key->keyLength, key->parentID, nodeName);
             return;
         }
 

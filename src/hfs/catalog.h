@@ -26,8 +26,8 @@ extern const uint32_t kAliasCreator;
 extern const uint32_t kFileAliasType;
 extern const uint32_t kFolderAliasType;
 
-extern wchar_t*       HFSPlusMetadataFolder;
-extern wchar_t*       HFSPlusDirMetadataFolder;
+extern char*          HFSPlusMetadataFolder;
+extern char*          HFSPlusDirMetadataFolder;
 
 #pragma mark High Level Commands
 
@@ -41,7 +41,7 @@ int HFSPlusGetCatalogInfoByCNID (FSSpecPtr spec, HFSPlusCatalogRecord* catalogRe
 int HFSPlusGetCatalogInfoByPath (FSSpecPtr spec, HFSPlusCatalogRecord* catalogRecord, const char* path, const HFSPlus* hfs) __attribute__((nonnull(3,4)));
 
 /** Looks up the thread record for the CNID, follows it to the record, then returns the name of that record. */
-int HFSPlusGetCNIDName (wchar_t* name, FSSpec spec) __attribute__((nonnull));
+int HFSPlusGetCNIDName (hfs_str* name, FSSpec spec) __attribute__((nonnull));
 
 /** Tries to follow all possible references from a catalog record, but only once. Returns 1 if the FSSpec refers to a new record, 0 if the source was not a reference, and -1 on error. */
 int HFSPlusGetTargetOfCatalogRecord (FSSpec* targetSpec, const HFSPlusCatalogRecord* sourceRecord, const HFSPlus* hfs);

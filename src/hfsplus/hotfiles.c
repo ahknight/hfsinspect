@@ -23,14 +23,16 @@ int hfs_get_hotfiles_btree(BTreePtr* tree, const HFSPlus* hfs)
         BTreeKeyPtr  recordKey     = NULL;
         void*        recordValue   = NULL;
         HFSPlusFork* fork          = NULL;
-        FILE*        fp           = NULL;
-        BTRecNum     recordID     = 0;
-        bt_nodeid_t  parentfolder = kHFSRootFolderID;
-        HFSUniStr255 name         = wcstohfsuc(L".hotfiles.btree");
-        FSSpec       spec         = { .hfs = hfs, .parentID = parentfolder, .name = name };
-        int          found        = 0;
+        FILE*        fp            = NULL;
+        BTRecNum     recordID      = 0;
+        bt_nodeid_t  parentfolder  = kHFSRootFolderID;
+        FSSpec       spec          = { .hfs = hfs, .parentID = parentfolder, .name = {0} };
+        int          found         = 0;
 
-        found = hfs_catalog_find_record(&node, &recordID, spec);
+        hfs_str      hotfiles_name = ".hotfiles.btree";
+        str_to_hfsuc(&spec.name, hotfiles_name);
+
+        found = hfsplus_catalog_find_record(&node, &recordID, spec);
         if (found != 1)
             return -1;
 

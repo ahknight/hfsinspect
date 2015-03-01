@@ -49,7 +49,8 @@
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "NO"
       debugXPCServices = "NO"
-      allowLocationSimulation = "NO">
+      allowLocationSimulation = "NO"
+      viewDebuggingEnabled = "No">
       <BuildableProductRunnable>
          <BuildableReference
             BuildableIdentifier = "primary"
@@ -61,7 +62,11 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "--debug"
+            argument = "-LLLL"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-P /a&#xe5;e&#xe9;i&#xee;o&#xf8;u&#xfc;"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -73,8 +78,12 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-s"
-            isEnabled = "YES">
+            argument = "-r"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-P /.journal"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-V /"
@@ -90,7 +99,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-d /dev/disk1"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-0"

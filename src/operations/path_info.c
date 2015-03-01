@@ -25,9 +25,9 @@ void showPathInfo(HIOptions* options)
         error("Path not found: %s", options->file_path);
         return;
     }
-    wchar_t name[255] = {0};
-    hfsuctowcs(name, &spec.name);
-    debug("Showing catalog record for %d:%ls.", spec.parentID, name);
+    hfs_str name = "";
+    hfsuc_to_str(&name, &spec.name);
+    debug("Showing catalog record for %d:%s.", spec.parentID, name);
     showCatalogRecord(options, spec, false);
 
     if (catalogRecord.record_type == kHFSFileRecord) {

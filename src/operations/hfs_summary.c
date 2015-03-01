@@ -213,9 +213,9 @@ void PrintVolumeSummary(out_ctx* ctx, const VolumeSummary* summary)
 
         char    size[50];
         (void)format_size(ctx, size, summary->largestFiles[i].measure, 50);
-        hfs_wc_str name = L"";
-        HFSPlusGetCNIDName(name, (FSSpec){get_hfs_volume(), summary->largestFiles[i].cnid});
-        print("%d %10s %10u %ls", 10-i, size, summary->largestFiles[i].cnid, name);
+        hfs_str name = "";
+        HFSPlusGetCNIDName(&name, (FSSpec){get_hfs_volume(), summary->largestFiles[i].cnid});
+        print("%d %10s %10u %s", 10-i, size, summary->largestFiles[i].cnid, name);
     }
     EndSection(ctx); // largest files
 

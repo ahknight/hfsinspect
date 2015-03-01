@@ -10,15 +10,15 @@
 
 void showCatalogRecord(HIOptions* options, FSSpec spec, bool followThreads)
 {
-    hfs_wc_str filename_str = {0};
-    out_ctx*   ctx          = options->hfs->vol->ctx;
+    hfs_str  filename_str = "";
+    out_ctx* ctx          = options->hfs->vol->ctx;
 
-    hfsuctowcs(filename_str, &spec.name);
-    debug("Finding catalog record for %d:%ls", spec.parentID, filename_str);
+    hfsuc_to_str(&filename_str, &spec.name);
+    debug("Finding catalog record for %d:%s", spec.parentID, filename_str);
 
     HFSPlusCatalogRecord catalogRecord = {0};
     if ( HFSPlusGetCatalogRecordByFSSpec(&catalogRecord, spec) < 0 ) {
-        error("FSSpec {%u, '%ls'} not found.", spec.parentID, filename_str);
+        error("FSSpec {%u, '%s'} not found.", spec.parentID, filename_str);
         return;
     }
 
@@ -26,7 +26,7 @@ void showCatalogRecord(HIOptions* options, FSSpec spec, bool followThreads)
 
     if ((type == kHFSPlusFileThreadRecord) || (type == kHFSPlusFolderThreadRecord)) {
         if (followThreads) {
-            debug("Following thread for %d:%ls", spec.parentID, filename_str);
+            debug("Following thread for %d:%s", spec.parentID, filename_str);
             FSSpec s = {
                 .hfs      = spec.hfs,
                 .parentID = catalogRecord.catalogThread.parentID,
@@ -40,7 +40,7 @@ void showCatalogRecord(HIOptions* options, FSSpec spec, bool followThreads)
                 PrintFolderListing(ctx, spec.parentID);
             } else {
                 BTreeNodePtr node = NULL; BTRecNum recordID = 0;
-                hfs_catalog_find_record(&node, &recordID, spec);
+                hfsplus_catalog_find_record(&node, &recordID, spec);
                 PrintNodeRecord(ctx, node, recordID);
             }
         }
@@ -58,7 +58,7 @@ void showCatalogRecord(HIOptions* options, FSSpec spec, bool followThreads)
 
         // Display record
         BTreeNodePtr node = NULL; BTRecNum recordID = 0;
-        hfs_catalog_find_record(&node, &recordID, spec);
+        hfsplus_catalog_find_record(&node, &recordID, spec);
         PrintNodeRecord(ctx, node, recordID);
 
         // Set extract file
@@ -69,7 +69,7 @@ void showCatalogRecord(HIOptions* options, FSSpec spec, bool followThreads)
             PrintFolderListing(ctx, catalogRecord.catalogFolder.folderID);
         } else {
             BTreeNodePtr node = NULL; BTRecNum recordID = 0;
-            hfs_catalog_find_record(&node, &recordID, spec);
+            hfsplus_catalog_find_record(&node, &recordID, spec);
             PrintNodeRecord(ctx, node, recordID);
         }
 

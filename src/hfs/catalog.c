@@ -21,8 +21,8 @@ const uint32_t kAliasCreator            = 'MACS';
 const uint32_t kFileAliasType           = 'alis';
 const uint32_t kFolderAliasType         = 'fdrp';
 
-wchar_t*       HFSPlusMetadataFolder    = L"\0\0\0\0HFS+ Private Data";
-wchar_t*       HFSPlusDirMetadataFolder = L".HFS+ Private Directory Data\xd";
+char*          HFSPlusMetadataFolder    = HFSPLUSMETADATAFOLDER;
+char*          HFSPlusDirMetadataFolder = HFSPLUS_DIR_METADATA_FOLDER;
 
 int hfsplus_get_catalog_btree(BTreePtr* tree, const HFSPlus* hfs)
 {
@@ -163,15 +163,15 @@ int hfsplus_catalog_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt_no
 
 int8_t hfsplus_catalog_find_record(BTreeNodePtr* node, BTRecNum* recordID, FSSpec spec)
 {
-    hfs_wc_str   wc_name      = {0};
-    const HFS*   hfs          = spec.hfs;
-    bt_nodeid_t  parentFolder = spec.parentID;
-    HFSUniStr255 name         = spec.name;
+    hfs_str        record_name  = {0};
+    const HFSPlus* hfs          = spec.hfs;
+    bt_nodeid_t    parentFolder = spec.parentID;
+    HFSUniStr255   name         = spec.name;
 
     trace("node (%p), recordID (%p), spec (%p, %u, (%u))", node, recordID, spec.hfs, spec.parentID, spec.name.length);
 
-    hfsuctowcs(wc_name, &name);
-    debug("Searching catalog for %d:%ls", parentFolder, wc_name);
+    hfsuc_to_str(&record_name, &name);
+    debug("Searching catalog for %d:%s", parentFolder, record_name);
 
     HFSPlusCatalogKey catalogKey = {0};
     catalogKey.parentID  = parentFolder;
@@ -212,13 +212,14 @@ int hfsplus_catalog_compare_keys_cf(const HFSPlusCatalogKey* key1, const HFSPlus
 
 int hfsplus_catalog_compare_keys_bc(const HFSPlusCatalogKey* key1, const HFSPlusCatalogKey* key2)
 {
-    int        result = 0;
+    int     result   = 0;
+    hfs_str key1Name = {0};
+    hfs_str key2Name = {0};
 
-    hfs_wc_str key1Name, key2Name;
-    hfsuctowcs(key1Name, &key1->nodeName);
-    hfsuctowcs(key2Name, &key2->nodeName);
+    hfsuc_to_str(&key1Name, &key1->nodeName);
+    hfsuc_to_str(&key2Name, &key2->nodeName);
 
-    trace("BC compare: key1 (%p) (%u, %u, '%ls'), key2 (%p) (%u, %u, '%ls')",
+    trace("BC compare: key1 (%p) (%u, %u, '%s'), key2 (%p) (%u, %u, '%s')",
           key1, key1->parentID, key1->nodeName.length, key1Name,
           key2, key2->parentID, key2->nodeName.length, key2Name);
 
@@ -244,7 +245,7 @@ int hfsplus_catalog_compare_keys_bc(const HFSPlusCatalogKey* key1, const HFSPlus
     return result;
 }
 
-int HFSPlusGetCNIDName(wchar_t* name, FSSpec spec)
+int HFSPlusGetCNIDName(hfs_str* name, FSSpec spec)
 {
     const HFSPlus*    hfs      = spec.hfs;
     bt_nodeid_t       cnid     = spec.parentID;
@@ -274,9 +275,8 @@ int HFSPlusGetCNIDName(wchar_t* name, FSSpec spec)
     btree_get_record(&recordKey, &recordValue, node, recordID);
 
     HFSPlusCatalogThread* threadRecord = (HFSPlusCatalogThread*)recordValue;
-    hfsuctowcs(name, &threadRecord->nodeName);
 
-    return wcslen(name);
+    return hfsuc_to_str(name, &threadRecord->nodeName);
 }
 
 #pragma mark - Searching
@@ -351,8 +351,10 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord* out_ca
         last_parentID = parentID;
 
         // Perform the search
-        FSSpec spec = { .hfs = hfs, .parentID = last_parentID, .name = strtohfsuc(segment) };
-        found         = !(HFSPlusGetCatalogRecordByFSSpec(&catalogRecord, spec) < 0);
+        HFSUniStr255 name = {0};
+        str_to_hfsuc(&name, (uint8_t*)segment);
+        FSSpec       spec = { .hfs = hfs, .parentID = last_parentID, .name = name };
+        found = !(HFSPlusGetCatalogRecordByFSSpec(&catalogRecord, spec) < 0);
         if ( !found ) {
             debug("Record NOT found:");
             debug("%s: segment '%u:%s' failed", path, parentID, segment);
@@ -398,9 +400,12 @@ int HFSPlusGetCatalogInfoByPath(FSSpecPtr out_spec, HFSPlusCatalogRecord* out_ca
 
     if (found) {
         if (out_spec != NULL) {
+            HFSUniStr255 name = {0};
+            str_to_hfsuc(&name, (uint8_t*)last_segment);
+
             out_spec->hfs      = hfs;
             out_spec->parentID = last_parentID;
-            out_spec->name     = strtohfsuc(last_segment);
+            out_spec->name     = name;
         }
         if (out_catalogRecord != NULL) *out_catalogRecord = catalogRecord;
     }

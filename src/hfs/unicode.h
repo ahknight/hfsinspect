@@ -10,29 +10,11 @@
 #define hfs_unicode_h
 
 #include <stdint.h>         // uint*
-#include <wchar.h>          // wchar_t
-#include "hfs/types.h"      // hfs_wc_str
+#include "hfs/types.h"      // hfs_str
 
 #pragma mark UTF conversions
 
-int          hfsuctowcs (hfs_wc_str output, const HFSUniStr255* input) __attribute__((nonnull));
-HFSUniStr255 wcstohfsuc (const wchar_t* input) __attribute__((nonnull));
-HFSUniStr255 strtohfsuc (const char* input) __attribute__((nonnull));
-
-// http://unicode.org/faq/utf_bom.html#utf16-3
-
-typedef uint16_t UTF16;
-typedef uint32_t UTF32;
-
-typedef struct UChar16 {
-    UTF16 hi;
-    UTF16 lo;
-} UChar16;
-
-typedef UTF32 UChar32;
-
-UChar32 UChar16toUChar32( UChar16 u16 );
-UChar16 UChar32toUChar16( UChar32 codepoint );
-UTF16   UChar16toUTF16(UChar16 u16);
+int hfsuc_to_str(hfs_str* str, const HFSUniStr255* hfs);
+int str_to_hfsuc(HFSUniStr255* hfs, const hfs_str str);
 
 #endif

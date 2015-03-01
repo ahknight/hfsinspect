@@ -7,31 +7,23 @@
 //
 
 #include <stdarg.h>
-#include <getopt.h>         // getopt_long
-#include <libgen.h>         // basename
-#include <locale.h>         // setlocale
-#include <errno.h>          // errno/perror
-#include <sys/stat.h>       // stat
-#include <sys/param.h>      // system definitions
-
-#include <string.h>         // memcpy, strXXX, etc.
-#if defined(__linux__)
-    #include <bsd/string.h> // strlcpy, etc.
-#endif
+#include <getopt.h>            // getopt_long
+#include <libgen.h>            // basename
+#include <locale.h>            // setlocale
 
 #if defined(BSD)
-    #include <sys/mount.h>  //statfs
+    #include <sys/mount.h>     //statfs
 #endif
 
+#include "logging/logging.h"   // console printing routines
 #include "volumes/volumes.h"
+#include "volumes/utilities.h" // commonly-used utility functions
 #include "hfs/hfs.h"
 #include "hfs/output_hfs.h"
+#include "hfs/unicode.h"
 #include "hfsplus/hfsplus.h"
-#include "logging/logging.h"    // console printing routines
 
 #include "operations/operations.h"
-#include "hfs/unicode.h"
-#include "volumes/utilities.h"     // commonly-used utility functions
 
 
 #pragma mark - Function Declarations
@@ -773,10 +765,12 @@ NOPE:
     // Show a catalog record by FSSpec
     if (check_mode(&options, HIModeShowCatalogRecord)) {
         debug("Finding catalog record for %d:%s", options.record_parent, options.record_filename);
-        FSSpec spec = {
+        HFSUniStr255 name = {0};
+        str_to_hfsuc(&name, (uint8_t*)options.record_filename);
+        FSSpec       spec = {
             .hfs      = options.hfs,
             .parentID = options.record_parent,
-            .name     = strtohfsuc(options.record_filename)
+            .name     = name
         };
         showCatalogRecord(&options, spec, false);
     }

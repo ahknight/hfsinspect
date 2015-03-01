@@ -17,7 +17,7 @@
 #include <stdbool.h>            // bool, true, false
 #include <math.h>               // log and friends
 #include <stdio.h>              // FILE*
-#include <wchar.h>
+#include <stdarg.h>             // va_args
 #include <assert.h>             // assert
 #include <errno.h>              // errno/perror
 #include <string.h>             // memcpy, strXXX, etc.

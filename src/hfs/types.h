@@ -18,8 +18,7 @@ typedef uint8_t  hfs_forktype_t;
 typedef uint32_t hfs_block_t;
 typedef uint32_t hfs_cnid_t;
 typedef uint64_t hfs_size_t;
-
-typedef wchar_t hfs_wc_str[256];     // Wide char version of HFSUniStr255
+typedef uint8_t  hfs_str[1024];
 
 typedef int (* hfs_compare_keys)(const void*, const void*);
 

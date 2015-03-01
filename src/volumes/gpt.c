@@ -230,7 +230,7 @@ void PrintGPTPartitions(const GPTHeader* header_p, const GPTPartitionRecord* ent
 {
     uuid_string_t uuid_str = "";
     uuid_t        uuid     = {0};
-    wchar_t       name[37] = {0};
+    uint32_t      name[37] = {0};
     const char*   type     = NULL;
     out_ctx*      ctx      = vol->ctx;
 
@@ -307,11 +307,11 @@ int gpt_load(Volume* vol)
     // Iterate over the partitions and update the volume record
     for(unsigned i = 0; i < header.partitions_entry_count; i++) {
         uuid_string_t      uuid_str    = "";
-        uuid_t             uuid        = {0};
-        wchar_t            wcname[100] = {'\0'};
-        char               name[100]   = {'\0'};
+        uuid_t             uuid        = "";
+        wchar_t            wcname[100] = {0};
+        char               name[100]   = "";
         Volume*            p           = NULL;
-        VolType            type        = {0};
+        VolType            type        = 0;
         GPTPartitionEntry* partition;
 
         // Grab the next partition structure
