@@ -10,7 +10,7 @@
 #include "volumes/corestorage.h"
 #include "volumes/output.h"
 
-#include "stringtools.h"
+#include "memdmp/memdmp.h"
 
 #include "crc32c/crc32c.h"
 #include "logging/logging.h"    // console printing routines

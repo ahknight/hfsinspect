@@ -10,9 +10,9 @@
 
 #include "output.h"
 
-#include "stringtools.h"
 #include "logging/logging.h"    // console printing routines
 #include "memdmp/memdmp.h"
+#include "memdmp/output.h"
 
 out_ctx OCMake(bool decimal_sizes, unsigned indent_step, char* prefix)
 {
@@ -134,9 +134,9 @@ void _PrintRawAttribute(out_ctx* ctx, const char* label, const void* map, size_t
     assert(base >= 2 && base <= 36);
 
 #define segmentLength 32
-    char*    str           = NULL;
-    ssize_t  len           = 0;
-    ssize_t  msize         = 0;
+    char*   str   = NULL;
+    ssize_t len   = 0;
+    ssize_t msize = 0;
 
     msize = format_dump(ctx, NULL, map, base, nbytes, 0);
     if (msize < 0) { perror("format_dump"); return; }
@@ -174,7 +174,10 @@ int _PrintUIChar(out_ctx* ctx, const char* label, const char* i, size_t nbytes)
 
 void VisualizeData(const void* data, size_t length)
 {
-    memdump(stdout, data, length, 16, 4, 4, DUMP_ENCODED | DUMP_OFFSET | DUMP_ASCII | DUMP_PADDING);
+    // Init the last line to something unlikely so a zero line is shown.
+    memdmp_state state = { .prev = "5432" };
+    
+    memdmp(stdout, data, length, NULL, &state);
 }
 
 #pragma mark - Formatters

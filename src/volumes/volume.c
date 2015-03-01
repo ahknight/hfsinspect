@@ -153,7 +153,7 @@ ssize_t vol_blk_get(const Volume* vol, void* buf, size_t count, off_t start, siz
     return rval;
 }
 
-ssize_t vol_read (const Volume* vol, void* buf, size_t size, off_t offset)
+ssize_t vol_read(const Volume* vol, void* buf, size_t size, off_t offset)
 {
     ssize_t bytes_read  = 0;
     size_t  blksz       = 0;

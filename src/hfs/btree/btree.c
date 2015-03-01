@@ -8,7 +8,7 @@
 
 #include <search.h>
 
-#include "stringtools.h"            // memdump
+#include "memdmp/memdmp.h"          // memdmp
 #include "hfs/btree/btree.h"
 #include "hfs/btree/btree_endian.h"
 #include "hfs/unicode.h"
@@ -141,7 +141,7 @@ BTRecOffset BTGetRecordOffset(const BTreeNodePtr node, uint16_t recNum)
     int            recordCount = node->nodeDescriptor->numRecords;
     BTRecOffsetPtr offsets     = (BTRecOffsetPtr)((void*)((char*)node->data + node->nodeSize)) - recordCount - 1;
     if ( offsets[recordCount] != 14 ) {
-        memdump(stderr, node->data, node->nodeSize, 16, 4, 4, DUMP_FULL);
+        memdmp(stderr, node->data, node->nodeSize, NULL, NULL);
         critical("Bad sentinel @ %ld! (%d != 14)", (long)((char*)offsets - (char*)node->data) + recordCount, offsets[recordCount]); /*sizeof(BTNodeDescriptor)*/
     }
     result = offsets[recordCount - recNum];

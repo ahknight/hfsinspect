@@ -633,10 +633,10 @@ OPEN:
         HFSPlusFork* fork        = NULL;
 
         // Volume Header Blocks
-        unsigned sectorCount = 16;
-        size_t   readSize    = vol->sector_size*sectorCount;
-        void*    buf         = NULL;
-        int      nbytes      = 0;
+        unsigned     sectorCount = 16;
+        size_t       readSize    = vol->sector_size*sectorCount;
+        void*        buf         = NULL;
+        int          nbytes      = 0;
 
         SALLOC(buf, readSize);
         assert(buf != NULL);

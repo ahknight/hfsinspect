@@ -8,7 +8,7 @@
 
 #include "hfs/output_hfs.h"
 #include "volumes/output.h"
-#include "stringtools.h"
+#include "memdmp/memdmp.h"
 #include "hfs/unicode.h"
 #include "hfs/types.h"
 #include "hfs/catalog.h"

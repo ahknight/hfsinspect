@@ -102,14 +102,14 @@ int swap_BTreeNode(BTreeNodePtr node)
 
     // *** Record Offsets ***
 
-    uint16_t     numRecords  = nodeDescriptor->numRecords;
+    uint16_t       numRecords = nodeDescriptor->numRecords;
 
     BTRecOffsetPtr offsets    = ((BTRecOffsetPtr)(node->data + node->nodeSize)) - numRecords - 1;
     for(unsigned i = 0; i < (numRecords+1); i++) Swap16(offsets[i]);
 
     // Validate offsets
-    off_t record_min = sizeof(BTNodeDescriptor);
-    off_t record_max = (node->nodeSize - ((numRecords+1) * sizeof(BTRecOffset)));
+    off_t          record_min = sizeof(BTNodeDescriptor);
+    off_t          record_max = (node->nodeSize - ((numRecords+1) * sizeof(BTRecOffset)));
 
     {
         int prev = record_max;
@@ -138,7 +138,7 @@ int swap_BTreeNode(BTreeNodePtr node)
 
     // Handle keyed nodes
     for (unsigned recordNum = 0; recordNum < numRecords; recordNum++) {
-        void*    record = BTGetRecord(node, recordNum);
+        void*       record = BTGetRecord(node, recordNum);
         BTreeKeyPtr key    = (BTreeKey*)(record);
         if (swapKeys) {
             Swap16( key->length16 );
