@@ -29,7 +29,6 @@
 		9B1937771A941ED6000E8995 /* hfs_summary.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B1937181A941E9D000E8995 /* hfs_summary.c */; };
 		9B1937781A941ED6000E8995 /* operations.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B1937191A941E9D000E8995 /* operations.c */; };
 		9B1937791A941ED6000E8995 /* path_info.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B19371B1A941E9D000E8995 /* path_info.c */; };
-		9B19377A1A941ED6000E8995 /* stringtools.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B19371C1A941E9D000E8995 /* stringtools.c */; };
 		9B19377B1A941ED6000E8995 /* attributes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B1937201A941E9D000E8995 /* attributes.c */; };
 		9B19377C1A941ED6000E8995 /* hotfiles.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B1937231A941E9D000E8995 /* hotfiles.c */; };
 		9B19377D1A941ED6000E8995 /* journal.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B1937251A941E9D000E8995 /* journal.c */; };
@@ -110,8 +109,6 @@
 		9B1937191A941E9D000E8995 /* operations.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = operations.c; sourceTree = "<group>"; };
 		9B19371A1A941E9D000E8995 /* operations.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = operations.h; sourceTree = "<group>"; };
 		9B19371B1A941E9D000E8995 /* path_info.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = path_info.c; sourceTree = "<group>"; };
-		9B19371C1A941E9D000E8995 /* stringtools.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = stringtools.c; sourceTree = "<group>"; };
-		9B19371D1A941E9D000E8995 /* stringtools.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stringtools.h; sourceTree = "<group>"; };
 		9B1937201A941E9D000E8995 /* attributes.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = attributes.c; sourceTree = "<group>"; };
 		9B1937211A941E9D000E8995 /* attributes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = attributes.h; sourceTree = "<group>"; };
 		9B1937221A941E9D000E8995 /* hfsplus.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfsplus.h; sourceTree = "<group>"; };
@@ -188,8 +185,6 @@
 			children = (
 				9B1937131A941E9D000E8995 /* hfsinspect.c */,
 				9B1936E91A941E9D000E8995 /* cdefs.h */,
-				9B19371D1A941E9D000E8995 /* stringtools.h */,
-				9B19371C1A941E9D000E8995 /* stringtools.c */,
 				9B1937141A941E9D000E8995 /* operations */,
 				9B1936EA1A941E9D000E8995 /* hfs */,
 				9B19371F1A941E9D000E8995 /* hfsplus */,
@@ -483,7 +478,6 @@
 				9B19377B1A941ED6000E8995 /* attributes.c in Sources */,
 				9B1937771A941ED6000E8995 /* hfs_summary.c in Sources */,
 				9B1D0C061A941F4C000E8995 /* utilities.c in Sources */,
-				9B19377A1A941ED6000E8995 /* stringtools.c in Sources */,
 				9B1D0C051A941F4C000E8995 /* output.c in Sources */,
 				9B19376E1A941EC5000E8995 /* hfs_extentlist.c in Sources */,
 				9B1D0C011A941F43000E8995 /* corestorage.c in Sources */,

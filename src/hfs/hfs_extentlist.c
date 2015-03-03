@@ -35,11 +35,7 @@ ExtentList* extentlist_make(void)
 
 void extentlist_add(ExtentList* list, size_t startBlock, size_t blockCount)
 {
-    Extent* newExtent      = NULL;
-    Extent* existingExtent = NULL;
-    Extent* tmp            = NULL;
-
-    // trace("list (%p), startBlock %zu, blockCount %zu", list, startBlock, blockCount);
+    Extent* newExtent = NULL;
 
     if (blockCount == 0) return;
 
@@ -47,24 +43,12 @@ void extentlist_add(ExtentList* list, size_t startBlock, size_t blockCount)
     newExtent->startBlock = startBlock;
     newExtent->blockCount = blockCount;
 
-    TAILQ_FOREACH_REVERSE_SAFE(existingExtent, list, _ExtentList, extents, tmp) {
-        if ((existingExtent != NULL) && (existingExtent->startBlock < startBlock)) {
-            break;
-        }
-//        if (existingExtent != NULL && existingExtent->startBlock == startBlock) {
-//            // Updating an entry.  Must recalc logical starts later.
-//            TAILQ_REMOVE(list, existingExtent, extents);
-//            SFREE(existingExtent);
-//            existingExtent = NULL;
-//            break;
-//        }
-    }
-
-    if(existingExtent == NULL) {
+    if(TAILQ_EMPTY(list)) {
         TAILQ_INSERT_HEAD(list, newExtent, extents);
         newExtent->logicalStart = 0;
+
     } else {
-        TAILQ_INSERT_AFTER(list, existingExtent, newExtent, extents);
+        TAILQ_INSERT_TAIL(list, newExtent, extents);
 
         int     block  = 0;
         Extent* extent = NULL;

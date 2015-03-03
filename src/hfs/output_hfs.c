@@ -28,7 +28,7 @@ void _PrintCatalogName(out_ctx* ctx, char* label, bt_nodeid_t cnid)
     if (cnid != 0)
         HFSPlusGetCNIDName(&name, (FSSpec){volume_, cnid});
 
-    PrintAttribute(ctx, label, "%d (%ls)", cnid, name);
+    PrintAttribute(ctx, label, "%d (%s)", cnid, name);
 }
 
 void _PrintHFSBlocks(out_ctx* ctx, const char* label, uint64_t blocks)
@@ -74,7 +74,7 @@ void PrintVolumeInfo(out_ctx* ctx, const HFSPlus* hfs)
     else
         BeginSection(ctx, "Unknown Volume Format"); // Curious.
 
-    hfs_str  volumeName = {0};
+    hfs_str  volumeName = "";
     int      success    = HFSPlusGetCNIDName(&volumeName, (FSSpec){hfs, kHFSRootFolderID});
     if (success)
         PrintAttribute(ctx, "volume name", "%s", volumeName);
@@ -911,7 +911,7 @@ void PrintFolderListing(out_ctx* ctx, uint32_t folderID)
     char         lineStr[110] = {0};
     memset(lineStr, '-', 100);
     char*        headerFormat = "%-9s %-10s %-10s %-9s %-9s %-15s %-15s %s";
-    char*        rowFormat    = "%-9u %-10s %-10s %-9d %-9d %-15s %-15s %ls";
+    char*        rowFormat    = "%-9u %-10s %-10s %-9d %-9d %-15s %-15s %s";
 
     // Search for thread record
     FSSpec       spec         = { .parentID = folderID };

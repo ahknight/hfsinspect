@@ -176,7 +176,7 @@ void VisualizeData(const void* data, size_t length)
 {
     // Init the last line to something unlikely so a zero line is shown.
     memdmp_state state = { .prev = "5432" };
-    
+
     memdmp(stdout, data, length, NULL, &state);
 }
 

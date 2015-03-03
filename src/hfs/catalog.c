@@ -63,9 +63,6 @@ int hfsplus_get_catalog_btree(BTreePtr* tree, const HFSPlus* hfs)
         }
         cachedTree->treeID  = kHFSCatalogFileID;
         cachedTree->getNode = hfsplus_catalog_get_node;
-
-        // Load the bitmap.
-        (void)BTIsNodeUsed(cachedTree, 0);
     }
 
     // Copy the cached tree out.
@@ -524,9 +521,9 @@ bool HFSPlusCatalogRecordIsSymLink(const HFSPlusCatalogRecord* record)
     trace("record (%p)", record);
 
     return (
-        (record->record_type == kHFSPlusFileRecord) &&
-        (record->catalogFile.userInfo.fdCreator == kSymLinkCreator) &&
-        (record->catalogFile.userInfo.fdType == kSymLinkFileType)
+        (record->record_type == kHFSPlusFileRecord)
+        && (record->catalogFile.userInfo.fdCreator == kSymLinkCreator)
+        && (record->catalogFile.userInfo.fdType == kSymLinkFileType)
         );
 }
 
@@ -535,10 +532,10 @@ bool HFSPlusCatalogRecordIsFileAlias(const HFSPlusCatalogRecord* record)
     trace("record (%p)", record);
 
     return (
-        (record->record_type == kHFSPlusFileRecord) &&
-//            (record->catalogFile.userInfo.fdFlags & kIsAlias) &&
-        (record->catalogFile.userInfo.fdCreator == kAliasCreator) &&
-        (record->catalogFile.userInfo.fdType == kFileAliasType)
+        (record->record_type == kHFSPlusFileRecord)
+        && (record->catalogFile.userInfo.fdFlags & kIsAlias)
+        && (record->catalogFile.userInfo.fdCreator == kAliasCreator)
+        && (record->catalogFile.userInfo.fdType == kFileAliasType)
         );
 }
 
@@ -547,10 +544,10 @@ bool HFSPlusCatalogRecordIsFolderAlias(const HFSPlusCatalogRecord* record)
     trace("record (%p)", record);
 
     return (
-        (record->record_type == kHFSPlusFileRecord) &&
-//            (record->catalogFile.userInfo.fdFlags & kIsAlias) &&
-        (record->catalogFile.userInfo.fdCreator == kAliasCreator) &&
-        (record->catalogFile.userInfo.fdType == kFolderAliasType)
+        (record->record_type == kHFSPlusFileRecord)
+        && (record->catalogFile.userInfo.fdFlags & kIsAlias)
+        && (record->catalogFile.userInfo.fdCreator == kAliasCreator)
+        && (record->catalogFile.userInfo.fdType == kFolderAliasType)
         );
 }
 

@@ -66,7 +66,7 @@ VolumeSummary generateVolumeSummary(HIOptions* options)
                     if (HFSPlusCatalogRecordIsSymLink(record)) { summary.symbolicLinkCount++; continue; }
 
                     // alias
-                    if (HFSPlusCatalogRecordIsAlias(record)) { summary.aliasCount++; continue; }
+                    if (file->userInfo.fdFlags & kIsAlias) { summary.aliasCount++; continue; }
 
                     // invisible
                     if (file->userInfo.fdFlags & kIsInvisible) { summary.invisibleFileCount++; continue; }
