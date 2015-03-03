@@ -63,14 +63,14 @@ void EndSection(out_ctx* ctx)
 
 int Print(out_ctx* ctx, const char* format, ...)
 {
-    va_list argp;
-    va_start(argp, format);
+    va_list ap;
+    va_start(ap, format);
 
 	fputs(ctx->indent_string, stdout);
-    int bytes = vprintf(format, argp);
+    int bytes = vfprintf(stdout, format, ap);
 	fputs("\n", stdout);
 
-    va_end(argp);
+    va_end(ap);
     return bytes;
 }
 

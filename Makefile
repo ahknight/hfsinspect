@@ -1,7 +1,7 @@
 # Lovingly crafted by hand.
 
 # Some defaults.  Feel free to override them.
-CFLAGS += -g -O0 -Wall
+CFLAGS += -g -O2 -Wall
 PREFIX = /usr/local
 
 # ------------ Systems and Platforms ------------

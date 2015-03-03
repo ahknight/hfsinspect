@@ -934,7 +934,7 @@ void PrintFolderListing(out_ctx* ctx, uint32_t folderID)
     hfs_str               name          = "";
     hfsuc_to_str(&name, &catalogRecord->catalogThread.nodeName);
 
-    struct {
+    __attribute__((aligned(8))) struct {
         uint64_t fileCount;
         uint64_t folderCount;
         uint64_t hardLinkCount;
@@ -976,10 +976,10 @@ void PrintFolderListing(out_ctx* ctx, uint32_t folderID)
 
                 hfsuc_to_str(&name, &recordKey->nodeName);
 
-                if ( HFSPlusCatalogRecordIsHardLink(catalogRecord) && HFSPlusCatalogRecordIsAlias(catalogRecord) ) {
+                if ( HFSPlusCatalogFolderIsHardLink(catalogRecord)) {
                     folderStats.hardLinkCount++;
                     (void)strlcpy(kind, "dir link", 10);
-                } else if (HFSPlusCatalogRecordIsHardLink(catalogRecord)) {
+                } else if (HFSPlusCatalogFileIsHardLink(catalogRecord)) {
                     folderStats.hardLinkCount++;
                     (void)strlcpy(kind, "hard link", 10);
                 } else if (HFSPlusCatalogRecordIsSymLink(catalogRecord)) {
@@ -1033,21 +1033,15 @@ void PrintFolderListing(out_ctx* ctx, uint32_t folderID)
     Print(ctx, "%s", lineStr);
     Print(ctx, headerFormat, "", "", "", "", "", dataTotal, rsrcTotal, "");
 
-    Print(ctx, "%10s: %-10d %10s: %-10d %10s: %-10d",
-          "Folders",
+    Print(ctx, "   Folders: %-10llu Data Forks: %-10llu Hard Links: %-10llu",
           folderStats.folderCount,
-          "Data forks",
           folderStats.dataForkCount,
-          "Hard links",
           folderStats.hardLinkCount
           );
 
-    Print(ctx, "%10s: %-10d %10s: %-10d %10s: %-10d",
-          "Files",
+    Print(ctx, "     Files: %-10llu RSRC Forks: %-10llu   Symlinks: %-10llu",
           folderStats.fileCount,
-          "RSRC forks",
           folderStats.rsrcForkCount,
-          "Symlinks",
           folderStats.symlinkCount
           );
 
