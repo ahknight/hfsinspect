@@ -13,35 +13,44 @@
 // All we need are optimized versions of the three be##toh functions.
 // Most OSes have these already.  We have good fallbacks, too.
 
-#if defined(__APPLE__)
+#if defined(__FreeBSD__) || defined(__NetBSD__)
+    #include <sys/endian.h>
+	#define _HAS_BETOH 1
+	#define _HAS_BSWAP 1
 
+#elif defined(__APPLE__)
     #include <libkern/OSByteOrder.h>
 
     #define be16toh(__x) OSSwapBigToHostInt16(__x)
     #define be32toh(__x) OSSwapBigToHostInt32(__x)
     #define be64toh(__x) OSSwapBigToHostInt64(__x)
+	#define _HAS_BETOH 1
 
-#elif defined(__FreeBSD__) || defined(__NetBSD__)
-
-    #include <sys/endian.h>
+	#define bswap16(__x) OSSwapInt16( (__x) )
+	#define bswap32(__x) OSSwapInt32( (__x) )
+	#define bswap64(__x) OSSwapInt64( (__x) )
+	#define _HAS_BSWAP 1
 
 #elif defined(__linux__)
+	#include <endian.h>
+	#define _HAS_BETOH 1
 
-    #include <endian.h>
+	#include <byteswap.h>
+	#define bswap16(__x) bswap_16( (__x) )
+	#define bswap32(__x) bswap_32( (__x) )
+	#define bswap64(__x) bswap_64( (__x) )
+	#define _HAS_BSWAP 1
+#endif
 
-#else /* unknown platform; see if the compiler has a builtin or use the fallback. */
-
-    #if defined __clang__ || defined __GNUC__ && (__GNUC__ > 4 || (__xGNUC__ == 4 && __GNUC_PATCHLEVEL__ > 8 ))
+/* missing features; see if the compiler has a builtin or use a fallback. */
+#if !defined(_HAS_BSWAP)
+    #if defined __clang__ || defined __GNUC__ && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8 ))
 static inline uint16_t bswap16(uint16_t x) { return __builtin_bswap16(x); }
-    #else
-        #warning Using fallback bswap16 (upgrade your compiler!).
-static inline uint16_t bswap16(uint16_t x) { return (uint16_t)(((x & 0x00ff) << 8)|((x & 0xff00) >> 8)); }
-    #endif
-
-    #if defined __clang__ || defined __GNUC__ && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_PATCHLEVEL__ > 3 ))
 static inline uint32_t bswap32(uint32_t x) { return __builtin_bswap32(x); }
+static inline uint64_t bswap64(uint64_t x) { return __builtin_bswap64(x); }
     #else
-        #warning Using fallback bswap32 (upgrade your compiler!).
+        #warning Using fallback bswap## functions (upgrade your compiler!).
+static inline uint16_t bswap16(uint16_t x) { return (uint16_t)(((x & 0x00ff) << 8)|((x & 0xff00) >> 8)); }
 static inline uint32_t bswap32(uint32_t x)
 {
     return (uint32_t)(
@@ -50,13 +59,6 @@ static inline uint32_t bswap32(uint32_t x)
         ((x & 0x00ff0000U) >>  8) |
         ((x & 0xff000000U) >> 24) );
 }
-
-    #endif
-
-    #if defined __clang__ || defined __GNUC__ && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_PATCHLEVEL__ > 3 ))
-static inline uint64_t bswap64(uint64_t x) { return __builtin_bswap64(x); }
-    #else
-        #warning Using fallback bswap64 (upgrade your compiler!).
 static inline uint64_t bswap64(uint64_t x)
 {
     return (uint64_t)(
@@ -69,43 +71,34 @@ static inline uint64_t bswap64(uint64_t x)
         ((x & 0x00ff000000000000ULL) >> 40) |
         ((x & 0xff00000000000000ULL) >> 56) );
 }
+	#endif
+#endif
 
-    #endif
-
+#if !defined(_HAS_BETOH)
     #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-
         #define be16toh(__x) ((uint16_t)(x))
         #define be32toh(__x) ((uint32_t)(x))
         #define be64toh(__x) ((uint64_t)(x))
-
     #elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-
         #define be16toh(__x) bswap16(__x)
         #define be32toh(__x) bswap32(__x)
         #define be64toh(__x) bswap64(__x)
-
     #endif
-
-#endif /* platforms */
+#endif
 
 #define Swap16(x) ( (x) = be16toh( (x) ) )
 #define Swap32(x) ( (x) = be32toh( (x) ) )
 #define Swap64(x) ( (x) = be64toh( (x) ) )
 
 #if defined(__clang__)
-
-#define Swap(x) _Generic( (x), uint16_t: Swap16((x)),  uint32_t: Swap32((x)),  uint64_t: Swap64((x))  )
-
+	#define Swap(x) _Generic( (x), uint16_t: Swap16((x)),  uint32_t: Swap32((x)),  uint64_t: Swap64((x))  )
 #else
-
-#define Swap(x) { switch(sizeof((x))) { \
-                      case 16: Swap16((x)); break; \
-                      case 32: Swap32((x)); break; \
-                      case 64: Swap64((x)); break; \
-                      default: break; \
-                  }}
-
+	#define Swap(x) { switch(sizeof((x))) { \
+	                      case 16: Swap16((x)); break; \
+	                      case 32: Swap32((x)); break; \
+	                      case 64: Swap64((x)); break; \
+	                      default: break; \
+	                  }}
 #endif // defined(clang)
 
 #endif // volumes_endian_h
-

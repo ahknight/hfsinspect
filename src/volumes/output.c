@@ -66,11 +66,9 @@ int Print(out_ctx* ctx, const char* format, ...)
     va_list argp;
     va_start(argp, format);
 
-    char    str[255] = {0};
-    int     bytes    = 0;
-
-    vsprintf(str, format, argp);
-    bytes = printf("%s%s\n", ctx->indent_string, str);
+	fputs(ctx->indent_string, stdout);
+    int bytes = vprintf(format, argp);
+	fputs("\n", stdout);
 
     va_end(argp);
     return bytes;

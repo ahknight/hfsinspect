@@ -140,7 +140,7 @@ int hfs_test(Volume* vol)
         return kFSTypeHFSPlus;
     }
 
-    debug("Unknown volume type: %#x", vh.signature);
+    debug("Unknown volume type: 0x%04X", vh.signature);
 
     return type;
 }

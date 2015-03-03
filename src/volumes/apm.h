@@ -19,8 +19,7 @@
 #define APM_SIG "PM"
 
 // 136 bytes (512 reserved on-disk)
-typedef struct APMHeader APMHeader;
-struct APMHeader {
+typedef struct APMHeader {
     uint16_t signature;
     uint16_t reserved1;
     uint32_t partition_count;
@@ -40,14 +39,14 @@ struct APMHeader {
     uint32_t boot_code_checksum;
     char     processor_type[16];
 //    char     reserved4[376];
-};
+} __attribute__((packed, aligned(2))) APMHeader;
 
 typedef struct APMPartitionIdentifer {
     char    type[32];
     char    name[100];
     VolType voltype;
     VolType volsubtype;
-} APMPartitionIdentifer;
+} __attribute__((packed, aligned(2))) APMPartitionIdentifer;
 
 static APMPartitionIdentifer APMPartitionIdentifers[] = {
     {"Apple_Boot",                  "OS X Open Firmware 3.x booter",    kVolTypeSystem,     kSysReserved},

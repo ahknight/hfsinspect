@@ -260,7 +260,7 @@ int main (int argc, char* const* argv)
 
     (void)strlcpy(PROGRAM_NAME, basename(argv[0]), PATH_MAX);
 
-    if (argc == 1) { print_usage(); exit(1); }
+    if (argc == 1) { print_usage(); exit(0); }
 
     setlocale(LC_ALL, "");
 

@@ -11,6 +11,7 @@ if [ -e "$1" ]; then
     
 else
     # Write whole file
+	cat $( dirname $0 )/CHANGELOG.header >> $1
     for TAG in $( git tag ); do
         DATE=$( git log --date=short --format="%cd" --abbrev-commit -n 1 $TAG)
         echo $TAG / $DATE  >> $1

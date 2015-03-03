@@ -59,13 +59,13 @@ Vagrant.configure("2") do |config|
     end
   end
   
-  config.vm.define :freebsd64 do |freebsd64|
-    freebsd64.vm.box = "freebsd_10.1_amd64_wunki"
-    freebsd64.vm.box_url = "http://files.wunki.org/freebsd-10.1-amd64-wunki.box"
-    freebsd64.vm.network :private_network, ip: "10.8.8.12"
-    
-    # use NFS for the synced folder
-    freebsd64.vm.synced_folder ".", "/vagrant", :nfs => true
-  end
+  # config.vm.define :freebsd64 do |freebsd64|
+  #   freebsd64.vm.box = "freebsd_10.1_amd64_wunki"
+  #   freebsd64.vm.box_url = "http://files.wunki.org/freebsd-10.1-amd64-wunki.box"
+  #   freebsd64.vm.network :private_network, ip: "10.8.8.12"
+  #
+  #   # use NFS for the synced folder
+  #   freebsd64.vm.synced_folder ".", "/vagrant", :nfs => true
+  # end
   
 end

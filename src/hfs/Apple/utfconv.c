@@ -32,8 +32,7 @@
 
 #include <sys/param.h>
 #include <sys/errno.h>
-#include <sys/malloc.h>
-#include <libkern/OSByteOrder.h>
+#include "volumes/_endian.h"
 
 #include "utfconv.h"
 
@@ -216,7 +215,7 @@ utf8_encodelen(const u_int16_t * ucsp, size_t ucslen, u_int16_t altslash, int fl
 		} else {
 			ucs_ch = *ucsp++;
 			if (swapbytes) {
-				ucs_ch = OSSwapInt16(ucs_ch);
+				ucs_ch = bswap16(ucs_ch);
 			}
 			if (ucs_ch == '/') {
 				ucs_ch = altslash ? altslash : '_';
@@ -289,7 +288,7 @@ utf8_encodestr(const u_int16_t * ucsp, size_t ucslen, u_int8_t * utf8p,
 			--extra;
 			ucs_ch = *chp++;
 		} else {
-			ucs_ch = swapbytes ? OSSwapInt16(*ucsp++) : *ucsp++;
+			ucs_ch = swapbytes ? bswap16(*ucsp++) : *ucsp++;
 
 			if (decompose && unicode_decomposeable(ucs_ch)) {
 				extra = unicode_decompose(ucs_ch, sequence) - 1;
@@ -339,7 +338,7 @@ utf8_encodestr(const u_int16_t * ucsp, size_t ucslen, u_int8_t * utf8p,
 				u_int16_t ch2;
 				u_int32_t pair;
 
-				ch2 = swapbytes ? OSSwapInt16(*ucsp) : *ucsp;
+				ch2 = swapbytes ? bswap16(*ucsp) : *ucsp;
 				if (ch2 >= SP_LOW_FIRST && ch2 <= SP_LOW_LAST) {
 					pair = ((ucs_ch - SP_HIGH_FIRST) << SP_HALF_SHIFT)
 						+ (ch2 - SP_LOW_FIRST) + SP_HALF_BASE;
@@ -502,7 +501,7 @@ utf8_decodestr(const u_int8_t* utf8p, size_t utf8len, u_int16_t* ucsp,
 				ucs_ch = (ch >> SP_HALF_SHIFT) + SP_HIGH_FIRST;
 				if (ucs_ch < SP_HIGH_FIRST || ucs_ch > SP_HIGH_LAST)
 					goto escape4;
-				*ucsp++ = swapbytes ? OSSwapInt16(ucs_ch) : (u_int16_t)ucs_ch;
+				*ucsp++ = swapbytes ? bswap16(ucs_ch) : (u_int16_t)ucs_ch;
 				if (ucsp >= bufend)
 					goto toolong;
 				ucs_ch = (ch & SP_HALF_MASK) + SP_LOW_FIRST;
@@ -510,7 +509,7 @@ utf8_decodestr(const u_int8_t* utf8p, size_t utf8len, u_int16_t* ucsp,
 					--ucsp;
 					goto escape4;
 				}
-				*ucsp++ = swapbytes ? OSSwapInt16(ucs_ch) : (u_int16_t)ucs_ch;
+				*ucsp++ = swapbytes ? bswap16(ucs_ch) : (u_int16_t)ucs_ch;
 			        continue;
 			default:
 				result = EINVAL;
@@ -533,7 +532,7 @@ utf8_decodestr(const u_int8_t* utf8p, size_t utf8len, u_int16_t* ucsp,
 					count = unicode_decompose(ucs_ch, sequence);
 					for (i = 0; i < count; ++i) {
 						ucs_ch = sequence[i];
-						*ucsp++ = swapbytes ? OSSwapInt16(ucs_ch) : (u_int16_t)ucs_ch;
+						*ucsp++ = swapbytes ? bswap16(ucs_ch) : (u_int16_t)ucs_ch;
 						if (ucsp >= bufend)
 							goto toolong;
 					}
@@ -544,7 +543,7 @@ utf8_decodestr(const u_int8_t* utf8p, size_t utf8len, u_int16_t* ucsp,
 				u_int16_t composite, base;
 
 				if (unicode_combinable(ucs_ch)) {
-					base = swapbytes ? OSSwapInt16(*(ucsp - 1)) : *(ucsp - 1);
+					base = swapbytes ? bswap16(*(ucsp - 1)) : *(ucsp - 1);
 					composite = unicode_combine(base, ucs_ch);
 					if (composite) {
 						--ucsp;
@@ -570,7 +569,7 @@ utf8_decodestr(const u_int8_t* utf8p, size_t utf8len, u_int16_t* ucsp,
 			combcharcnt = 0;  /* start over */
 		}
 
-		*ucsp++ = swapbytes ? OSSwapInt16(ucs_ch) : (u_int16_t)ucs_ch;
+		*ucsp++ = swapbytes ? bswap16(ucs_ch) : (u_int16_t)ucs_ch;
 		continue;
 
 		/* 
@@ -603,11 +602,11 @@ escape:
 		combcharcnt = 0;
 		
 		ucs_ch = '%';
-		*ucsp++ = swapbytes ? OSSwapInt16(ucs_ch) : (u_int16_t)ucs_ch;
+		*ucsp++ = swapbytes ? bswap16(ucs_ch) : (u_int16_t)ucs_ch;
 		ucs_ch =  hexdigits[byte >> 4];
-		*ucsp++ = swapbytes ? OSSwapInt16(ucs_ch) : (u_int16_t)ucs_ch;
+		*ucsp++ = swapbytes ? bswap16(ucs_ch) : (u_int16_t)ucs_ch;
 		ucs_ch =  hexdigits[byte & 0x0F];
-		*ucsp++ = swapbytes ? OSSwapInt16(ucs_ch) : (u_int16_t)ucs_ch;
+		*ucsp++ = swapbytes ? bswap16(ucs_ch) : (u_int16_t)ucs_ch;
 	}
 	/*
 	 * Make a previous combining sequence canonical
