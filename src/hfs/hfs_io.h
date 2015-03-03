@@ -9,28 +9,28 @@
 #ifndef hfsinspect_hfs_io_h
 #define hfsinspect_hfs_io_h
 
-#include "hfs/hfs_types.h"
+#include "hfs/types.h"
 
 extern hfs_forktype_t HFSDataForkType;
 extern hfs_forktype_t HFSResourceForkType;
 
 #pragma mark HFS Volume
 
-ssize_t hfs_read                (void* buffer, const HFS *hfs, size_t size, size_t offset)              _NONNULL;
-ssize_t hfs_read_blocks         (void* buffer, const HFS *hfs, size_t block_count, size_t start_block)  _NONNULL;
+ssize_t hfs_read            (void* buffer, const HFSPlus* hfs, size_t size, size_t offset) __attribute__((nonnull));
+ssize_t hfs_read_blocks     (void* buffer, const HFSPlus* hfs, size_t block_count, size_t start_block) __attribute__((nonnull));
 
-FILE*   fopen_hfs               (HFS* hfs) _NONNULL;
+FILE* fopen_hfs           (HFSPlus* hfs) __attribute__((nonnull));
 
 #pragma mark HFS Fork
 
-int     hfsfork_get_special     (HFSFork** fork, const HFS *hfs, bt_nodeid_t cnid) _NONNULL;
+int hfsplus_get_special_fork (HFSPlusFork** fork, const HFSPlus* hfs, bt_nodeid_t cnid) __attribute__((nonnull));
 
-int     hfsfork_make            (HFSFork** fork, const HFS *hfs, const HFSPlusForkData forkData, hfs_forktype_t forkType, bt_nodeid_t cnid) _NONNULL;
-void    hfsfork_free            (HFSFork* fork) _NONNULL;
+int  hfsfork_make        (HFSPlusFork** fork, const HFSPlus* hfs, const HFSPlusForkData forkData, hfs_forktype_t forkType, bt_nodeid_t cnid) __attribute__((nonnull));
+void hfsfork_free        (HFSPlusFork* fork) __attribute__((nonnull));
 
-ssize_t hfs_read_fork           (void* buffer, const HFSFork *fork, size_t block_count, size_t start_block)     _NONNULL;
-ssize_t hfs_read_fork_range     (void* buffer, const HFSFork *fork, size_t size, size_t offset)                 _NONNULL;
+ssize_t hfs_read_fork       (void* buffer, const HFSPlusFork* fork, size_t block_count, size_t start_block) __attribute__((nonnull));
+ssize_t hfs_read_fork_range (void* buffer, const HFSPlusFork* fork, size_t size, size_t offset) __attribute__((nonnull));
 
-FILE*   fopen_hfsfork           (HFSFork* fork) _NONNULL;
+FILE* fopen_hfsfork       (HFSPlusFork* fork) __attribute__((nonnull));
 
 #endif

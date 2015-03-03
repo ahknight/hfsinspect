@@ -9,6 +9,8 @@
 #ifndef hfsinspect_hfs_unicode_h
 #define hfsinspect_hfs_unicode_h
 
+#include "hfs/Apple/hfs_macos_defs.h"
+
 /*
  * Copyright (c) 2000-2002, 2005 Apple Computer, Inc. All rights reserved.
  *
@@ -36,8 +38,6 @@
  *
  * @APPLE_OSREFERENCE_LICENSE_HEADER_END@
  */
-
-#include "hfs/Apple/hfs_macos_defs.h"
 
 int32_t FastUnicodeCompare ( register ConstUniCharArrayPtr str1, register ItemCount length1,
 							register ConstUniCharArrayPtr str2, register ItemCount length2);

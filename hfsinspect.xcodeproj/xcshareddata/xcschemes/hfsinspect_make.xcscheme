@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0510"
+   LastUpgradeVersion = "0610"
    version = "2.0">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -35,14 +35,15 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/ahknight/code/hfsinspect"
+      customWorkingDirectory = "/Volumes/Data/code/c/hfsinspect"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "NO"
       debugXPCServices = "NO"
-      allowLocationSimulation = "NO">
+      allowLocationSimulation = "NO"
+      viewDebuggingEnabled = "No">
       <PathRunnable
-         FilePath = "/Users/ahknight/code/hfsinspect/build/Darwin-x86_64/hfsinspect">
+         FilePath = "/Volumes/Data/code/c/hfsinspect/build/Darwin-x86_64/hfsinspect">
       </PathRunnable>
       <MacroExpansion>
          <BuildableReference
@@ -55,32 +56,38 @@
       </MacroExpansion>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "-d images/test.img"
+            argument = "-d /dev/disk1"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "--volumeheader"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "--disk-info"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "--fs-path /.journal"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-r"
+            argument = "--list"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-LLLL"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
       <EnvironmentVariables>
          <EnvironmentVariable
-            key = "DEBUG"
-            value = ""
-            isEnabled = "YES">
-         </EnvironmentVariable>
-         <EnvironmentVariable
             key = "NOCOLOR"
-            value = ""
+            value = "1"
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>
-         <AdditionalOption
-            key = "DYLD_INSERT_LIBRARIES"
-            value = "/usr/lib/libgmalloc.dylib"
-            isEnabled = "YES">
-         </AdditionalOption>
       </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
@@ -92,6 +99,15 @@
       <PathRunnable
          FilePath = "/Users/ahknight/code/hfsinspect/hfsinspect">
       </PathRunnable>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "9B9F1FFB184AC1CB005D7271"
+            BuildableName = "hfsinspect_make"
+            BlueprintName = "hfsinspect_make"
+            ReferencedContainer = "container:hfsinspect.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

@@ -80,11 +80,14 @@ typedef struct block_list_header {
 
 struct journal;
 
+// Only define this if we're not on OS X and before sys/disk.h.
+#if !defined(DKIOCFORMAT)
 typedef struct
 {
     uint64_t               offset;
     uint64_t               length;
 } dk_extent_t;
+#endif
 
 struct jnl_trim_list {
 	uint32_t	allocated_count;

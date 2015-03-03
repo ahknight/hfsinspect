@@ -6,141 +6,110 @@
 //  Copyright (c) 2013 Adam Knight. All rights reserved.
 //
 
-#include "logging.h"
-#include <stdarg.h>
-#include <unistd.h>
 #include <libgen.h>
-#include <sys/param.h>  //MIN/MAX
+#include <signal.h>         // raise
+#include <sys/param.h>      // MIN/MAX
+#include <sys/ioctl.h>      // ioctl
 
-#include "prefixstream.h"
-#include "nullstream.h"
+#include "logging.h"
+#include "memdmp/output.h"
 
-bool DEBUG = false;
+
+#define MIN_LINE_LENGTH     40
+#define DEFAULT_LINE_LENGTH 160
+#define MAX_LINE_LENGTH     0xff
+
+#define PrintLine_MAX_DEPTH 40
+#define USE_EMOJI           0
+
+enum LogLevel log_level = L_STANDARD;
 
 struct _colorState {
     struct {
-        uint8_t    red;
-        uint8_t    green;
-        uint8_t    blue;
-        uint8_t    white;
-    }           foreground;
+        uint8_t red;
+        uint8_t green;
+        uint8_t blue;
+        uint8_t white;
+    } foreground;
     struct {
-        uint8_t    red;
-        uint8_t    green;
-        uint8_t    blue;
-        uint8_t    white;
-    }           background;
+        uint8_t red;
+        uint8_t green;
+        uint8_t blue;
+        uint8_t white;
+    } background;
 };
 typedef struct _colorState colorState;
 
-bool _useColor(FILE* f)
-{
-    return ( isatty(fileno(f)) == 1 && getenv("NOCOLOR") == NULL );
-}
-
-void _print_reset(FILE* f)
-{
-    if (_useColor(f) == false) return;
-    fprintf(f, "\x1b[0m");
-}
-
-void _print_gray(FILE* f, uint8_t gray, bool background)
-{
-    if (_useColor(f) == false) return;
-    // values must be from 0-23.
-    int color = 232 + gray;
-    fprintf(f, "\x1b[%u;5;%um", (background?48:38), color);
-}
-
-void _print_color(FILE* f, uint8_t red, uint8_t green, uint8_t blue, bool background)
-{
-    if (_useColor(f) == false) return;
-    // values must be from 0-5.
-    if (red == green && green == blue) {
-        _print_gray(f, red, background);
-        return;
-    }
-    
-    int color = 16 + (36 * red) + (6 * green) + blue;
-    fprintf(f, "\x1b[%u;5;%um", (background?48:38), color);
-}
 
 void _printColor(FILE* f, unsigned level)
 {
     if (_useColor(f) == false) return;
 
-    // Critical:    always white on red
-    colorState critical = { { .white = 23 }, { .red = 5 } };
-    
-    // Error:       always red
-    colorState error    = { { .red = 5 }, { 0 } };
-    
-    // Warning:     always orange
-    colorState warning  = { { 5, 1, 0}, { 0 } };
-    
-    // Info:        shades of green
-    colorState info     = { { 1, 5, 1}, { 0 } };
-    
-    // Debug:       shades of blue
-    colorState debug    = { { 2, 2, 4}, { 0 } };
-    
-    //    const int max_depth = 15;
-    //
-    //    int depth = stack_depth(max_depth);
-    //
-    //    float colorMap[max_depth][3] = {
-    //        {1, 1, 1}, //0 - start()
-    //        {1, 1, 1}, //1 - main()
-    //        {1, 1, 5}, //2 - calls from main()
-    //        {1, 2, 1}, //3 - functions or libraries
-    //        {1, 3, 1},
-    //
-    //        {1, 4, 1}, //5
-    //        {1, 5, 1},
-    //        {1, 1, 2},
-    //        {1, 1, 3},
-    //        {1, 1, 4},
-    //
-    //        {1, 1, 5}, //10
-    //        {2, 1, 1},
-    //        {3, 1, 1},
-    //        {4, 1, 1},
-    //        {5, 1, 1},
-    //    };
-    
-    colorState current = { { .white = 23 }, { 0 } };
+    colorState current;
+
     switch (level) {
         case L_CRITICAL:
-            current = critical;
+        {
+            // Critical: always white on red
+            current = (colorState){ { .white = 23 }, { .red = 5 } };
             break;
-            
+        }
+
         case L_ERROR:
-            current = error;
+        {
+            // Error: always red
+            current = (colorState){ { .red = 5 }, { 0 } };
             break;
-            
+        }
+
         case L_WARNING:
-            current = warning;
+        {
+            // Warning: always orange
+            current = (colorState){ { 5, 1, 0}, { 0 } };
             break;
-            
+        }
+
+        case L_STANDARD:
+        {
+            current = (colorState){ { .white = 23 }, { 0 } };
+            break;
+        }
+
         case L_INFO:
-            current = info;
+        {
+            // Info: shades of green
+            current = (colorState){ { 1, 5, 1}, { 0 } };
             break;
-            
+        }
+
         case L_DEBUG:
-            current = debug;
+        {
+            // Debug: shades of blue
+            current = (colorState){ { 2, 2, 4}, { 0 } };
             break;
-            
+        }
+
+        case L_DEBUG2:
+        {
+            // Debug: shades of blue
+            current = (colorState){ { 3, 3, 5}, { 0 } };
+            break;
+        }
+
         default:
+        {
+            current = (colorState){ { 5, 5, 1 }, { 0 } };
             break;
+        }
     }
-    
+
     _print_reset(f);
-    if (current.foreground.white) {
+    if (current.foreground.white != 0) {
         _print_gray(f, current.foreground.white, 0);
     } else {
         _print_color(f, current.foreground.red, current.foreground.green, current.foreground.blue, 0);
     }
-    if (current.background.white) {
+    if (current.background.white != 0) {
         _print_gray(f, current.background.white, 1);
     } else {
         _print_color(f, current.background.red, current.background.green, current.background.blue, 1);
@@ -152,113 +121,149 @@ int LogLine(enum LogLevel level, const char* format, ...)
     va_list argp;
     va_start(argp, format);
 
-    int nchars = 0;
-    
-    static FILE* streams[6] = {0};
-
-#define USE_EMOJI 0
-
-    char* prefixes[6] = {
+    int     nchars      = 0;
+    FILE*   fp          = stderr;
+    char*   prefixes[8] = {
 #if USE_EMOJI
         "❕",
         "⛔️",
         "🚸 ",
         "🆗 ",
-        "ℹ️",
+        "ℹ️ ",
+        "🐞 ",
+        "🐞 ",
         "🐞 ",
 #else
-        "! ",
-        "E ",
-        "W ",
-        "  ",
-        "I ",
-        "D ",
+        "[CRIT]   ",
+        "[ERR]    ",
+        "[WARN]   ",
+        "",
+        "[INFO]   ",
+        "[DEBUG]  ",
+        "[DEBUG2] ",
+        "[TRACE]  ",
 #endif
     };
-    
-    if (streams[0] == NULL) {
-        streams[L_CRITICAL] = prefixstream(stderr, prefixes[L_CRITICAL]);
-        streams[L_ERROR]    = prefixstream(stderr, prefixes[L_ERROR]);
-        streams[L_WARNING]  = prefixstream(stderr, prefixes[L_WARNING]);
-        streams[L_STANDARD] = prefixstream(stdout, prefixes[L_STANDARD]);
-        
-        if (DEBUG) {
-            streams[L_INFO]     = prefixstream(stderr, prefixes[L_INFO]);
-            streams[L_DEBUG]    = prefixstream(stderr, prefixes[L_DEBUG]);
-        } else {
-            streams[L_INFO]     = nullstream();
-            streams[L_DEBUG]    = nullstream();
-        }
+    char*   prefix = NULL;
+
+    if (level > log_level)   return 0;
+
+    if (level == L_STANDARD) fp = stdout;
+
+    if (level >= L_TRACE) {
+        prefix = prefixes[L_TRACE];
+    } else {
+        prefix = prefixes[level];
     }
-    
-    FILE* fp = stdout;
-    
-    if (level <= L_DEBUG)
-        fp = streams[level];
-    else
-        fprintf(stderr, "Uh oh. %u isn't a valid log level.", level);
-    
+
     _printColor(fp, level);
+    nchars += fputs(prefix, fp);
+    nchars += fputs(" ", fp);
     nchars += vfprintf(fp, format, argp);
-    fputc('\n', fp);
+    nchars += fputc('\n', fp);
     _print_reset(fp);
 
     va_end(argp);
-    
-    if ( DEBUG && (level <= L_WARNING) ) {
+
+    if ( (log_level > L_INFO) && (level <= L_WARNING) ) {
         print_trace(fp, 2);
     }
-    
+
     fflush(fp);
-    
-    if (DEBUG && level <= L_CRITICAL) {
-        raise(SIGTRAP);
+
+    if ((level <= L_CRITICAL)) {
+        if (log_level > L_INFO)
+            raise(SIGTRAP);
+        else
+            abort();
     }
-    
-    if (!DEBUG && level == L_CRITICAL)
-        exit(1);
-    
+
     return nchars;
 }
 
-#define PrintLine_MAX_LINE_LEN 1024
-#define PrintLine_MAX_DEPTH    40
-int PrintLine(enum LogLevel level, const char* file, const char* function, unsigned int line, const char* format, ...)
+int PrintLine(enum LogLevel level, const char* file, const char* function, unsigned int line_no, const char* format, ...)
 {
     va_list argp;
     va_start(argp, format);
-    
-    int out_bytes = 0;
-    
-    // "Print" the input format string to a string.
-    char inputstr[PrintLine_MAX_LINE_LEN];
-    if (argp != NULL)
-        vsnprintf((char*)&inputstr, PrintLine_MAX_LINE_LEN, format, argp);
-    else
-        (void)strlcpy(inputstr, format, PrintLine_MAX_LINE_LEN);
-    
+
+    if (level > log_level) {
+        va_end(argp);
+        return 0;
+    }
+
+    unsigned short term_width = 0;
+    struct winsize w          = {0};
+    int            fd         = fileno(stdout);
+    char*          in_line    = NULL;
+    char*          out_line   = NULL;
+    int            out_bytes  = 0;
+    unsigned int   depth      = stack_depth(PrintLine_MAX_DEPTH) - 1; // remove our frame
+
+    // Get the terminal's line width.
+    if (isatty(fd)) {
+        ioctl(fd, TIOCGWINSZ, &w);
+        term_width = w.ws_col;
+    }
+
+    if (term_width == 0) {
+        term_width = DEFAULT_LINE_LENGTH;
+    }
+
+    term_width  = MAX(MIN_LINE_LENGTH, term_width);
+    term_width  = MIN(MAX_LINE_LENGTH, term_width);
+
+    term_width -= 10; // Account for prefix.
+
+    SALLOC(out_line, term_width);
+    SALLOC(in_line, term_width);
+
+    // Fill the line with spaces.
+    memset(out_line, ' ', term_width);
+
     // Indent the string with the call depth.
-    unsigned int depth = stack_depth(PrintLine_MAX_DEPTH) - 1; // remove our frame
-    depth = MIN(depth, PrintLine_MAX_DEPTH);
-    char indent[PrintLine_MAX_LINE_LEN];
-    
-    // Fill the indent string with spaces.
-    memset(indent, ' ', depth);
-    
-    // Mark the current depth.
-    indent[depth] = '\0';
-    
+    depth       = MIN(depth, term_width);
+
+    // "Print" the input format string to a string.
+    int in_line_len = 0;
+    in_line_len = vsnprintf(in_line, term_width, format, argp);
+    if (in_line_len < 0) {
+        perror("vsnprintf");
+        exit(1);
+    }
+
     // Append the text after the indentation.
-    (void)strlcat(indent, inputstr, PrintLine_MAX_LINE_LEN);
-    
-    // Now add our format to that string and print to stdout.
-    if (DEBUG && level != L_STANDARD)
-        out_bytes += LogLine(level, "%-80s [%s:%u %s()]", indent, basename((char*)file), line, function);
-    else
-        out_bytes += LogLine(level, "%s", inputstr);
-    
+    (void)memcpy((char*)(out_line+depth), in_line, MIN(term_width - depth, in_line_len));
+
+    // Now add our debug format to the end of that string and print it.
+    if ((log_level > L_INFO) && (level != L_STANDARD)) {
+        char*  debug_info   = NULL;
+        size_t debug_len    = 0;
+        int    debug_offset = 0;
+
+        debug_info   = ALLOC(term_width);
+        debug_len    = snprintf(debug_info, term_width, "[%s:%u %s()]", basename((char*)file), line_no, function);
+        debug_offset = (term_width-1) - debug_len;
+
+        if (debug_offset > 0) {
+            memcpy((char*)(out_line + debug_offset), debug_info, debug_len);
+        }
+
+        SFREE(debug_info);
+    }
+
+
+    // Cap the string
+    out_line[term_width] = '\0';
+
+    out_bytes           += LogLine(level, "%s", out_line);
+
+    // printf("%s\n", out_line);
+
     // Clean up.
     va_end(argp);
-    
+    SFREE(in_line);
+    SFREE(out_line);
+
     return out_bytes;
 }
+

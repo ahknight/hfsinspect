@@ -1,11 +1,18 @@
 syntax: glob
+.depend
 .vagrant
 Makefile
 build
-docs/html
+docs/_build
 docs/doxygen.log
 images/*.bin
 images/*.dmg
 images/*.img
 tmp/
 xcuserdata
+*.xccheckout
+.deps
+*.cache
+
+images
+hfsinspect

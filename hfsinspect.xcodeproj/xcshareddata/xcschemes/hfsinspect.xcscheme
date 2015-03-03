@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0510"
+   LastUpgradeVersion = "0610"
    version = "2.0">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -43,13 +43,14 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
-      useCustomWorkingDirectory = "NO"
-      customWorkingDirectory = "/Volumes/Code/c/hfsinspect"
+      useCustomWorkingDirectory = "YES"
+      customWorkingDirectory = "/Volumes/Data/code/c/hfsinspect"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "NO"
       debugXPCServices = "NO"
-      allowLocationSimulation = "NO">
+      allowLocationSimulation = "NO"
+      viewDebuggingEnabled = "No">
       <BuildableProductRunnable>
          <BuildableReference
             BuildableIdentifier = "primary"
@@ -60,6 +61,30 @@
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
+         <CommandLineArgument
+            argument = "-LLLL"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-P /a&#xe5;e&#xe9;i&#xee;o&#xf8;u&#xfc;"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-d images/test.img"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-D"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-r"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-P /.journal"
+            isEnabled = "NO">
+         </CommandLineArgument>
          <CommandLineArgument
             argument = "-V /"
             isEnabled = "NO">
@@ -73,23 +98,19 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-d /dev/disk0"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "-d images/test.img"
+            argument = "-d /dev/disk1"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-D"
-            isEnabled = "YES">
+            argument = "-0"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-b hotfiles"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-n 0"
+            argument = "-n 227"
             isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
@@ -97,7 +118,7 @@
          <EnvironmentVariable
             key = "DEBUG"
             value = ""
-            isEnabled = "YES">
+            isEnabled = "NO">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "NOCOLOR"
@@ -107,11 +128,6 @@
       </EnvironmentVariables>
       <AdditionalOptions>
          <AdditionalOption
-            key = "MallocStackLogging"
-            value = ""
-            isEnabled = "YES">
-         </AdditionalOption>
-         <AdditionalOption
             key = "DYLD_INSERT_LIBRARIES"
             value = "/usr/lib/libgmalloc.dylib"
             isEnabled = "YES">
@@ -119,11 +135,6 @@
          <AdditionalOption
             key = "OBJC_PRINT_EXCEPTIONS"
             value = "YES"
-            isEnabled = "YES">
-         </AdditionalOption>
-         <AdditionalOption
-            key = "USERBREAK"
-            value = "1"
             isEnabled = "YES">
          </AdditionalOption>
          <AdditionalOption

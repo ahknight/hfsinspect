@@ -7,7 +7,7 @@ test_cmd() {
     echo "---"
     echo "Running: $1"
     echo ""
-    ( $1 ) || { echo "*** FAIL: $1"; exit 1; }
+    ( $1 > /dev/null ) || { echo "*** FAIL: $1"; exit 1; }
     echo "*** SUCCESS: $1"
 }
 

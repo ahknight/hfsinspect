@@ -1,2 +1,0 @@
-# Presumes LLVM/Clang
-CFLAGS += -Wpedantic -Wno-four-char-constants

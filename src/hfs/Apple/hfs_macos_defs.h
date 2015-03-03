@@ -29,6 +29,7 @@
 #ifndef __HFS_MACOS_TYPES__
 #define __HFS_MACOS_TYPES__
 
+#include <stdlib.h>
 
 /****** START OF MACOSTYPES *********/
 
@@ -94,14 +95,14 @@ typedef const UniChar *		ConstUniCharArrayPtr;
 	"Boolean" will remain an unsigned char for compatibility with source
 	code written before "bool" existed.
 */
-#if !TYPE_BOOL
-
+//#if !TYPE_BOOL
+//
 //enum {
 //	false						= 0,
 //	true						= 1
 //};
-
-#endif  /*  !TYPE_BOOL */
+//
+//#endif  /*  !TYPE_BOOL */
 
 
 /*********************************************************************************

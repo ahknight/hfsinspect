@@ -9,9 +9,7 @@
 #ifndef hfsinspect_debug_h
 #define hfsinspect_debug_h
 
-#include <stdio.h>
-
-int print_trace(FILE* fp, unsigned offset);
+int print_trace(FILE* fp, unsigned offset) __attribute__((nonnull));
 int stack_depth(int max);
 
 #endif

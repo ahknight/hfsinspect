@@ -1,0 +1,108 @@
+hfsinspect
+
+The following changes are automagically-generated from the commit history.  Subtle hints of frustration may be apparent at times.
+
+0.1.0 / 2013-06-04
+==================
+
+ * Finished volume header.
+ * Some work on generalizing the I/O.
+ * YAY! KEYED RECORDS!
+ * Fixed a lot of issues with reading records in nodes and byte-swapping on node read.
+ * Search is fixed. File path lookups work. Whirled peas.
+
+0.2.0 / 2013-06-25
+==================
+
+ * Round 300 of trying to get extent reading right.
+ * Renaming some things, including licenses.
+ * Lots of progress.
+ * Adding in basic README
+ * Cleaned up help; fixed output permissions; moved journal out to its own option.
+ * Standardized some memory calls.
+ * Added metric measures to sizeString.
+ * Adding hfs_read_range function.
+ * Adding some support for HFS structures; made some logging statements public.
+ * Redid some logic in main; added GPT and HFS detection support.
+ * Made fork size data a top-tier property (prep for HFS).
+ * Adding some stat structs to the volume.
+ * Switch to array math for extent swapping.
+ * Try to detect GPT/HFS formats.
+ * Be a little smarter about block sizes on raw devices; fixed an extent record swap bug.
+ * More GPT partition IDs; fixed reading inside an HFS wrapper partition.
+
+0.2.1 / 2013-07-10
+==================
+
+ * Update README.md with waffle.io badge
+ * Merge pull request #11 from waffleio/master
+ * Fixes #12 and #13.
+ * Adding Travis support. (Maybe.)
+ * Updating Travis support.
+
+0.3.0 / 2013-12-05
+==================
+
+ * Updated GPT partition parsing to handle 512b or 4K-block drives.
+ * Initialize the block count variable. Turns out that matters.
+ * added support for proper volumes and documentation
+ * Starting process of abstracting the volume I/O from the filesystem logic.
+ * Moved the core endian-ness logic into _endian.h for porting.
+ * Moved core output logic into output.h for abstraction.
+ * Cleaned up includes.
+ * Integrated the new partition/volume logic into the HFS code.
+ * Started adding doc-comments.
+ * Included doxygen config.
+ * Cleaned up hexdumper.
+ * Major work on partitions, Core Storage, memory use, and hex dumps.
+ * Color-coded hex dumps.
+ * Updating logging mechanism. Including work-in-progress btree implementation that attempts to divorce it from knowledge of specific HFS datatypes.
+ * With a freshly-broken btree implementation (working on it) comes make support. Yay!
+ * Now compiling on Linux! (How does anything run on that platform?) Sample test images. Tests to come. Better GPT partition detection.
+ * A better, unified makefile. Basic tests.
+ * Rename Makefile.DARWIN to Makefile.Darwin
+ * Rename Makefile.LINUX to Makefile.Linux
+ * I think I finally got the Travis support going…
+ * Reorganized the Makefile and project to better support multi-OS testing.
+ * Included a Vagrantfile for a Linux machine similar to the Travis CI machine.
+ * Congratulations! It's a manpage!
+ * starting to add FS extract option
+ * Added clang script. Started hotfiles support. Created function to convert a path into a catalog record (about time).
+ * work on fs yank
+ * Added some compiler metadata. More work on hot files. General tweaking.
+ * updated docs
+ * catalog modernization work
+
+0.3.1 / 2014-03-28
+==================
+
+ * Removed deprecated catalog function.
+ * Added parsing of btree node allocation maps.
+ * Xcode project tweaks to not install every time.
+ * Don’t trust the on-disk data in the trees as much.
+ * Added --si flag to use SI decimal prefixes. Defaults to binary (1024).
+ * Endian cleanup.
+ * Allocation file support.
+ * Freespace/extents reporting (-0/--freespace).
+ * Endian simplification.
+ * Now checking GPT CRCs. Various safeties for corrupt partition tables.
+
+0.3.2 / 2014-04-02
+==================
+
+ * Added support for APM volumes with 512, 1K, or 2K block sizes. Better memory handling in some places (more to come). Better GPT detection.
+ * Cleaned up some parts of the Linux build.  Now requires libbsd for strlcpy/strlcat.
+ * Some GPT fixes for Linux x64.
+ * Updated Travis config.
+ * Travis config consolidation.
+ * Elusive GCC swap errors, begone!
+ * Moved main.c operations out into distinct files.
+ * Cleaned up critical() a little.
+ * Fixed case where a Volume's block size was unreasonably large for an image file.
+ * Moved some type declarations around.
+ * Added a build test script.
+ * Using FREE macro more.
+ * Removed stale includes.
+ * Fixed some errors when running on 32-bit Linux.
+ * Changed Makefile because Travis is using an ancient gunzip.
+
