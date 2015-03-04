@@ -1089,6 +1089,23 @@ void PrintNodeRecord(out_ctx* ctx, const BTreeNodePtr node, int recordNumber)
             hfsuc_to_str(&nodeName, &key->nodeName);
             Print(ctx, "%-3u %-12u %-5u %-12u %s", recordNumber, next_node, key->keyLength, key->parentID, nodeName);
             return;
+
+        } else if (node->bTree->treeID == kHFSAttributesFileID) {
+            if (recordNumber == 0) {
+                BeginSection(ctx, "Attribute Tree Index Records");
+                Print(ctx, "%-3s %-12s %-5s %-12s %s", "#", "nodeID", "kLen", "fileID", "attrName");
+            }
+            bt_nodeid_t        next_node = *(bt_nodeid_t*)record->value;
+            HFSPlusAttrKey*    key       = (HFSPlusAttrKey*)record->key;
+			
+			HFSUniStr255 uniStr = { .length = key->attrNameLen, .unicode = {0} };
+			memcpy(&uniStr.unicode, key->attrName, 127);
+            hfs_str attrName  = "";
+            hfsuc_to_str(&attrName, &uniStr);
+			
+            Print(ctx, "%-3u %-12u %-5u %-12u %s", recordNumber, next_node, key->keyLength, key->fileID, attrName);
+			
+            return;
         }
 
     }

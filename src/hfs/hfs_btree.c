@@ -31,7 +31,7 @@ int hfs_get_btree(BTreePtr* btree, const HFSPlus* hfs, hfs_cnid_t cnid)
     switch (cnid) {
         case kHFSAttributesFileID:
         {
-//            tree->keyCompare = (btree_key_compare_func)hfs_attributes_compare_keys;
+//            tree->keyCompare = (btree_key_compare_func)hfsplus_attributes_compare_keys;
             break;
         }
 
@@ -40,7 +40,7 @@ int hfs_get_btree(BTreePtr* btree, const HFSPlus* hfs, hfs_cnid_t cnid)
             break;
         }
     }
-//    tree->keyCompare = (btree_key_compare_func)hfs_attributes_compare_keys;
+//    tree->keyCompare = (btree_key_compare_func)hfsplus_attributes_compare_keys;
 
 
     return 0;
