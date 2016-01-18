@@ -79,7 +79,7 @@ ssize_t cs_get_metadata_block(void** buf, const Volume* vol, const CSVolumeHeade
 READ:
     offset = block * (size_t)header->md_block_size;
     bytes  = vol_read(vol, *buf, buf_size, offset);
-    if (bytes < 0)   return -1;
+    if (bytes < 0) return -1;
     bh     = (CSBlockHeader*)*buf;
     if (bh->version != 1)
         return -1;

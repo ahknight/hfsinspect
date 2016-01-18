@@ -63,7 +63,7 @@ int swap_BTreeNode(BTreeNodePtr node)
     // *** Verify Node ***
 
     // Check record offset 0 to see if we've done this before (last two bytes of the node). It's a constant 14.
-    BTRecOffset sentinel = *(BTRecOffsetPtr)(node->data + node->nodeSize - sizeof(BTRecOffset));
+    BTRecOffset sentinel = *(BTRecOffsetPtr)(((uint8_t*)node->data) + node->nodeSize - sizeof(BTRecOffset));
     if ( sentinel == 14 ) { warning("Node is already swapped."); return 0; }
 
     // Verify that this is a node in the first place (swap error protection).
@@ -104,7 +104,7 @@ int swap_BTreeNode(BTreeNodePtr node)
 
     uint16_t       numRecords = nodeDescriptor->numRecords;
 
-    BTRecOffsetPtr offsets    = ((BTRecOffsetPtr)(node->data + node->nodeSize)) - numRecords - 1;
+    BTRecOffsetPtr offsets    = ((BTRecOffsetPtr)(((uint8_t*)node->data) + node->nodeSize)) - numRecords - 1;
     for(unsigned i = 0; i < (numRecords+1); i++) Swap16(offsets[i]);
 
     // Validate offsets

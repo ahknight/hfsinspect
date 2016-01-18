@@ -2,6 +2,7 @@
 
 # Some defaults.  Feel free to override them.
 CFLAGS += -g -O2 -Wall
+LDFLAGS += -flto
 PREFIX = /usr/local
 
 # ------------ Systems and Platforms ------------
@@ -49,8 +50,14 @@ endif
 ifeq ($(CC_name), clang)
 sys_CFLAGS += -fstack-protector-all -fstrict-enums -ftrapv
 # Warnings
-sys_CFLAGS += -Wno-four-char-constants # -Weverything 
+sys_CFLAGS += -Wdocumentation -Wmissing-variable-declarations # -Weverything -Wno-four-char-constants -Wno-packed -Wno-padded -Wno-conversion -Wno-sign-conversion -Wno-sign-compare -Wno-format-nonliteral -Wno-unused-parameter -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-cast-align
 cc_CFLAGS = -include-pch $(PCHFILE)
+endif
+
+# scan-build
+ifeq ($(CC_name), ccc-analyzer)
+sys_CFLAGS += -fstack-protector-all -fstrict-enums -ftrapv
+cc_CFLAGS += -include $(PCHFILENAME)
 endif
 
 # General options

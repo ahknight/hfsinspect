@@ -123,6 +123,7 @@ Volume* vol_qopen(const char* path)
     SALLOC(vol, sizeof(Volume));
 
     if ( vol_open(vol, path, O_RDONLY, 0, 0, 0) < 0 ) {
+        if (vol->fp) fclose(vol->fp);
         SFREE(vol);
         // perror("vol_open");
         return NULL;
@@ -139,7 +140,7 @@ ssize_t vol_blk_get(const Volume* vol, void* buf, size_t count, off_t start, siz
     trace("vol (%p), start %zd, count %zu, blksz %zu, buf (%p)", vol, start, count, blksz, buf);
 
     // Determine offset based on block size.
-    off  = start * blksz + vol->offset;
+    off  = (start * blksz) + vol->offset;
 
     debug2("Seeking to %zd then reading %zu blocks of size %zu.", off, count, blksz);
 

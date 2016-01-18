@@ -86,9 +86,9 @@ void extractHFSPlusCatalogFile(const HFSPlus* hfs, const HFSPlusCatalogFile* fil
         char*   outputPath = NULL;
         SALLOC(outputPath, FILENAME_MAX);
         ssize_t size;
-        size = strlcpy(outputPath, extractPath, sizeof(outputPath));
+        size = strlcpy(outputPath, extractPath, FILENAME_MAX);
         if (size < 1) die(1, "Could not create destination filename.");
-        size = strlcat(outputPath, ".rsrc", sizeof(outputPath));
+        size = strlcat(outputPath, ".rsrc", FILENAME_MAX);
         if (size < 1) die(1, "Could not create destination filename.");
 
         HFSPlusFork* fork = NULL;

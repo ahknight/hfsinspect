@@ -75,23 +75,34 @@ int apm_test(Volume* vol)
 
     SALLOC(buf, 4096);
 
-    if ( vol_read(vol, buf, 4096, 0) < 0 )
+    if ( vol_read(vol, buf, 4096, 0) < 0 ) {
+        SFREE(buf);
         return -1;
+    }
+
+    int result = 0;
 
     if ( memcmp(buf+512, APM_SIG, 2) == 0 ) {
         vol->sector_size = 512;
-        return 1;
-
-    } else if ( memcmp(buf+1024, APM_SIG, 2) == 0 ) {
-        vol->sector_size = 1024;
-        return 1;
-
-    } else if ( memcmp(buf+2048, APM_SIG, 2) == 0 ) {
-        vol->sector_size = 2048;
-        return 1;
+        result           = 1;
+        goto OUT;
     }
 
-    return 0;
+    if ( memcmp(buf+1024, APM_SIG, 2) == 0 ) {
+        vol->sector_size = 1024;
+        result           = 1;
+        goto OUT;
+    }
+
+    if ( memcmp(buf+2048, APM_SIG, 2) == 0 ) {
+        vol->sector_size = 2048;
+        result           = 1;
+        goto OUT;
+    }
+
+OUT:
+    SFREE(buf);
+    return result;
 }
 
 /**
@@ -191,7 +202,7 @@ int apm_load(Volume* vol)
     APMHeader header      = {0};
     unsigned  partitionID = 1;
 
-    while (1) {
+    do {
         if ( apm_get_header(vol, &header, partitionID) < 0 )
             return -1;
 
@@ -212,9 +223,7 @@ int apm_load(Volume* vol)
                 partition->type = identifier.voltype;
             }
         }
-
-        if (++partitionID >= header.partition_count) break;
-    }
+    } while (++partitionID <= header.partition_count);
 
     return 0;
 }

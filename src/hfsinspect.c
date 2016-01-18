@@ -69,7 +69,7 @@ char* deviceAtPath(char* path)
 
 bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
 {
-#if defined(__BSD__)
+#if defined(__APPLE__)
     char* path = realpath(path_in, NULL);
     if (path == NULL) {
         die(1, path_in);
@@ -111,7 +111,7 @@ bool resolveDeviceAndPath(char* path_in, char* device_out, char* path_out)
 
     return true;
 #else
-    warning("%s: not supported on this platform", __FUNCTION__);
+    warning("%s: not currently supported on this platform", __FUNCTION__);
     return false;
 #endif
 }
@@ -358,7 +358,7 @@ int main (int argc, char* const* argv)
             {
                 char* str = deviceAtPath(optarg);
                 (void)strlcpy(options.device_path, str, PATH_MAX);
-                if (options.device_path == NULL) fatal("Unable to determine device. Does the path exist?");
+                if (options.device_path[0] == '\0') fatal("Unable to determine device. Does the path exist?");
                 break;
             }
 
@@ -375,8 +375,8 @@ int main (int argc, char* const* argv)
 
                 bool success          = resolveDeviceAndPath(optarg, device, file);
 
-                if (device != NULL) (void)strlcpy(options.device_path, device, PATH_MAX);
-                if (file != NULL)   (void)strlcpy(options.file_path, file, PATH_MAX);
+                (void)strlcpy(options.device_path, device, PATH_MAX);
+                (void)strlcpy(options.file_path, file, PATH_MAX);
 
                 if ( !success || !strlen(options.device_path ) ) fatal("Device could not be determined. Specify manually with -d/--device.");
                 if ( !strlen(options.file_path) ) fatal("Path must be an absolute path from the root of the target filesystem.");
@@ -388,7 +388,7 @@ int main (int argc, char* const* argv)
             {
                 set_mode(&options, HIModeShowPathInfo);
                 (void)strlcpy(options.file_path, optarg, PATH_MAX);
-                if (options.file_path[0] != '/') fatal("Path given to -P/--fs-path must be an absolute path from the root of the target filesystem.");
+                if (options.file_path[0] != '/') fatal("Path given to -P/--vol-path must be an absolute path from the root of the target filesystem.");
                 break;
             }
 
@@ -420,7 +420,8 @@ int main (int argc, char* const* argv)
 
                 SFREE(tofree);
 
-                if ((options.record_filename == NULL) || (options.record_parent == 0)) fatal("option -F/--fsspec requires a parent ID and file (eg. 2:.journal)");
+                if ((options.record_filename[0] == '\0') || (options.record_parent == 0))
+                    fatal("option -F/--fsspec requires a parent ID and file (eg. 2:.journal)");
 
                 break;
             }
@@ -491,7 +492,7 @@ int main (int argc, char* const* argv)
 
         char device[PATH_MAX];
         (void)strlcpy(device, deviceAtPath("."), PATH_MAX);
-        if (device != NULL)
+        if (device[0] != '\0')
             (void)strlcpy(options.device_path, device, PATH_MAX);
 
         if ( EMPTY_STRING(options.device_path) ) {
@@ -644,6 +645,7 @@ OPEN:
         if (nbytes < 0) die(0, "reading volume header");
 
         FILE* fp = fopen(headerPath, "w");
+        if (fp == NULL) die(0, "copying volume header");
         (void)fwrite(buf, 1, readSize, fp);
         fclose(fp);
 

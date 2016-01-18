@@ -115,7 +115,8 @@ void PrintHFSMasterDirectoryBlock(out_ctx* ctx, const HFSMasterDirectoryBlock* v
     PrintUI(ctx, vcb, drNxtCNID);
     PrintUI(ctx, vcb, drFreeBks);
 
-    char name[32]; memset(name, '\0', 32); memcpy(name, vcb->drVN, 31);
+    size_t name_len = sizeof(vcb->drVN);
+    char   name[name_len]; memset(name, '\0', name_len); memcpy(name, vcb->drVN, (name_len - 1));
     PrintAttribute(ctx, "drVN", "%s", name);
 
     PrintHFSTimestamp(ctx, vcb, drVolBkUp);

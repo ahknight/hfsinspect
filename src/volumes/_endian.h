@@ -15,8 +15,8 @@
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
     #include <sys/endian.h>
-	#define _HAS_BETOH 1
-	#define _HAS_BSWAP 1
+    #define _HAS_BETOH 1
+    #define _HAS_BSWAP 1
 
 #elif defined(__APPLE__)
     #include <libkern/OSByteOrder.h>
@@ -24,22 +24,22 @@
     #define be16toh(__x) OSSwapBigToHostInt16(__x)
     #define be32toh(__x) OSSwapBigToHostInt32(__x)
     #define be64toh(__x) OSSwapBigToHostInt64(__x)
-	#define _HAS_BETOH 1
+    #define _HAS_BETOH 1
 
-	#define bswap16(__x) OSSwapInt16( (__x) )
-	#define bswap32(__x) OSSwapInt32( (__x) )
-	#define bswap64(__x) OSSwapInt64( (__x) )
-	#define _HAS_BSWAP 1
+    #define bswap16(__x) OSSwapInt16( (__x) )
+    #define bswap32(__x) OSSwapInt32( (__x) )
+    #define bswap64(__x) OSSwapInt64( (__x) )
+    #define _HAS_BSWAP 1
 
 #elif defined(__linux__)
-	#include <endian.h>
-	#define _HAS_BETOH 1
+    #include <endian.h>
+    #define _HAS_BETOH 1
 
-	#include <byteswap.h>
-	#define bswap16(__x) bswap_16( (__x) )
-	#define bswap32(__x) bswap_32( (__x) )
-	#define bswap64(__x) bswap_64( (__x) )
-	#define _HAS_BSWAP 1
+    #include <byteswap.h>
+    #define bswap16(__x) bswap_16( (__x) )
+    #define bswap32(__x) bswap_32( (__x) )
+    #define bswap64(__x) bswap_64( (__x) )
+    #define _HAS_BSWAP 1
 #endif
 
 /* missing features; see if the compiler has a builtin or use a fallback. */
@@ -59,6 +59,7 @@ static inline uint32_t bswap32(uint32_t x)
         ((x & 0x00ff0000U) >>  8) |
         ((x & 0xff000000U) >> 24) );
 }
+
 static inline uint64_t bswap64(uint64_t x)
 {
     return (uint64_t)(
@@ -71,7 +72,8 @@ static inline uint64_t bswap64(uint64_t x)
         ((x & 0x00ff000000000000ULL) >> 40) |
         ((x & 0xff00000000000000ULL) >> 56) );
 }
-	#endif
+
+    #endif
 #endif
 
 #if !defined(_HAS_BETOH)
@@ -91,14 +93,14 @@ static inline uint64_t bswap64(uint64_t x)
 #define Swap64(x) ( (x) = be64toh( (x) ) )
 
 #if defined(__clang__)
-	#define Swap(x) _Generic( (x), uint16_t: Swap16((x)),  uint32_t: Swap32((x)),  uint64_t: Swap64((x))  )
+    #define Swap(x) _Generic( (x), uint16_t: Swap16((x)),  uint32_t: Swap32((x)),  uint64_t: Swap64((x))  )
 #else
-	#define Swap(x) { switch(sizeof((x))) { \
-	                      case 16: Swap16((x)); break; \
-	                      case 32: Swap32((x)); break; \
-	                      case 64: Swap64((x)); break; \
-	                      default: break; \
-	                  }}
+    #define Swap(x) { switch(sizeof((x))) { \
+                          case 16: Swap16((x)); break; \
+                          case 32: Swap32((x)); break; \
+                          case 64: Swap64((x)); break; \
+                          default: break; \
+                      }}
 #endif // defined(clang)
 
 #endif // volumes_endian_h

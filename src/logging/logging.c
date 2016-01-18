@@ -253,9 +253,9 @@ int PrintLine(enum LogLevel level, const char* file, const char* function, unsig
 
 
     // Cap the string
-    out_line[term_width] = '\0';
+    out_line[(term_width - 1)] = '\0';
 
-    out_bytes           += LogLine(level, "%s", out_line);
+    out_bytes                 += LogLine(level, "%s", out_line);
 
     // printf("%s\n", out_line);
 

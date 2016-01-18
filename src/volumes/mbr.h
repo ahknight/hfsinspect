@@ -21,7 +21,7 @@ typedef struct MBRCHS {
     uint8_t  head;
     uint16_t sector : 6;
     uint16_t cylinder : 10;
-} __attribute__((packed, aligned(2))) MBRCHS;
+} MBRCHS;
 
 #define empty_MBRCHS ((MBRCHS){ .head = 0, .sector = 0, .cylinder = 0})
 
@@ -32,7 +32,7 @@ typedef struct MBRPartition {
     MBRCHS   last_sector;
     uint32_t first_sector_lba;
     uint32_t sector_count;
-} __attribute__((packed, aligned(2))) MBRPartition;
+} MBRPartition;
 
 #define empty_MBRPartition ((MBRPartition){ \
         .status = 0, \
@@ -49,7 +49,7 @@ typedef struct MBR {
     uint16_t     reserved0;
     MBRPartition partitions[4];
     uint8_t      signature[2];
-} __attribute__((packed, aligned(2))) MBR;
+} MBR;
 
 #define empty_MBR ((MBR){ \
         .bootstrap = {0}, \

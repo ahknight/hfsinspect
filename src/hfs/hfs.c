@@ -160,7 +160,7 @@ Volume* hfsplus_find(Volume* vol)
 
     if ( (test) & (kFSTypeHFSPlus | kFSTypeWrappedHFSPlus)) {
         result = vol;
-    } else if (vol->partition_count) {
+    } else if (vol->partition_count > 0) {
         for(unsigned i = 0; i < vol->partition_count; i++) {
             if (vol->partitions[i] != NULL) {
                 result = hfsplus_find(vol->partitions[i]);
