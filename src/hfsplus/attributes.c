@@ -11,9 +11,11 @@
 #include "hfsplus/hfsplus.h"
 
 #include "hfs/hfs_io.h"
+#include "hfs/unicode.h"
 #include "hfs/btree/btree.h"
 #include "volumes/utilities.h" // commonly-used utility functions
 #include "logging/logging.h"   // console printing routines
+#include "hfs/output_hfs.h"
 
 
 int hfsplus_get_attribute_btree(BTreePtr* tree, const HFSPlus* hfs)
@@ -49,39 +51,41 @@ int hfsplus_get_attribute_btree(BTreePtr* tree, const HFSPlus* hfs)
 
 int hfsplus_attributes_compare_keys (const HFSPlusAttrKey* key1, const HFSPlusAttrKey* key2)
 {
-    int     result     = 0;
-	
-	HFSUniStr255 key1UniStr = {key1->attrNameLen, {0}};
-	HFSUniStr255 key2UniStr = {key2->attrNameLen, {0}};
-	
-	memcpy(&key1UniStr->attrName, key1->attrName, kHFSMaxAttrNameLen);
-	memcpy(&key2UniStr->attrName, key2->attrName, kHFSMaxAttrNameLen);
+    int          result     = 0;
+
+    HFSUniStr255 key1UniStr = {key1->attrNameLen, {0}};
+    HFSUniStr255 key2UniStr = {key2->attrNameLen, {0}};
+
+    memcpy(&key1UniStr.unicode, key1->attrName, kHFSMaxAttrNameLen);
+    memcpy(&key2UniStr.unicode, key2->attrName, kHFSMaxAttrNameLen);
 
     hfs_str key1Name = {0};
     hfs_str key2Name = {0};
 
-    hfsuc_to_str(&key1Name, key1UniStr);
-    hfsuc_to_str(&key2Name, key2UniStr);
+    hfsuc_to_str(&key1Name, &key1UniStr);
+    hfsuc_to_str(&key2Name, &key2UniStr);
 
-    trace("BC compare: key1 (%p) (%u, %u, '%s'), key2 (%p) (%u, %u, '%s')",
+    trace("compare: key1 (%p) (%u, %u, '%s'), key2 (%p) (%u, %u, '%s')",
           key1, key1->fileID, key1->attrNameLen, key1Name,
           key2, key2->fileID, key2->attrNameLen, key2Name);
 
-    if ( (result = cmp(key1->fileID, key2->fileID)) != 0)
+    if ( (result = cmp(key1->fileID, key2->fileID)) != 0) {
+        trace("* %d: File ID difference.", result);
         return result;
+    }
 
     unsigned len = MIN(key1->attrNameLen, key2->attrNameLen);
     for (unsigned i = 0; i < len; i++) {
         if ((result = cmp(key1->attrName[i], key2->attrName[i])) != 0) {
-            trace("* Character difference at position %u", i);
-            break;
+            trace("* %d: Character difference at position %u", result, i);
+            return result;
         }
     }
 
-    if (result == 0) {
-        // The shared prefix sorted the same, so the shorter one wins.
-        result = cmp(key1->attrNameLen, key2->attrNameLen);
-        if (result != 0) trace("* Shorter wins.");
+    // The shared prefix sorted the same, so the shorter one wins.
+    if ((result = cmp(key1->attrNameLen, key2->attrNameLen)) != 0) {
+        trace("* %d: Shorter wins.", result);
+        return result;
     }
 
     return 0;
@@ -125,30 +129,3 @@ int hfsplus_attributes_get_node(BTreeNodePtr* out_node, const BTreePtr bTree, bt
     return 0;
 }
 
-void HFSPlusPrintFileAttributes(uint32_t fileID, HFSPlus* hfs)
-{
-    BTreeNodePtr      	node     = NULL;
-    BTRecNum           	recordID = 0;
-	HFSPlusAttrKey		key = {0};
-	
-	key.keyLength = 14;
-	key.fileID = fileID;
-	key.attrNameLen = 0;
-
-    if (hfsplus_get_attribute_btree(&tree, hfs) < 0)
-        return -1;
-
-    int found = btree_search(&node, &recordID, tree, &key);
-    if ((found != 1) || (node->dataLen == 0)) {
-        warning("No thread record for %d found.", cnid);
-        return -1;
-    }
-
-    debug("Found thread record %d:%d", node->nodeNumber, recordID);
-
-    BTreeKeyPtr           recordKey    = NULL;
-    void*                 recordValue  = NULL;
-    btree_get_record(&recordKey, &recordValue, node, recordID);
-
-    HFSPlusCatalogThread* threadRecord = (HFSPlusCatalogThread*)recordValue;
-}

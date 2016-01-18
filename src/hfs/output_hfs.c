@@ -14,7 +14,7 @@
 #include "hfs/catalog.h"
 #include "hfs/hfs.h"
 #include "logging/logging.h"    // console printing routines
-
+#include "hfsplus/attributes.h"
 
 static HFSPlus* volume_ = NULL;
 void set_hfs_volume(HFSPlus* v) { volume_ = v; }
@@ -660,6 +660,9 @@ void PrintHFSPlusCatalogFile(out_ctx* ctx, const HFSPlusCatalogFile* record)
         PrintHFSPlusForkData(ctx, &record->resourceFork, record->fileID, HFSResourceForkType);
         EndSection(ctx);
     }
+
+    if ((record->flags & kHFSHasAttributesMask))
+        PrintHFSPlusFileAttributes(ctx, record->fileID, volume_);
 }
 
 void PrintHFSPlusFolderThreadRecord(out_ctx* ctx, const HFSPlusCatalogThread* record)
@@ -731,6 +734,65 @@ void PrintHFSPlusAttrRecord(out_ctx* ctx, const HFSPlusAttrRecord* record)
         }
     }
 }
+
+void PrintHFSPlusFileAttributes(out_ctx* ctx, uint32_t fileID, HFSPlus* hfs)
+{
+    BTreePtr       bTree       = NULL;
+    BTreeNodePtr   node        = NULL;
+    BTRecNum       recordID    = 0;
+    BTreeKeyPtr    recordKey   = NULL;
+    void*          recordValue = NULL;
+    HFSPlusAttrKey key         = {0};
+    
+    char*          str         = "com.apple.TextEncoding";
+    
+    key.fileID      = fileID;
+    key.attrNameLen = strlen(str);
+    // key.attrName[0] = 'c';
+    for (int i = 0; i < key.attrNameLen; i++) {
+        key.attrName[i] = str[i];
+    }
+    key.keyLength = kHFSPlusAttrKeyMinimumLength + (key.attrNameLen * 2);
+    
+    if (hfsplus_get_attribute_btree(&bTree, hfs) < 0)
+        return;
+    
+    int found = btree_search(&node, &recordID, bTree, &key);
+    if ((found != 1)) {
+        // We won't find an exact match. We'll find the insertion point
+        // for null record.  So add one and get that one.
+        // FIXME: End of the node would suck here.
+        recordID++;
+    }
+    
+    debug("Found attribute record %d:%d", node->nodeNumber, recordID);
+    
+    btree_get_record(&recordKey, &recordValue, node, recordID);
+    
+    BeginSection(ctx, "Extended Attributes");
+    while (((HFSPlusAttrKey*)recordKey)->fileID == fileID) {
+        // VisualizeHFSPlusAttrKey(ctx, recordKey, "Attribute", 1);
+        // PrintHFSPlusAttrRecord(ctx, (HFSPlusAttrRecord*)recordValue);
+        PrintHFSUniStr255(ctx, "", (HFSUniStr255*) &((HFSPlusAttrKey*)recordKey)->attrNameLen);
+        
+        if (++recordID >= node->nodeDescriptor->numRecords) {
+            bt_nodeid_t nextNodeID = node->nodeDescriptor->fLink;
+            debug("Loading node %u", nextNodeID);
+            BTFreeNode(node);
+            
+            recordKey = recordValue = node = NULL;
+            recordID  = 0;
+            
+            BTGetNode(&node, bTree, nextNodeID);
+        }
+        
+        debug("Loading record %u", recordID);
+        btree_get_record(&recordKey, &recordValue, node, recordID);
+        debug("%u, %u", fileID, ((HFSPlusAttrKey*)recordKey)->fileID);
+    }
+    EndSection(ctx);
+}
+
 
 void PrintHFSPlusExtentRecord(out_ctx* ctx, const HFSPlusExtentRecord* record)
 {
