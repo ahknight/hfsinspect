@@ -334,7 +334,6 @@ void btree_free_node (BTreeNodePtr node)
 
 int btree_get_record(BTreeKeyPtr* key, void** data, const BTreeNodePtr node, BTRecNum recordID)
 {
-    assert(key || data);
     assert(node);
     assert(node->bTree->headerRecord.nodeSize > 0);
 
@@ -343,7 +342,7 @@ int btree_get_record(BTreeKeyPtr* key, void** data, const BTreeNodePtr node, BTR
     uint8_t*    record  = BTGetRecord(node, recordID);
     BTRecOffset keySize = BTGetRecordKeyLength(node, recordID);
 
-    if (key != NULL)  *key = (BTreeKey*)record;
+    *key = (BTreeKey*)record;
     if (data != NULL) *data = (record + keySize);
 
     return 0;
@@ -355,9 +354,7 @@ int btree_walk(const BTreePtr btree, const BTreeNodePtr node, btree_walk_func wa
     BTreeNodePtr _node = node;
 
     // Fetch the first leaf node if no node was passed in.
-    if (node == NULL) {
-        BTGetNode(&_node, btree, btree->headerRecord.firstLeafNode);
-    }
+    BTGetNode(&_node, btree, btree->headerRecord.firstLeafNode);
 
     walker(btree, _node);
 

@@ -117,9 +117,6 @@ int _gpt_load_header(Volume* vol, GPTHeader* header_out, GPTPartitionRecord* ent
     uint32_t  first_sector_lba = 1;
     length = sizeof(GPTHeader);
 
-    if (vol == NULL) { errno = EINVAL; return -1; }
-    if ( (header_out == NULL) && (entries_out == NULL) ) { errno = EINVAL; return -1; }
-
     // Load the MBR.
     if ( mbr_load_header(vol, &mbr) < 0 )
         return -1;
@@ -156,45 +153,43 @@ int _gpt_load_header(Volume* vol, GPTHeader* header_out, GPTPartitionRecord* ent
     if (_gpt_valid_header(header) != true)
         return -1;
 
-    if (entries_out != NULL) {
-        void*              buf     = NULL;
-        GPTPartitionRecord entries = {{{0}}};
+    void*              buf     = NULL;
+    GPTPartitionRecord entries = {{{0}}};
 
-        // Determine start of partition array
-        offset = header.partition_table_start_lba * vol->sector_size;
-        length = header.partitions_entry_count * header.partitions_entry_size;
+    // Determine start of partition array
+    offset = header.partition_table_start_lba * vol->sector_size;
+    length = header.partitions_entry_count * header.partitions_entry_size;
 
-        // Read the partition array
-        SALLOC(buf, length);
-        if ( vol_read(vol, buf, length, offset) < 0 )
-            return -1;
+    // Read the partition array
+    SALLOC(buf, length);
+    if ( vol_read(vol, buf, length, offset) < 0 )
+        return -1;
 
-        // Verify the partition map.
-        if (_gpt_valid_pmap(header, (const GPTPartitionRecord*)buf) != true)
-            return -1;
-        else
-            debug("GPT partition map CRC OK!");
+    // Verify the partition map.
+    if (_gpt_valid_pmap(header, (const GPTPartitionRecord*)buf) != true)
+        return -1;
+    else
+        debug("GPT partition map CRC OK!");
 
-        // Iterate over the partitions and update the volume record
-        for(unsigned i = 0; i < header.partitions_entry_count; i++) {
-            GPTPartitionEntry partition;
+    // Iterate over the partitions and update the volume record
+    for(unsigned i = 0; i < header.partitions_entry_count; i++) {
+        GPTPartitionEntry partition;
 
-            // Grab the next partition structure
-            partition = ((GPTPartitionEntry*)buf)[i];
-            if ((partition.first_lba == 0) && (partition.last_lba == 0))
-                break;
+        // Grab the next partition structure
+        partition = ((GPTPartitionEntry*)buf)[i];
+        if ((partition.first_lba == 0) && (partition.last_lba == 0))
+            break;
 
-            // Copy entry struct
-            entries[i] = partition;
-        }
-
-        // Clean up
-        SFREE(buf);
-
-        if (entries_out != NULL) memcpy(*entries_out, entries, sizeof(entries));
+        // Copy entry struct
+        entries[i] = partition;
     }
 
-    if (header_out != NULL) *header_out = header;
+    // Clean up
+    SFREE(buf);
+
+    memcpy(*entries_out, entries, sizeof(entries));
+
+    *header_out = header;
 
     return 0;
 }

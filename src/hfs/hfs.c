@@ -57,8 +57,6 @@ int hfs_open(HFSPlus* hfs, Volume* vol)
 
     trace("hfs (%p), vol (%p)", hfs, vol);
 
-    if ((hfs == NULL) || (vol == NULL)) { errno = EINVAL; return -1; }
-
     // Test to see if we support the volume.
     result = hfs_test(vol);
     if (result < 0) return -1;
@@ -166,6 +164,8 @@ Volume* hfsplus_find(Volume* vol)
                 result = hfsplus_find(vol->partitions[i]);
                 if (result != NULL)
                     break;
+            } else {
+                error("Volume should have a partition number %d but it was NULL!", i);
             }
         }
     }

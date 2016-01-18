@@ -254,7 +254,7 @@ int vol_close(Volume* vol)
 
 Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t length)
 {
-    { if ((vol == NULL) || (vol->fp == NULL)) { errno = EINVAL; return NULL; } }
+    { if (vol->fp == NULL) { errno = EINVAL; return NULL; } }
 
     Volume* newvol = NULL;
     SALLOC(newvol, sizeof(Volume));
@@ -294,11 +294,6 @@ Volume* vol_make_partition(Volume* vol, uint16_t pos, off_t offset, size_t lengt
 
 void vol_dump(Volume* vol)
 {
-    if (vol == NULL) {
-        error("Volume must not be NULL");
-        return;
-    }
-
     BeginSection(vol->ctx, "Volume '%s' (%s)", vol->desc, vol->native_desc);
 
     Print(vol->ctx, "source", "%s", vol->source);

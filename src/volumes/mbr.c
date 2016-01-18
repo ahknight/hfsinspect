@@ -83,8 +83,7 @@ const char* mbr_partition_type_str(uint16_t type, VolType* hint)
         }
     }
 
-    if (type_str == NULL)
-        (void)strlcpy(type_str, "unknown", 100);
+    (void)strlcpy(type_str, "unknown", 100);
 
     return type_str;
 }
