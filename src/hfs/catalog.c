@@ -24,6 +24,10 @@ const uint32_t kFolderAliasType         = 'fdrp';
 char*          HFSPlusMetadataFolder    = HFSPLUSMETADATAFOLDER;
 char*          HFSPlusDirMetadataFolder = HFSPLUS_DIR_METADATA_FOLDER;
 
+// In Apple/FastUnicodeCompare.c
+int32_t FastUnicodeCompare ( register const uint16_t* str1, register uint32_t length1,
+                             register const uint16_t* str2, register uint32_t length2);
+
 int hfsplus_get_catalog_btree(BTreePtr* tree, const HFSPlus* hfs)
 {
     trace("tree (%p), hfs (%p)", tree, hfs);

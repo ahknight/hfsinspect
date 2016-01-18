@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9B1937641A941EAA000E8995 /* hfs_unicode.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B1936F01A941E9D000E8995 /* hfs_unicode.c */; };
 		9B1937651A941EB5000E8995 /* btree.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B1936F51A941E9D000E8995 /* btree.c */; };
 		9B1937661A941EB5000E8995 /* btree_endian.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B1936F71A941E9D000E8995 /* btree_endian.c */; };
 		9B1937671A941EBA000E8995 /* cache.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B1936F91A941E9D000E8995 /* cache.c */; };
@@ -48,6 +47,7 @@
 		9B61B0301A957321000E8995 /* crc32c_tables.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B61B01B1A957321000E8995 /* crc32c_tables.c */; };
 		9B61B0371A957321000E8995 /* memdmp.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B61B02A1A957321000E8995 /* memdmp.c */; };
 		9B61B0381A957321000E8995 /* output.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B61B02C1A957321000E8995 /* output.c */; };
+		9BDB3BBD1AAF51C5000E8995 /* FastUnicodeCompare.c in Sources */ = {isa = PBXBuildFile; fileRef = 9BDB3BBC1AAF51C5000E8995 /* FastUnicodeCompare.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -68,8 +68,6 @@
 		9B1936ED1A941E9D000E8995 /* hfs_format.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_format.h; sourceTree = "<group>"; };
 		9B1936EE1A941E9D000E8995 /* hfs_macos_defs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_macos_defs.h; sourceTree = "<group>"; };
 		9B1936EF1A941E9D000E8995 /* hfs_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_types.h; sourceTree = "<group>"; };
-		9B1936F01A941E9D000E8995 /* hfs_unicode.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hfs_unicode.c; sourceTree = "<group>"; };
-		9B1936F11A941E9D000E8995 /* hfs_unicode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_unicode.h; sourceTree = "<group>"; };
 		9B1936F21A941E9D000E8995 /* hfs_unistr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hfs_unistr.h; sourceTree = "<group>"; };
 		9B1936F31A941E9D000E8995 /* vfs_journal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vfs_journal.h; sourceTree = "<group>"; };
 		9B1936F51A941E9D000E8995 /* btree.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = btree.c; sourceTree = "<group>"; };
@@ -167,6 +165,7 @@
 		9B9F2001184B27AC005D7271 /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = SOURCE_ROOT; };
 		9BAC71F1182D48F80001A1A3 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = SOURCE_ROOT; };
 		9BBA85031735AFD400273AE9 /* hfsinspect */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = hfsinspect; sourceTree = BUILT_PRODUCTS_DIR; };
+		9BDB3BBC1AAF51C5000E8995 /* FastUnicodeCompare.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = FastUnicodeCompare.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -228,11 +227,10 @@
 			isa = PBXGroup;
 			children = (
 				9B1936EC1A941E9D000E8995 /* APPLE_LICENSE */,
+				9BDB3BBC1AAF51C5000E8995 /* FastUnicodeCompare.c */,
 				9B1936ED1A941E9D000E8995 /* hfs_format.h */,
 				9B1936EE1A941E9D000E8995 /* hfs_macos_defs.h */,
 				9B1936EF1A941E9D000E8995 /* hfs_types.h */,
-				9B1936F01A941E9D000E8995 /* hfs_unicode.c */,
-				9B1936F11A941E9D000E8995 /* hfs_unicode.h */,
 				9B1936F21A941E9D000E8995 /* hfs_unistr.h */,
 				9B46A6691AA279B7000E8995 /* utfconv.c */,
 				9B46A66A1AA279B7000E8995 /* utfconv.h */,
@@ -491,7 +489,6 @@
 				9B1D0C031A941F4C000E8995 /* gpt.c in Sources */,
 				9B61B0371A957321000E8995 /* memdmp.c in Sources */,
 				9B1937651A941EB5000E8995 /* btree.c in Sources */,
-				9B1937641A941EAA000E8995 /* hfs_unicode.c in Sources */,
 				9B1D0C021A941F43000E8995 /* crc32.c in Sources */,
 				9B1937721A941EC5000E8995 /* unicode.c in Sources */,
 				9B1937751A941ED6000E8995 /* extract_file.c in Sources */,
@@ -500,6 +497,7 @@
 				9B1D0C041A941F4C000E8995 /* mbr.c in Sources */,
 				9B1D0C001A941F43000E8995 /* apm.c in Sources */,
 				9B1937781A941ED6000E8995 /* operations.c in Sources */,
+				9BDB3BBD1AAF51C5000E8995 /* FastUnicodeCompare.c in Sources */,
 				9B19377C1A941ED6000E8995 /* hotfiles.c in Sources */,
 				9B19376D1A941EC5000E8995 /* hfs_endian.c in Sources */,
 				9B1937661A941EB5000E8995 /* btree_endian.c in Sources */,

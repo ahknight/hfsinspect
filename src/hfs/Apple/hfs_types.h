@@ -15,7 +15,6 @@
 
 #include "hfs/Apple/hfs_macos_defs.h"
 #include "hfs/Apple/hfs_unistr.h"
-#include "hfs/Apple/hfs_unicode.h"
 #include "hfs/Apple/vfs_journal.h"
 #include "hfs/Apple/hfs_format.h"
 
