@@ -66,9 +66,9 @@ int Print(out_ctx* ctx, const char* format, ...)
     va_list ap;
     va_start(ap, format);
 
-	fputs(ctx->indent_string, stdout);
-    int bytes = vfprintf(stdout, format, ap);
-	fputs("\n", stdout);
+    fputs(ctx->indent_string, stdout);
+    int     bytes = vfprintf(stdout, format, ap);
+    fputs("\n", stdout);
 
     va_end(ap);
     return bytes;

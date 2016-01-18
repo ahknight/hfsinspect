@@ -234,8 +234,8 @@ void print_help()
                  "    -n ID,      --node ID       Dump an HFS+ B-Tree node by ID (must specify tree with -b). \n"
                  "    -c CNID,    --cnid CNID     Lookup and display a record by its catalog node ID. \n"
                  "    -F FSSpec   --fsspec FSSpec Locate a record by Carbon-style FSSpec (parent:name).\n"
-                 "    -P path     --fs-path path  Locate a record by path on the given device's filesystem.\n"
-                 "    -y DIR      --yank          Yank all the filesystem files and put then in the specified directory.\n"
+                 "    -P path     --vol-path path Locate a record by its path on the given device's filesystem.\n"
+                 "    -y DIR      --yank DIR      Yank all the filesystem files and put then in the specified directory.\n"
                  "\n"
                  "OUTPUT: \n"
                  "    You can optionally have hfsinspect dump any fork it finds as the result of an operation. This includes B-Trees or file forks.\n"
@@ -287,7 +287,7 @@ int main (int argc, char* const* argv)
         { "node",           required_argument,      NULL,                   'n' },
         { "cnid",           required_argument,      NULL,                   'c' },
         { "fsspec",         required_argument,      NULL,                   'F' },
-        { "fs-path",        required_argument,      NULL,                   'P' },
+        { "vol-path",       required_argument,      NULL,                   'P' },
         { "yank",           required_argument,      NULL,                   'y' },
 
         { "output",         required_argument,      NULL,                   'o' },

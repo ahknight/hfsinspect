@@ -69,6 +69,7 @@ struct Volume {
     mode_t   mode;                          // mode of source file
     uint16_t pad;                           // (padding)
     out_ctx* ctx;                           // Output context
+    PartitionOps* ops;                      // Partition operations (like dump)
 
     uint64_t sector_count;                  // total blocks in this volume
     uint32_t sector_size;                   // block size (LBA size if the raw disk; FS blocks if a filesystem)

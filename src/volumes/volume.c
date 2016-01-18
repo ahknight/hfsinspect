@@ -342,6 +342,10 @@ void vol_dump(Volume* vol)
             }
         }
     }
+    if (vol->ops != NULL && vol->ops->dump != NULL) {
+        BeginSection(vol->ctx, "Native Description");
+        vol->ops->dump(vol);
+        EndSection(vol->ctx);
+    }
     EndSection(vol->ctx);
 }
-
