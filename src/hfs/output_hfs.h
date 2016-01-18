@@ -39,7 +39,7 @@ void PrintForkExtentsSummary        (out_ctx* ctx, const HFSPlusFork* fork) _NON
 void PrintHFSPlusForkData           (out_ctx* ctx, const HFSPlusForkData* fork, uint32_t cnid, uint8_t forktype) _NONNULL;
 void PrintBTNodeDescriptor          (out_ctx* ctx, const BTNodeDescriptor* node) _NONNULL;
 void PrintBTHeaderRecord            (out_ctx* ctx, const BTHeaderRec* hr) _NONNULL;
-void PrintHFSPlusBSDInfo            (out_ctx* ctx, const HFSPlusBSDInfo* record) _NONNULL;
+void PrintHFSPlusBSDInfo            (out_ctx* ctx, const HFSPlusBSDInfo* record, bool isHardLink) _NONNULL;
 void PrintFndrFileInfo              (out_ctx* ctx, const FndrFileInfo* record) _NONNULL;
 void PrintFndrDirInfo               (out_ctx* ctx, const FndrDirInfo* record) _NONNULL;
 void PrintFinderFlags               (out_ctx* ctx, uint16_t record) _NONNULL;
@@ -61,6 +61,7 @@ void PrintFolderListing             (out_ctx* ctx, uint32_t folderID) _NONNULL;
 void PrintNodeRecord                (out_ctx* ctx, const BTreeNodePtr node, int recordNumber) _NONNULL;
 
 void PrintHFSPlusExtentRecord       (out_ctx* ctx, const HFSPlusExtentRecord* record) _NONNULL;
+void PrintHFSPlusFileAttributes     (out_ctx* ctx, uint32_t fileID, HFSPlus* hfs) _NONNULL;
 void PrintHFSUniStr255              (out_ctx* ctx, const char* label, const HFSUniStr255* record) _NONNULL;
 
 int format_hfs_timestamp            (out_ctx* ctx, char* out, uint32_t timestamp, size_t length) _NONNULL;

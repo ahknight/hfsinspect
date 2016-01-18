@@ -443,11 +443,16 @@ int _genModeString(char* modeString, uint16_t mode)
     return strlen(modeString);
 }
 
-void PrintHFSPlusBSDInfo(out_ctx* ctx, const HFSPlusBSDInfo* record)
+void PrintHFSPlusBSDInfo(out_ctx* ctx, const HFSPlusBSDInfo* record, bool isHardLink)
 {
-    PrintUI(ctx, record, ownerID);
-    PrintUI(ctx, record, groupID);
-
+    if (isHardLink == false) {
+        PrintUI(ctx, record, ownerID);
+        PrintUI(ctx, record, groupID);
+    } else {
+        PrintAttribute(ctx, "ownerID", "%u (previous link ID)", record->ownerID);
+        PrintAttribute(ctx, "groupID", "%u (next link ID)", record->groupID);
+    }
+    
     int   flagMasks[] = {
         UF_NODUMP,
         UF_IMMUTABLE,
@@ -526,7 +531,7 @@ void PrintHFSPlusBSDInfo(out_ctx* ctx, const HFSPlusBSDInfo* record)
     PrintUIOctFlagIfMatch(ctx, mode, S_IXOTH);
 
 
-    PrintUI(ctx, record, special.linkCount);
+    PrintUI(ctx, record, special.iNodeNum);
 }
 
 void PrintFndrFileInfo(out_ctx* ctx, const FndrFileInfo* record)
@@ -603,7 +608,8 @@ void PrintHFSPlusCatalogFolder(out_ctx* ctx, const HFSPlusCatalogFolder* record)
     PrintHFSTimestamp(ctx, record, attributeModDate);
     PrintHFSTimestamp(ctx, record, accessDate);
     PrintHFSTimestamp(ctx, record, backupDate);
-    PrintHFSPlusBSDInfo(ctx, &record->bsdInfo);
+
+    PrintHFSPlusBSDInfo(ctx, &record->bsdInfo, (record->flags & kHFSHasLinkChainMask));
 
     BeginSection(ctx, "Finder Info");
     PrintFndrDirInfo(ctx, &record->userInfo);
@@ -634,7 +640,8 @@ void PrintHFSPlusCatalogFile(out_ctx* ctx, const HFSPlusCatalogFile* record)
     PrintHFSTimestamp       (ctx, record, attributeModDate);
     PrintHFSTimestamp       (ctx, record, accessDate);
     PrintHFSTimestamp       (ctx, record, backupDate);
-    PrintHFSPlusBSDInfo     (ctx, &record->bsdInfo);
+
+    PrintHFSPlusBSDInfo     (ctx, &record->bsdInfo, (record->flags & kHFSHasLinkChainMask));
 
     BeginSection(ctx, "Finder Info");
     PrintFndrFileInfo       (ctx, &record->userInfo);
@@ -645,12 +652,12 @@ void PrintHFSPlusCatalogFile(out_ctx* ctx, const HFSPlusCatalogFile* record)
     PrintUI                 (ctx, record, reserved2);
 
     BeginSection(ctx, "Data Fork");
-    PrintHFSPlusForkData(ctx, &record->dataFork, kHFSCatalogFileID, HFSDataForkType);
+    PrintHFSPlusForkData(ctx, &record->dataFork, record->fileID, HFSDataForkType);
     EndSection(ctx);
 
     if (record->resourceFork.logicalSize) {
         BeginSection(ctx, "Resource Fork");
-        PrintHFSPlusForkData(ctx, &record->resourceFork, kHFSCatalogFileID, HFSResourceForkType);
+        PrintHFSPlusForkData(ctx, &record->resourceFork, record->fileID, HFSResourceForkType);
         EndSection(ctx);
     }
 }
@@ -1096,16 +1103,16 @@ void PrintNodeRecord(out_ctx* ctx, const BTreeNodePtr node, int recordNumber)
                 BeginSection(ctx, "Attribute Tree Index Records");
                 Print(ctx, "%-3s %-12s %-5s %-12s %s", "#", "nodeID", "kLen", "fileID", "attrName");
             }
-            bt_nodeid_t        next_node = *(bt_nodeid_t*)record->value;
-            HFSPlusAttrKey*    key       = (HFSPlusAttrKey*)record->key;
-			
-			HFSUniStr255 uniStr = { .length = key->attrNameLen, .unicode = {0} };
-			memcpy(&uniStr.unicode, key->attrName, 127);
-            hfs_str attrName  = "";
+            bt_nodeid_t     next_node = *(bt_nodeid_t*)record->value;
+            HFSPlusAttrKey* key       = (HFSPlusAttrKey*)record->key;
+
+            HFSUniStr255    uniStr    = { .length = key->attrNameLen, .unicode = {0} };
+            memcpy(&uniStr.unicode, key->attrName, 127);
+            hfs_str         attrName  = "";
             hfsuc_to_str(&attrName, &uniStr);
-			
+
             Print(ctx, "%-3u %-12u %-5u %-12u %s", recordNumber, next_node, key->keyLength, key->fileID, attrName);
-			
+
             return;
         }
 
