@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0610"
+   LastUpgradeVersion = "0720"
    version = "2.0">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -23,26 +23,30 @@
       </BuildActionEntries>
    </BuildAction>
    <TestAction
+      buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "NO"
-      buildConfiguration = "Debug">
+      shouldUseLaunchSchemeArgsEnv = "NO">
       <Testables>
       </Testables>
+      <AdditionalOptions>
+      </AdditionalOptions>
    </TestAction>
    <LaunchAction
+      buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
       customWorkingDirectory = "/Volumes/Data/code/c/hfsinspect"
-      buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "NO"
       debugXPCServices = "NO"
+      debugServiceExtension = "internal"
       allowLocationSimulation = "NO"
       viewDebuggingEnabled = "No">
       <PathRunnable
+         runnableDebuggingMode = "0"
          FilePath = "/Volumes/Data/code/c/hfsinspect/build/Darwin-x86_64/hfsinspect">
       </PathRunnable>
       <MacroExpansion>
@@ -91,12 +95,13 @@
       </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
+      buildConfiguration = "Release"
       shouldUseLaunchSchemeArgsEnv = "YES"
       savedToolIdentifier = "/Applications/Xcode.app/Contents/Applications/Instruments.app/Contents/Resources/templates/Allocations.tracetemplate"
       useCustomWorkingDirectory = "NO"
-      buildConfiguration = "Release"
       debugDocumentVersioning = "YES">
       <PathRunnable
+         runnableDebuggingMode = "0"
          FilePath = "/Users/ahknight/code/hfsinspect/hfsinspect">
       </PathRunnable>
       <MacroExpansion>

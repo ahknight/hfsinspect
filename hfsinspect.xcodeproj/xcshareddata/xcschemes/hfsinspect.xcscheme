@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0610"
+   LastUpgradeVersion = "0720"
    version = "2.0">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -23,10 +23,10 @@
       </BuildActionEntries>
    </BuildAction>
    <TestAction
+      buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "NO"
-      buildConfiguration = "Debug">
+      shouldUseLaunchSchemeArgsEnv = "NO">
       <Testables>
       </Testables>
       <MacroExpansion>
@@ -38,20 +38,25 @@
             ReferencedContainer = "container:hfsinspect.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
+      <AdditionalOptions>
+      </AdditionalOptions>
    </TestAction>
    <LaunchAction
+      buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
       customWorkingDirectory = "/Volumes/Data/code/c/hfsinspect"
-      buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "NO"
       debugXPCServices = "NO"
+      enableAddressSanitizer = "YES"
+      debugServiceExtension = "internal"
       allowLocationSimulation = "NO"
       viewDebuggingEnabled = "No">
-      <BuildableProductRunnable>
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "9BBA85021735AFD400273AE9"
@@ -63,11 +68,11 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "-LLLL"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-P /a&#xe5;e&#xe9;i&#xee;o&#xf8;u&#xfc;"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-d images/test.img"
@@ -86,15 +91,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-V /"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
             argument = "-p /"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "-d /dev/disk7s2"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
@@ -110,8 +107,12 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-n 227"
-            isEnabled = "NO">
+            argument = "-d /dev/disk2s2"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-c 14915778"
+            isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
       <EnvironmentVariables>
@@ -128,34 +129,20 @@
       </EnvironmentVariables>
       <AdditionalOptions>
          <AdditionalOption
-            key = "DYLD_INSERT_LIBRARIES"
-            value = "/usr/lib/libgmalloc.dylib"
-            isEnabled = "YES">
-         </AdditionalOption>
-         <AdditionalOption
             key = "OBJC_PRINT_EXCEPTIONS"
             value = "YES"
-            isEnabled = "YES">
-         </AdditionalOption>
-         <AdditionalOption
-            key = "MallocGuardEdges"
-            value = ""
-            isEnabled = "YES">
-         </AdditionalOption>
-         <AdditionalOption
-            key = "MallocScribble"
-            value = ""
             isEnabled = "YES">
          </AdditionalOption>
       </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
+      buildConfiguration = "Debug"
       shouldUseLaunchSchemeArgsEnv = "YES"
       savedToolIdentifier = "/Applications/Xcode.app/Contents/Applications/Instruments.app/Contents/Resources/templates/Leaks.tracetemplate"
       useCustomWorkingDirectory = "NO"
-      buildConfiguration = "Debug"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable>
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "9BBA85021735AFD400273AE9"

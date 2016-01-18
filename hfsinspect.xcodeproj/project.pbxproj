@@ -443,7 +443,7 @@
 		9BBA84FB1735AFD400273AE9 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0610;
+				LastUpgradeCheck = 0720;
 				ORGANIZATIONNAME = "Adam Knight";
 			};
 			buildConfigurationList = 9BBA84FE1735AFD400273AE9 /* Build configuration list for PBXProject "hfsinspect" */;
@@ -590,6 +590,7 @@
 				CLANG_STATIC_ANALYZER_MODE = deep;
 				CLANG_X86_VECTOR_INSTRUCTIONS = sse4.2;
 				COPY_PHASE_STRIP = NO;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_WARN_PEDANTIC = YES;
@@ -629,6 +630,7 @@
 					hfsinspect,
 				);
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPLOYMENT_LOCATION = YES;
 				DSTROOT = /usr/local;
@@ -641,6 +643,8 @@
 					"$(inherited)",
 					"$(SDKROOT)/usr/lib/system",
 				);
+				LLVM_LTO = NO;
+				MACH_O_TYPE = mh_execute;
 				PRODUCT_NAME = hfsinspect;
 				SKIP_INSTALL = YES;
 				STRIP_INSTALLED_PRODUCT = NO;
@@ -657,10 +661,11 @@
 					hfsinspect,
 				);
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPLOYMENT_LOCATION = YES;
 				DSTROOT = /usr/local;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = 2;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = src/cdefs.h;
 				GCC_PREPROCESSOR_DEFINITIONS = "";
@@ -669,7 +674,10 @@
 					"$(inherited)",
 					"$(SDKROOT)/usr/lib/system",
 				);
+				LLVM_LTO = YES;
+				MACH_O_TYPE = mh_execute;
 				PRODUCT_NAME = hfsinspect;
+				STRIP_INSTALLED_PRODUCT = NO;
 				USER_HEADER_SEARCH_PATHS = "src vendor";
 				WARNING_CFLAGS = "-Wall";
 			};
