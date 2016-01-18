@@ -206,6 +206,7 @@ int hfsplus_get_special_fork(HFSPlusFork** fork, const HFSPlus* hfs, bt_nodeid_t
 
 int hfsfork_make (HFSPlusFork** fork, const HFSPlus* hfs, const HFSPlusForkData forkData, hfs_forktype_t forkType, bt_nodeid_t cnid)
 {
+    trace("fork %p; hfs %p; forkData (%u blocks); forkType %02x; cnid %u", fork, hfs, forkData.totalBlocks, forkType, cnid);
     ASSERT_PTR(fork);
     ASSERT_PTR(hfs);
 
@@ -221,7 +222,7 @@ int hfsfork_make (HFSPlusFork** fork, const HFSPlus* hfs, const HFSPlusForkData 
 
     f->extents     = extentlist_make();
     if ( hfsplus_extents_get_extentlist_for_fork(f->extents, f) == false) {
-        critical("Failed to get extents for new fork!");
+        error("Failed to get extents for new fork!");
         SFREE(f);
         return -1;
     }
@@ -356,6 +357,10 @@ ssize_t hfs_read_fork_range(void* buffer, const HFSPlusFork* fork, size_t size, 
 
     // Add a block to the read if the offset is not block-aligned.
     block_count = (size / fork->hfs->block_size) + ( ((offset + size) % fork->hfs->block_size) ? 1 : 0);
+    
+    // If the read is less than a block, ensure that at least one block is read.
+    if (block_count == 0 && size > 0)
+        block_count = 1;
 
     // Use the calculated size instead of the passed size to account for block alignment.
     SALLOC(read_buffer, block_count * fork->hfs->block_size);

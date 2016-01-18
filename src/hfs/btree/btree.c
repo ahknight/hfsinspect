@@ -18,8 +18,8 @@
 
 static inline int icmp(const void* a, const void* b)
 {
-    int64_t A = *(int64_t*)a;
-    int64_t B = *(int64_t*)b;
+    int64_t A = *(int32_t*)a;
+    int64_t B = *(int32_t*)b;
     return cmp(A,B);
 }
 
@@ -221,7 +221,7 @@ int btree_init(BTreePtr btree, FILE* fp)
     // Now load up the header node.
     if ( (nbytes = fpread(btree->fp, buf, sizeof(BTNodeDescriptor), 0)) < 0 ) {
         SFREE(buf);
-        return -1;
+        return -1; //fpread has set errno
     }
 
     btree->nodeDescriptor = *(BTNodeDescriptor*)buf;
@@ -233,7 +233,7 @@ int btree_init(BTreePtr btree, FILE* fp)
 
         if ( (nbytes = fpread(btree->fp, buf, sizeof(BTHeaderRec), sizeof(BTNodeDescriptor))) < 0 ) {
             SFREE(buf);
-            return -1;
+            return -1; // fpread has set errno
         }
 
         btree->headerRecord = *(BTHeaderRec*)buf;
@@ -256,14 +256,17 @@ int btree_get_node(BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeN
     ssize_t      bytes_read = 0;
 
     trace("Tree %u: getting node %d", tree->treeID, nodeNumber);
-
+    errno = 0;
+    
     if(nodeNumber >= tree->headerRecord.totalNodes) {
-        error("Node %u is beyond file range.", nodeNumber);
+        error("Node %u is beyond tree node count (%u).", nodeNumber, tree->headerRecord.totalNodes);
+        errno = ESPIPE;
         return -1;
     }
 
     if ((nodeNumber != 0) && (BTIsNodeUsed(tree, nodeNumber) == false)) {
         debug2("Node %u is unused.", nodeNumber);
+        errno = EINVAL;
         return -1;
     }
 
@@ -294,7 +297,7 @@ int btree_get_node(BTreeNodePtr* outNode, const BTreePtr tree, bt_nodeid_t nodeN
         if (bytes_read < 0) {
             error("Error reading from fork.");
             btree_free_node(node);
-            return bytes_read;
+            return bytes_read; // fpread has set errno
         }
 
         if ((size_t)bytes_read != node->nodeSize) {
@@ -337,7 +340,11 @@ int btree_get_record(BTreeKeyPtr* key, void** data, const BTreeNodePtr node, BTR
     assert(node);
     assert(node->bTree->headerRecord.nodeSize > 0);
 
-    if (recordID >= node->recordCount) return -1;
+    if (recordID >= node->recordCount) {
+        error("Record %u is beyond the end of the node (%u records).", recordID, node->recordCount);
+        errno = EINVAL;
+        return -1;
+    }
 
     uint8_t*    record  = BTGetRecord(node, recordID);
     BTRecOffset keySize = BTGetRecordKeyLength(node, recordID);
@@ -394,7 +401,7 @@ int btree_search(BTreeNodePtr* node, BTRecNum* recordID, const BTreePtr btree, c
     BTreeNodePtr searchNode    = NULL;
     BTRecNum     searchIndex   = 0;
     bool         search_result = false;
-    int          level         = depth;
+    uint8_t      level         = depth;
     bt_nodeid_t  history[256]  = {0};
 
     if (level == 0) {
@@ -435,14 +442,11 @@ int btree_search(BTreeNodePtr* node, BTRecNum* recordID, const BTreePtr btree, c
             // Nodes have a specific height.  This one fails.
             critical("Node found at unexpected height (got %d; expected %d).", searchNode->nodeDescriptor->height, level);
         }
-        if (level == 1) {
-            if (searchNode->nodeDescriptor->kind != kBTLeafNode) {
-                critical("Node found at level 1 that is not a leaf node!");
-            }
-        } else {
-            if (searchNode->nodeDescriptor->kind != kBTIndexNode) {
-                critical("Invalid node! (expected an index node at level %d)", level);
-            }
+        if ((level == 1) && (searchNode->nodeDescriptor->kind != kBTLeafNode)) {
+            critical("Node found at level 1 that is not a leaf node!");
+        }
+        if ((level != 1) && (searchNode->nodeDescriptor->kind != kBTIndexNode)) {
+            critical("Invalid node! (expected an index node at level %d)", level);
         }
 
         // Search the node
@@ -450,7 +454,7 @@ int btree_search(BTreeNodePtr* node, BTRecNum* recordID, const BTreePtr btree, c
         debug2("SEARCH NODE RESULT: %d; idx %d", search_result, searchIndex);
 
         // If this was a leaf node, return it as there's no next node to search.
-        if ( ((BTNodeDescriptor*)searchNode->data)->kind == kBTLeafNode) {
+        if (level == 1) {
             debug("Breaking on leaf node.");
             break;
         }
@@ -470,7 +474,8 @@ int btree_search(BTreeNodePtr* node, BTRecNum* recordID, const BTreePtr btree, c
         debug("Next node is %d", currentNode);
 
         if (btree->keyCompare(searchKey, currentKey) == -1) {
-            critical("Search failed. Returned record's key is higher than the search key.");
+            error("Search failed. Returned record's key is higher than the search key.");
+            break;
         }
 
         btree_free_node(searchNode);

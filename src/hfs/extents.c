@@ -162,7 +162,7 @@ int hfsplus_extents_find_record(HFSPlusExtentRecord* record, hfs_block_t* record
     }
 
     // At ths point the record looks like it should be valid, so pass it along.
-    if (record != NULL) memcpy(*record, returnedRecord, sizeof(HFSPlusExtentRecord));
+    memcpy(*record, returnedRecord, sizeof(HFSPlusExtentRecord));
     *record_start_block = returnedKey->startBlock;
 
 RETURN:
@@ -202,11 +202,12 @@ bool hfsplus_extents_get_extentlist_for_fork(ExtentList* list, const HFSPlusFork
     }
 
     while (blocks < fork->totalBlocks) {
-        debug("Fetching more extents");
         HFSPlusExtentRecord record     = {{0}};
         hfs_block_t         startBlock = 0;
-
-        int                 found      = hfsplus_extents_find_record(&record, &startBlock, fork, blocks);
+        int                 found      = 0;
+        
+        debug("Fetching more extents for fork %u (have %u, need %u)", fork->cnid, blocks, fork->totalBlocks);
+        found = hfsplus_extents_find_record(&record, &startBlock, fork, blocks);
 
         if (found < 0) {
             error("Error while searching extent B-Tree for additional extents.");
@@ -216,7 +217,7 @@ bool hfsplus_extents_get_extentlist_for_fork(ExtentList* list, const HFSPlusFork
         if (found == 0) break;
 
         if (startBlock > blocks)
-            critical("Bad extent.");
+            critical("Wrong extent record returned (starts at offset %u; we needed %u).", startBlock, blocks);
 
         if ( extentlist_find(list, startBlock, NULL, NULL) == true )
             critical("We already have this record.");

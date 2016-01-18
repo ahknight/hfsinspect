@@ -13,6 +13,6 @@ ssize_t fpread(FILE* f, void* buf, size_t nbytes, off_t offset)
     if ( fseeko(f, offset, SEEK_SET) == 0 )
         return fread(buf, 1, nbytes, f);
     else
-        return -1;
+        return -1; // fseeko has set errno already
 }
 
