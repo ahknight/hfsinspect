@@ -529,6 +529,9 @@ OPEN:
 
 #pragma mark Disk Summary
 
+    out_ctx* ctx = vol->ctx;
+    ctx->decimal_sizes = use_decimal;
+
     if (check_mode(&options, HIModeShowDiskInfo)) {
         volumes_dump(vol);
     } else {
@@ -550,9 +553,6 @@ OPEN:
     if (hfs_open(options.hfs, vol) < 0) {
         die(1, "hfs_open");
     }
-
-    out_ctx* ctx = options.hfs->vol->ctx;
-    ctx->decimal_sizes = use_decimal;
 
     uid_t    uid = 99;
     gid_t    gid = 99;
