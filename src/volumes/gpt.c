@@ -239,7 +239,7 @@ void PrintGPTPartitions(const GPTHeader* header_p, const GPTPartitionRecord* ent
         _gpt_swap_uuid(&uuid, (const uuid_t*)&partition.type_uuid);
         uuid_unparse(uuid, uuid_str);
         type = _gpt_partition_type_str(uuid, NULL);
-        PrintAttribute(ctx, "type", "%s (%s)", type, uuid);
+        PrintAttribute(ctx, "type", "%s (%s)", type, uuid_str);
 
         _gpt_swap_uuid(&uuid, (const uuid_t*)&partition.uuid);
         uuid_unparse(uuid, uuid_str);

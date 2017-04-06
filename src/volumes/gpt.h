@@ -79,6 +79,7 @@ static GPTPartitionName gpt_partition_types[] = {
     {"4C616265-6C00-11AA-AA11-00306543ECAC", "Apple Label",                     kVolTypeUserData,       kTypeUnknown},
     {"5265636F-7665-11AA-AA11-00306543ECAC", "Apple TV Recovery Partition",     kVolTypeUserData,       kSysRecovery},
     {"53746F72-6167-11AA-AA11-00306543ECAC", "Core Storage Volume",             kVolTypePartitionMap,   kPMCoreStorage},
+    {"7C3457EF-0000-11AA-AA11-00306543ECAC", "Apple Filesystem (APFS)",         kVolTypeUserData,       kTypeUnknown},
     {{0}, {0}, 0, 0},
 };
 
