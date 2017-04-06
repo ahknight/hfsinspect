@@ -292,7 +292,7 @@ void PrintExtentList(out_ctx* ctx, const ExtentList* list, uint32_t totalBlocks)
 
 void PrintForkExtentsSummary(out_ctx* ctx, const HFSPlusFork* fork)
 {
-    info("Printing extents summary");
+    debug("Printing extents summary");
 
     PrintExtentList(ctx, fork->extents, fork->totalBlocks);
 }

@@ -142,7 +142,7 @@ BTRecOffset BTGetRecordOffset(const BTreeNodePtr node, uint16_t recNum)
     BTRecOffsetPtr offsets     = (BTRecOffsetPtr)((void*)((char*)node->data + node->nodeSize)) - recordCount - 1;
     if ( offsets[recordCount] != 14 ) {
         memdmp(stderr, node->data, node->nodeSize, NULL, NULL);
-        critical("Bad sentinel @ %ld! (%d != 14)", (long)((char*)offsets - (char*)node->data) + recordCount, offsets[recordCount]); /*sizeof(BTNodeDescriptor)*/
+        critical("Invalid node sentinel @ %ld! (%d != 14)", (long)((char*)offsets - (char*)node->data) + recordCount, offsets[recordCount]); /*sizeof(BTNodeDescriptor)*/
     }
     result = offsets[recordCount - recNum];
 
@@ -372,7 +372,7 @@ int btree_walk(const BTreePtr btree, const BTreeNodePtr node, btree_walk_func wa
         btree_free_node(right);
     }
 
-    if (!node && _node)
+    if (_node != NULL)
         btree_free_node(_node);
 
     return 0;
@@ -412,7 +412,7 @@ int btree_search(BTreeNodePtr* node, BTRecNum* recordID, const BTreePtr btree, c
 
     while (1) {
         if (currentNode > btree->headerRecord.totalNodes) {
-            critical("Current node is %u but tree only has %u nodes. Aborting search.", currentNode, btree->headerRecord.totalNodes);
+            critical("Next search node is %u but the tree only has %u nodes.", currentNode, btree->headerRecord.totalNodes);
         }
 
         debug2("SEARCHING NODE %d (CNID %d; level %d)", currentNode, btree->treeID, level);
@@ -427,8 +427,8 @@ int btree_search(BTreeNodePtr* node, BTRecNum* recordID, const BTreePtr btree, c
         }
 
         if ( BTGetNode(&searchNode, btree, currentNode) < 0) {
-            error("search tree: failed to get node %u!", currentNode);
-            perror("search");
+            error("failed to get node %u!", currentNode);
+            perror("btree_search");
             btree_free_node(searchNode);
             return false;
         }

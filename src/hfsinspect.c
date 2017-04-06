@@ -868,11 +868,11 @@ NOPE:
         }
 
         // Extract any found data, if requested.
-        if ((options.extract_path != NULL) && (strlen(options.extract_path) != 0)) {
+        if ((options.extract_path[0] != '\0') && (strlen(options.extract_path) != 0)) {
             debug("Extracting data.");
-//            if (options.extract_HFSPlusCatalogFile->fileID != 0) {
-//                extractHFSPlusCatalogFile(options.hfs, options.extract_HFSPlusCatalogFile, options.extract_path);
-//            } else
+            if (options.extract_HFSPlusCatalogFile->fileID != 0) {
+                extractHFSPlusCatalogFile(options.hfs, options.extract_HFSPlusCatalogFile, options.extract_path);
+            } else
             if (options.extract_HFSPlusFork != NULL) {
                 extractFork(options.extract_HFSPlusFork, options.extract_path);
             }
