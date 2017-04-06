@@ -69,18 +69,18 @@ int cs_get_volume_header(Volume* vol, CSVolumeHeader* header)
     return cs_verify_block(header, buf, buf_size);
 }
 
-ssize_t cs_get_metadata_block(void** buf, const Volume* vol, const CSVolumeHeader* header, unsigned block)
+ssize_t cs_get_metadata_block(void** buf, const Volume* vol, const CSVolumeHeader* const header, const unsigned block)
 {
     CSBlockHeader* bh       = NULL;
     size_t         buf_size = header->md_block_size;
     off_t          offset   = 0;
     ssize_t        bytes    = 0;
 
-READ:
     offset = block * (size_t)header->md_block_size;
+READ:
     bytes  = vol_read(vol, *buf, buf_size, offset);
     if (bytes < 0) return -1;
-    bh     = (CSBlockHeader*)*buf;
+    bh = (CSBlockHeader*)*buf;
     if (bh->version != 1)
         return -1;
 

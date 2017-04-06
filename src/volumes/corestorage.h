@@ -43,6 +43,17 @@ struct CSBlockHeader
     uint64_t field_12;              // 56
 } __attribute__((aligned(2), packed));
 
+/*
+From fsck_cs:
+ vh_header
+ vh_num_labels
+ vh_label_max_nbytes
+ vh_blksz
+ vh_wipe_key
+ vh_pv_nbytes
+ vh_pv_resize
+ vh_old_pv_nbytes
+*/
 // 512 bytes
 typedef struct CSVolumeHeader CSVolumeHeader;
 struct CSVolumeHeader
@@ -70,6 +81,25 @@ struct CSVolumeHeader
     uint8_t       field_26[176];                // 336
 } __attribute__((aligned(2), packed));
 
+/*
+From fsck_cs:
+ dl_header
+ dl_var_label_byte_off
+ dl_mlv_current_raid_scheme
+ dl_mlv_has_fixed_extent_size
+ dl_mlv_extent_size
+ dl_mlv_num_extents
+ dl_num_recovery_info
+ dl_recovery
+ dl_attr_len
+ dl_attr_compress
+ lvg_signature
+ lvg_metadata_cksum_alg
+ dl_mlv_segsz
+ dl_var_label_cksum
+
+This is probably called "disk label".
+*/
 // probably 512 bytes, though only 216+ are described below
 typedef struct CSMetadataBlockType11 CSMetadataBlockType11;
 struct CSMetadataBlockType11
