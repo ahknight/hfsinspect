@@ -1,0 +1,113 @@
+Volume metadata can be at the front or back of the disk (depends on if it was a fresh init or a conversion; conversions are at the end in the free space).
+Ring buffer of disk label blocks to describe the LVG.  The most recent is the current one. LVG header points to start.
+LVG's B-Tree describes the LV extents.
+A partial conversion would have an encrypted extent and an unencrypted extent.  When doing the conversion a block of data is converted and the metadata is updated (next block in buffer). This is how resume can work.
+
++-- Logical Volume Group C450DBEF-2D5A-41BF-8844-815A345CFAE5
+    =========================================================
+    Name:         Macintosh HD
+    Status:       Online
+    Size:         467418034176 B (467.4 GB)
+    Free Space:   10694656 B (10.7 MB)
+    |
+    +-< Physical Volume B3E00B4B-C5A6-4630-B00E-6EB24FAA1290
+    |   ----------------------------------------------------
+    |   Index:    0
+    |   Disk:     disk0s2
+    |   Status:   Online
+    |   Size:     467418034176 B (467.4 GB)
+    |
+    +-> Logical Volume Family DA7498DB-ECD6-4B4D-8CD3-D13A274DF226
+        ----------------------------------------------------------
+        Encryption Type:         AES-XTS
+        Encryption Status:       Unlocked
+        Conversion Status:       Complete
+        High Level Queries:      Fully Secure
+        |                        Passphrase Required
+        |                        Accepts New Users
+        |                        Has Visible Users
+        |                        Has Volume Key
+        |
+        +-> Logical Volume E8FDC3CA-CA2B-4C38-991D-29DBD00380FC
+            ---------------------------------------------------
+            Disk:                  disk2
+            Status:                Online
+            Size (Total):          467055017984 B (467.1 GB)
+            Revertible:            Yes (unlock and decryption required)
+            LV Name:               Macintosh HD
+            Volume Name:           Macintosh HD
+            Content Hint:          Apple_HFS
+
+$ diskutil cs info C450DBEF-2D5A-41BF-8844-815A345CFAE5
+Core Storage Properties:
+   Role:                       Logical Volume Group (LVG)
+   UUID:                       C450DBEF-2D5A-41BF-8844-815A345CFAE5
+   LVG Name:                   Macintosh HD
+   LVG Version:                1
+   LVG Size:                   467418034176 B
+   LVG Free Space:             10694656 B
+   LVG Status:                 Online
+   LVG Sparse:                 No
+   Fusion Drive:               No
+$ diskutil cs info B3E00B4B-C5A6-4630-B00E-6EB24FAA1290
+Core Storage Properties:
+   Role:                       Physical Volume (PV)
+   UUID:                       B3E00B4B-C5A6-4630-B00E-6EB24FAA1290
+   Parent LVG UUID:            C450DBEF-2D5A-41BF-8844-815A345CFAE5
+   Device Identifier:          disk0s2
+   PV Size:                    467418034176 B
+   PV Status:                  Online
+$ diskutil cs info DA7498DB-ECD6-4B4D-8CD3-D13A274DF226
+Core Storage Properties:
+   Role:                       Logical Volume Family (LVF)
+   UUID:                       DA7498DB-ECD6-4B4D-8CD3-D13A274DF226
+   Parent LVG UUID:            C450DBEF-2D5A-41BF-8844-815A345CFAE5
+   LVF Encryption Status:      Unlocked
+   LVF Encryption Type:        AES-XTS
+   Might Have Encryption:      Yes
+   Passphrase Required:        Yes
+   Fully Encrypted:            Yes
+   Accepting New Users:        Yes
+   Has Volume Key:             Yes
+   Has Visible Users:          Yes
+$ diskutil cs info E8FDC3CA-CA2B-4C38-991D-29DBD00380FC
+Core Storage Properties:
+   Role:                       Logical Volume (LV)
+   UUID:                       E8FDC3CA-CA2B-4C38-991D-29DBD00380FC
+   Parent LVF UUID:            DA7498DB-ECD6-4B4D-8CD3-D13A274DF226
+   Parent LVG UUID:            C450DBEF-2D5A-41BF-8844-815A345CFAE5
+   Device Identifier:          disk2
+   LV Status:                  Online
+   Conversion State:           Complete
+   LV Conversion Progress:     100%
+   Content Hint:               Apple_HFS
+   LV Name:                    Macintosh HD
+   Volume Name:                Macintosh HD
+   LV Size:                    467055017984 B
+$ fsck_cs /dev/disk0s2
+   Executing fsck_cs (version 517.50.1)
+** Checking volume
+** disk0s2: Scan for Volume Headers
+** The volume disk0s2 cannot be verified when it is in use
+** disk0s2: Scan for Disk Labels
+** Logical Volume Group C450DBEF-2D5A-41BF-8844-815A345CFAE5 on 1 device
+** disk0s2: Scan for Metadata Volume
+** Logical Volume Group has a 24 MB Metadata Volume with double redundancy
+** Start scanning metadata for a valid checkpoint
+** Load and verify Segment Headers
+** Load and verify Checkpoint Payload
+** Load and verify Transaction Segment
+** Incorporate 0 newer non-checkpoint transactions
+** Load and verify Virtual Address Table
+** Load and verify Segment Usage Table
+** Load and verify Metadata Superblock
+** Load and verify Logical Volumes B-Trees
+** Logical Volume Group contains 1 Logical Volume
+** Load and verify DA7498DB-ECD6-4B4D-8CD3-D13A274DF226
+** Load and verify E8FDC3CA-CA2B-4C38-991D-29DBD00380FC
+** Load and verify Freespace Summary
+** Load and verify Block Accounting
+** Load and verify Live Virtual Addresses
+** Newest transaction commit checkpoint is valid
+** Load and verify Segment Cleaning
+** The volume C450DBEF-2D5A-41BF-8844-815A345CFAE5 appears to be OK
