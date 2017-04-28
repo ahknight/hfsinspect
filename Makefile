@@ -2,7 +2,6 @@
 
 # Some defaults.  Feel free to override them.
 CFLAGS += -g -O2 -Wall
-LDFLAGS += -flto
 PREFIX = /usr/local
 
 # ------------ Systems and Platforms ------------
@@ -52,6 +51,12 @@ sys_CFLAGS += -fstack-protector-all -fstrict-enums -ftrapv
 # Warnings
 sys_CFLAGS += -Wdocumentation -Wmissing-variable-declarations # -Weverything -Wno-four-char-constants -Wno-packed -Wno-padded -Wno-conversion -Wno-sign-conversion -Wno-sign-compare -Wno-format-nonliteral -Wno-unused-parameter -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-cast-align
 cc_CFLAGS = -include-pch $(PCHFILE)
+
+# LLVM on Mac can reliably use LTO (having some issues with default Linux installs)
+ifeq ($(OS), Darwin)
+sys_LDFLAGS += -flto
+endif
+
 endif
 
 # scan-build
@@ -120,7 +125,7 @@ ALL_LDFLAGS = $(LDFLAGS)
 all: $(PRODUCTNAME)
 
 $(PRODUCTNAME): $(PCHFILE) $(BINARYPATH)
-#	 @echo "Compiled and linked with: $(CC)/$(ALL_CFLAGS)/$(ALL_LDFLAGS)/$(LIBS)/"
+	 @echo "Compiled and linked with: $(CC)/$(ALL_CFLAGS)/$(ALL_LDFLAGS)/$(LIBS)/"
 
 $(BINARYPATH): $(OBJFILES)
 	@echo Building hfsinspect
